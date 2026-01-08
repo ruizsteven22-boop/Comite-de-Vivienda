@@ -77,7 +77,6 @@ const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [view, setView] = useState<'dashboard' | 'members' | 'treasury' | 'board' | 'attendance' | 'assemblies' | 'support'>('dashboard');
   
-  // Persistencia de datos simple
   const [users, setUsers] = useState<User[]>(() => {
     const saved = localStorage.getItem('te_users');
     return saved ? JSON.parse(saved) : INITIAL_USERS;
@@ -121,7 +120,6 @@ const App: React.FC = () => {
   const handleLogin = (user: User) => {
     setCurrentUser(user);
     localStorage.setItem('te_session', JSON.stringify(user));
-    // Redirigir según rol si es necesario
     if (user.role === BoardRole.TREASURER) setView('treasury');
     else setView('dashboard');
   };
@@ -138,7 +136,6 @@ const App: React.FC = () => {
     }
   };
 
-  // Lógica de Control de Acceso (ACL)
   const canAccess = (viewName: string): boolean => {
     if (!currentUser) return false;
     if (currentUser.role === 'SUPPORT' || currentUser.role === 'ADMINISTRATOR') return true;
@@ -150,7 +147,7 @@ const App: React.FC = () => {
       case 'board': return currentUser.role !== BoardRole.TREASURER;
       case 'assemblies': return currentUser.role !== BoardRole.TREASURER;
       case 'attendance': return currentUser.role !== BoardRole.TREASURER;
-      case 'support': return false; // Solo soporte/admin
+      case 'support': return false;
       default: return false;
     }
   };
@@ -172,112 +169,96 @@ const App: React.FC = () => {
     return <Login users={users} onLogin={handleLogin} />;
   }
 
+  const isSupport = currentUser.role === 'SUPPORT' || currentUser.role === 'ADMINISTRATOR';
+
   return (
-    <div className="flex flex-col md:flex-row min-h-screen bg-slate-50">
-      <aside className={`w-full md:w-64 flex-shrink-0 text-white flex flex-col ${
-        currentUser.role === 'SUPPORT' ? 'bg-indigo-900' : 'bg-emerald-800'
+    <div className="flex flex-col md:flex-row min-h-screen bg-[#F1F5F9]">
+      {/* Sidebar con Contraste Mejorado */}
+      <aside className={`w-full md:w-72 flex-shrink-0 text-white flex flex-col shadow-[10px_0_30px_rgba(0,0,0,0.1)] transition-all duration-500 overflow-hidden relative z-50 ${
+        isSupport 
+        ? 'bg-gradient-to-br from-[#1e1b4b] via-[#1e1b4b] to-[#312e81]' 
+        : 'bg-gradient-to-br from-[#064e3b] via-[#064e3b] to-[#0f766e]'
       }`}>
-        <div className="p-8">
-          <h1 className="text-2xl font-black tracking-tighter uppercase">Tierra Esperanza</h1>
-          <p className="text-emerald-200 text-[10px] mt-1 uppercase tracking-[0.2em] font-black opacity-60">Gestión de Comité</p>
+        {/* Glow Decorativo más tenue para no lavar el texto */}
+        <div className="absolute -top-24 -left-24 w-48 h-48 bg-emerald-400/10 blur-[100px] rounded-full"></div>
+        
+        <div className="p-10 relative">
+          <h1 className="text-2xl font-black tracking-tight leading-none uppercase">
+            Tierra<br/>
+            <span className={isSupport ? 'text-indigo-300' : 'text-emerald-400'}>Esperanza</span>
+          </h1>
+          <div className={`h-1 w-12 mt-4 rounded-full ${isSupport ? 'bg-indigo-400' : 'bg-emerald-400'}`}></div>
         </div>
         
-        <nav className="mt-6 px-4 space-y-2 flex-1">
-          {canAccess('dashboard') && (
-            <button 
-              onClick={() => { setView('dashboard'); setViewingMemberId(null); }}
-              className={`w-full flex items-center space-x-3 px-4 py-3.5 rounded-2xl transition ${view === 'dashboard' ? 'bg-white/10 text-white shadow-inner ring-1 ring-white/20' : 'text-white/60 hover:bg-white/5'}`}
-            >
-              <Icons.Dashboard />
-              <span className="font-bold text-sm">Resumen</span>
-            </button>
-          )}
-          
-          {canAccess('members') && (
-            <button 
-              onClick={() => { setView('members'); setViewingMemberId(null); }}
-              className={`w-full flex items-center space-x-3 px-4 py-3.5 rounded-2xl transition ${view === 'members' ? 'bg-white/10 text-white shadow-inner ring-1 ring-white/20' : 'text-white/60 hover:bg-white/5'}`}
-            >
-              <Icons.Users />
-              <span className="font-bold text-sm">Socios</span>
-            </button>
-          )}
-          
-          {canAccess('treasury') && (
-            <button 
-              onClick={() => { setView('treasury'); setViewingMemberId(null); }}
-              className={`w-full flex items-center space-x-3 px-4 py-3.5 rounded-2xl transition ${view === 'treasury' ? 'bg-white/10 text-white shadow-inner ring-1 ring-white/20' : 'text-white/60 hover:bg-white/5'}`}
-            >
-              <Icons.Wallet />
-              <span className="font-bold text-sm">Tesorería</span>
-            </button>
-          )}
-          
-          {canAccess('board') && (
-            <button 
-              onClick={() => { setView('board'); setViewingMemberId(null); }}
-              className={`w-full flex items-center space-x-3 px-4 py-3.5 rounded-2xl transition ${view === 'board' ? 'bg-white/10 text-white shadow-inner ring-1 ring-white/20' : 'text-white/60 hover:bg-white/5'}`}
-            >
-              <Icons.Shield />
-              <span className="font-bold text-sm">Directiva</span>
-            </button>
-          )}
-
-          {canAccess('assemblies') && (
-            <button 
-              onClick={() => { setView('assemblies'); setViewingMemberId(null); }}
-              className={`w-full flex items-center space-x-3 px-4 py-3.5 rounded-2xl transition ${view === 'assemblies' ? 'bg-white/10 text-white shadow-inner ring-1 ring-white/20' : 'text-white/60 hover:bg-white/5'}`}
-            >
-              <Icons.Calendar />
-              <span className="font-bold text-sm">Asambleas</span>
-            </button>
-          )}
-
-          {canAccess('attendance') && (
-            <button 
-              onClick={() => { setView('attendance'); setViewingMemberId(null); }}
-              className={`w-full flex items-center space-x-3 px-4 py-3.5 rounded-2xl transition ${view === 'attendance' ? 'bg-white/10 text-white shadow-inner ring-1 ring-white/20' : 'text-white/60 hover:bg-white/5'}`}
-            >
-              <Icons.Clipboard />
-              <span className="font-bold text-sm">Asistencia</span>
-            </button>
-          )}
+        <nav className="mt-4 px-6 space-y-2 flex-1 relative">
+          {[
+            { id: 'dashboard', icon: <Icons.Dashboard />, label: 'Panel Principal' },
+            { id: 'members', icon: <Icons.Users />, label: 'Comunidad' },
+            { id: 'treasury', icon: <Icons.Wallet />, label: 'Finanzas' },
+            { id: 'board', icon: <Icons.Shield />, label: 'Directiva' },
+            { id: 'assemblies', icon: <Icons.Calendar />, label: 'Eventos' },
+            { id: 'attendance', icon: <Icons.Clipboard />, label: 'Asistencia' },
+          ].map((item) => (
+            canAccess(item.id) && (
+              <button 
+                key={item.id}
+                onClick={() => { setView(item.id as any); setViewingMemberId(null); }}
+                className={`w-full flex items-center space-x-4 px-5 py-4 rounded-2xl transition-all duration-300 group relative overflow-hidden ${
+                  view === item.id 
+                  ? 'bg-white/10 text-white shadow-lg backdrop-blur-md ring-1 ring-white/30' 
+                  : 'text-white/70 hover:text-white hover:bg-white/5'
+                }`}
+              >
+                {view === item.id && (
+                  <div className={`absolute left-0 top-0 h-full w-1.5 ${isSupport ? 'bg-indigo-400' : 'bg-emerald-400'}`}></div>
+                )}
+                <span className={`transition-transform duration-500 ${view === item.id ? 'scale-110' : 'group-hover:scale-110'}`}>
+                  {item.icon}
+                </span>
+                <span className={`text-sm tracking-wide font-bold`}>{item.label}</span>
+              </button>
+            )
+          ))}
         </nav>
 
-        {(currentUser.role === 'SUPPORT' || currentUser.role === 'ADMINISTRATOR') && (
-          <div className="px-4 mb-4">
+        {isSupport && (
+          <div className="px-6 mb-4 relative">
              <button 
               onClick={() => { setView('support'); setViewingMemberId(null); }}
-              className={`w-full flex items-center space-x-3 px-4 py-3.5 rounded-2xl transition ${view === 'support' ? 'bg-white/10 text-white shadow-inner ring-1 ring-white/20' : 'text-white/40 hover:bg-white/5'}`}
+              className={`w-full flex items-center space-x-4 px-5 py-4 rounded-2xl transition-all duration-300 ${
+                view === 'support' ? 'bg-indigo-400/30 text-white ring-1 ring-white/40 shadow-xl' : 'text-white/40 hover:text-white hover:bg-white/5'
+              }`}
             >
               <Icons.Settings />
-              <span className="font-bold text-sm">Soporte y Seguridad</span>
+              <span className="font-bold text-sm">Configuración</span>
             </button>
           </div>
         )}
 
-        <div className="p-6 border-t border-white/10 bg-black/10">
-          <div className="flex items-center space-x-4 mb-6">
-            <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center font-black text-white shadow-inner ring-1 ring-white/20">
+        <div className="p-8 border-t border-white/10 bg-black/20 backdrop-blur-lg">
+          <div className="flex items-center space-x-4 mb-8">
+            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black text-white shadow-2xl relative group ${
+              isSupport ? 'bg-indigo-600 border border-indigo-400' : 'bg-emerald-600 border border-emerald-400'
+            }`}>
               {currentUser.name.charAt(0)}
             </div>
             <div className="overflow-hidden">
-              <p className="text-sm font-black truncate">{currentUser.name}</p>
-              <p className="text-[9px] text-white/40 uppercase tracking-widest font-bold truncate">{currentUser.role}</p>
+              <p className="text-sm font-black truncate text-white">{currentUser.name}</p>
+              <p className={`text-[10px] uppercase tracking-widest font-black truncate text-white/60`}>{currentUser.role}</p>
             </div>
           </div>
           <button 
             onClick={handleLogout}
-            className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-2xl text-xs font-black transition uppercase tracking-widest"
+            className="w-full flex items-center justify-center space-x-3 px-4 py-4 bg-red-500/20 hover:bg-red-500/30 text-red-100 rounded-2xl text-[10px] font-black transition-all uppercase tracking-widest border border-red-500/30"
           >
             <Icons.Logout />
-            <span>Cerrar Sesión</span>
+            <span>Desconectar</span>
           </button>
         </div>
       </aside>
 
-      <main className="flex-1 overflow-y-auto p-4 md:p-12">
-        <div className="max-w-6xl mx-auto">
+      <main className="flex-1 overflow-y-auto">
+        <div className="max-w-7xl mx-auto p-6 md:p-12 animate-in fade-in slide-in-from-bottom-6 duration-1000">
           {renderView()}
         </div>
       </main>

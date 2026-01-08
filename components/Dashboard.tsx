@@ -11,7 +11,7 @@ interface DashboardProps {
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ members, transactions, assemblies }) => {
-  const [aiSummary, setAiSummary] = useState<string>('Cargando resumen inteligente...');
+  const [aiSummary, setAiSummary] = useState<string>('Analizando actividad comunitaria...');
 
   const totalIncome = transactions
     .filter(t => t.type === TransactionType.INCOME)
@@ -37,61 +37,73 @@ const Dashboard: React.FC<DashboardProps> = ({ members, transactions, assemblies
   ];
 
   return (
-    <div className="space-y-6">
-      <header>
-        <h2 className="text-3xl font-bold text-slate-800">Panel de Control</h2>
-        <p className="text-slate-500">Vista general del comité Tierra Esperanza</p>
+    <div className="space-y-12">
+      <header className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div>
+          <h2 className="text-5xl font-black text-slate-900 tracking-tighter leading-tight">
+            Estado de <br/><span className="text-emerald-700 underline decoration-emerald-300 underline-offset-8">Tierra Esperanza</span>
+          </h2>
+          <p className="text-slate-600 mt-4 font-bold uppercase tracking-widest text-xs">Reporte Ejecutivo • {new Date().toLocaleDateString('es-CL', { month: 'long', year: 'numeric' })}</p>
+        </div>
+        <div className="bg-white px-6 py-4 rounded-[2rem] shadow-sm border border-slate-200 flex items-center space-x-4">
+           <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" /></svg>
+           </div>
+           <div>
+              <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Sincronización</p>
+              <p className="text-sm font-bold text-slate-800">Sistema en Línea</p>
+           </div>
+        </div>
       </header>
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-          <p className="text-sm font-medium text-slate-500 uppercase tracking-wider">Total Socios</p>
-          <div className="flex items-end justify-between mt-2">
-            <p className="text-4xl font-bold text-slate-800">{members.length}</p>
-            <span className="text-emerald-600 font-semibold bg-emerald-50 px-2 py-1 rounded text-xs">Activos</span>
+      {/* KPI Cards con Contraste Reforzado */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+        {[
+          { label: 'Socios', val: members.length, sub: 'Miembros activos', from: 'from-emerald-600', to: 'to-teal-700', icon: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z' },
+          { label: 'Caja', val: `$${balance.toLocaleString('es-CL')}`, sub: 'Saldo Disponible', from: 'from-cyan-600', to: 'to-blue-700', icon: 'M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z' },
+          { label: 'Ingresos', val: `$${totalIncome.toLocaleString('es-CL')}`, sub: 'Acumulado', from: 'from-blue-600', to: 'to-indigo-700', icon: 'M13 7h8m0 0v8m0-8l-8 8-4-4-6 6' },
+          { label: 'Eventos', val: assemblies.length, sub: 'Registrados', from: 'from-amber-600', to: 'to-orange-700', icon: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z' },
+        ].map((kpi, idx) => (
+          <div key={idx} className="relative group">
+            <div className={`absolute inset-0 bg-gradient-to-br ${kpi.from} ${kpi.to} rounded-[2.5rem] blur-2xl opacity-5 group-hover:opacity-10 transition-opacity duration-500`}></div>
+            <div className="bg-white p-8 rounded-[2.5rem] shadow-[0_10px_40px_rgba(0,0,0,0.04)] border border-slate-200 hover:border-emerald-500 transition-all duration-500 relative flex flex-col items-center text-center">
+              <div className={`w-16 h-16 rounded-[1.5rem] bg-gradient-to-br ${kpi.from} ${kpi.to} text-white flex items-center justify-center mb-6 shadow-xl`}>
+                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d={kpi.icon} /></svg>
+              </div>
+              <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mb-2">{kpi.label}</p>
+              <p className="text-3xl font-black text-slate-900 tracking-tighter">{kpi.val}</p>
+              <p className="text-xs text-slate-600 mt-2 font-bold bg-slate-100 px-4 py-1.5 rounded-full">{kpi.sub}</p>
+            </div>
           </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-          <p className="text-sm font-medium text-slate-500 uppercase tracking-wider">Saldo Caja</p>
-          <div className="mt-2">
-            <p className="text-4xl font-bold text-emerald-600">${balance.toLocaleString('es-CL')}</p>
-            <p className="text-xs text-slate-400 mt-1">Acumulado total</p>
-          </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-          <p className="text-sm font-medium text-slate-500 uppercase tracking-wider">Ingresos Mayo</p>
-          <div className="mt-2">
-            <p className="text-4xl font-bold text-blue-600">${totalIncome.toLocaleString('es-CL')}</p>
-            <p className="text-xs text-slate-400 mt-1">Cuotas y otros</p>
-          </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-          <p className="text-sm font-medium text-slate-500 uppercase tracking-wider">Asambleas</p>
-          <div className="mt-2">
-            <p className="text-4xl font-bold text-amber-600">{assemblies.length}</p>
-            <p className="text-xs text-slate-400 mt-1">Realizadas en 2024</p>
-          </div>
-        </div>
+        ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Chart */}
-        <div className="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-          <h3 className="text-lg font-semibold text-slate-800 mb-6">Flujo de Caja</h3>
-          <div className="h-64">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+        {/* Chart Card */}
+        <div className="lg:col-span-2 bg-white p-12 rounded-[3rem] shadow-[0_10px_40px_rgba(0,0,0,0.03)] border border-slate-200 flex flex-col overflow-hidden relative">
+          <div className="flex justify-between items-center mb-12 relative z-10">
+            <div>
+              <h3 className="text-2xl font-black text-slate-900 tracking-tight">Análisis Financiero</h3>
+              <p className="text-slate-600 text-sm font-bold mt-1">Comparativa de flujos</p>
+            </div>
+            <div className="flex items-center space-x-6">
+               <div className="flex items-center space-x-3"><span className="w-4 h-4 rounded-full bg-emerald-600"></span><span className="text-[11px] font-black text-slate-600 uppercase tracking-widest">Entradas</span></div>
+               <div className="flex items-center space-x-3"><span className="w-4 h-4 rounded-full bg-rose-600"></span><span className="text-[11px] font-black text-slate-600 uppercase tracking-widest">Salidas</span></div>
+            </div>
+          </div>
+          <div className="h-80 relative z-10">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+              <BarChart data={chartData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="10 10" vertical={false} stroke="#e2e8f0" />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fontWeight: 800, fill: '#475569' }} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fontWeight: 800, fill: '#475569' }} />
+                <Tooltip 
+                  cursor={{ fill: '#f1f5f9' }} 
+                  contentStyle={{ borderRadius: '20px', border: '1px solid #e2e8f0', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)', fontWeight: 'bold' }}
+                />
+                <Bar dataKey="value" radius={[15, 15, 15, 15]} barSize={70}>
                   {chartData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={index === 0 ? '#10b981' : '#ef4444'} />
+                    <Cell key={`cell-${index}`} fill={index === 0 ? '#059669' : '#e11d48'} />
                   ))}
                 </Bar>
               </BarChart>
@@ -99,20 +111,30 @@ const Dashboard: React.FC<DashboardProps> = ({ members, transactions, assemblies
           </div>
         </div>
 
-        {/* AI Summary */}
-        <div className="bg-emerald-900 text-emerald-50 p-6 rounded-2xl shadow-lg relative overflow-hidden">
-          <div className="absolute top-0 right-0 p-4 opacity-10">
-            <svg className="w-24 h-24" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L1 21h22L12 2zm0 3.45L20.1 19H3.9L12 5.45zM11 10v4h2v-4h-2zm0 6v2h2v-2h-2z" /></svg>
-          </div>
-          <h3 className="text-lg font-semibold mb-4 flex items-center">
-            <span className="mr-2">✨</span> Informe IA - Tesorería
-          </h3>
-          <div className="text-sm leading-relaxed space-y-3 whitespace-pre-line opacity-90">
-            {aiSummary}
-          </div>
-          <div className="mt-6 pt-4 border-t border-emerald-800 flex justify-between items-center">
-            <span className="text-xs text-emerald-400 italic">Generado con Gemini 3 Flash</span>
-            <button className="text-xs font-bold uppercase tracking-tighter hover:text-white">Refrescar</button>
+        {/* AI Insight Box con Contraste de Texto Mejorado */}
+        <div className="bg-gradient-to-br from-[#064e3b] to-[#1e1b4b] text-white p-12 rounded-[3.5rem] shadow-2xl relative overflow-hidden group">
+          <div className="relative z-10 h-full flex flex-col">
+            <div className="inline-flex items-center space-x-4 bg-white/10 backdrop-blur-md border border-white/20 px-6 py-3 rounded-full mb-10 w-fit">
+              <span className="relative flex h-3 w-3">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-cyan-400"></span>
+              </span>
+              <span className="text-xs font-black uppercase tracking-[0.2em] text-white">Insight Estratégico</span>
+            </div>
+            
+            <div className="text-lg leading-relaxed space-y-6 font-semibold text-emerald-50 flex-1 tracking-tight">
+              {aiSummary}
+            </div>
+            
+            <div className="mt-12 pt-8 border-t border-white/20 flex justify-between items-center">
+              <div>
+                <p className="text-[10px] font-black text-cyan-300 uppercase tracking-widest">Inteligencia de Datos</p>
+                <p className="text-xs font-bold text-white/70">Análisis Progresivo</p>
+              </div>
+              <button className="w-12 h-12 flex items-center justify-center bg-white/20 hover:bg-white/30 rounded-2xl transition-all border border-white/20">
+                <svg className="w-5 h-5 text-emerald-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+              </button>
+            </div>
           </div>
         </div>
       </div>
