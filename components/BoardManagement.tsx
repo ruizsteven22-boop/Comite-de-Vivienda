@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { BoardPosition, BoardRole, Member } from '../types';
 import { formatRut } from '../services/utils';
+import { printBoardIDCard, printBoardReport } from '../services/printService';
 
 interface BoardManagementProps {
   board: BoardPosition[];
@@ -16,7 +17,6 @@ const BoardManagement: React.FC<BoardManagementProps> = ({ board, setBoard, boar
   const [tempBoard, setTempBoard] = useState<BoardPosition[]>(board);
   const [tempPeriod, setTempPeriod] = useState(boardPeriod);
 
-  // Estado para las búsquedas individuales por cargo y tipo
   const [searchQueries, setSearchQueries] = useState<Record<string, string>>({});
 
   const handleUpdateBoard = (role: BoardRole, type: 'primary' | 'substitute', field: string, value: string) => {
@@ -50,7 +50,6 @@ const BoardManagement: React.FC<BoardManagementProps> = ({ board, setBoard, boar
       }
       return pos;
     }));
-    // Limpiar búsqueda después de seleccionar
     setSearchQueries(prev => ({ ...prev, [`${role}-${type}`]: '' }));
   };
 
@@ -67,13 +66,21 @@ const BoardManagement: React.FC<BoardManagementProps> = ({ board, setBoard, boar
     setSearchQueries({});
   };
 
+  const handlePrintFullReport = () => {
+    printBoardReport(board, boardPeriod);
+  };
+
+  const handlePrintID = (person: { name: string, rut: string, phone: string }, role: string) => {
+    printBoardIDCard(person, role, boardPeriod);
+  };
+
   const getFilteredMembers = (query: string) => {
     if (!query || query.length < 2) return [];
     const normalizedQuery = query.toLowerCase();
     return members.filter(m => 
       m.name.toLowerCase().includes(normalizedQuery) || 
       m.rut.toLowerCase().includes(normalizedQuery)
-    ).slice(0, 5); // Limitar a 5 resultados
+    ).slice(0, 5);
   };
 
   return (
@@ -84,13 +91,23 @@ const BoardManagement: React.FC<BoardManagementProps> = ({ board, setBoard, boar
           <p className="text-slate-500">Representantes oficiales y sus respectivos suplentes</p>
         </div>
         {!isEditing ? (
-          <button 
-            onClick={() => setIsEditing(true)}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2.5 rounded-xl font-bold transition shadow-lg shadow-emerald-600/20 flex items-center group"
-          >
-            <svg className="w-4 h-4 mr-2 group-hover:rotate-12 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
-            Modificar Directiva
-          </button>
+          <div className="flex space-x-2">
+            <button 
+              onClick={handlePrintFullReport}
+              className="bg-slate-100 hover:bg-slate-200 text-slate-700 px-6 py-2.5 rounded-xl font-bold transition flex items-center border border-slate-200"
+              title="Imprimir Nómina Oficial"
+            >
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
+              Imprimir Nómina
+            </button>
+            <button 
+              onClick={() => setIsEditing(true)}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2.5 rounded-xl font-bold transition shadow-lg shadow-emerald-600/20 flex items-center group"
+            >
+              <svg className="w-4 h-4 mr-2 group-hover:rotate-12 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+              Modificar Directiva
+            </button>
+          </div>
         ) : (
           <div className="flex space-x-2">
             <button 
@@ -109,7 +126,6 @@ const BoardManagement: React.FC<BoardManagementProps> = ({ board, setBoard, boar
         )}
       </header>
 
-      {/* SECCIÓN DE PERIODO DE VIGENCIA */}
       <div className={`p-8 rounded-[32px] shadow-sm border transition-all duration-300 ${isEditing ? 'bg-emerald-50 border-emerald-200 ring-4 ring-emerald-500/5' : 'bg-white border-slate-100'}`}>
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="flex items-center space-x-6">
@@ -130,7 +146,6 @@ const BoardManagement: React.FC<BoardManagementProps> = ({ board, setBoard, boar
                     placeholder="Ej: 2024 - 2026"
                     autoFocus
                   />
-                  <p className="text-[10px] text-emerald-500 mt-2 font-bold italic">Presione enter o use el botón de guardar para confirmar.</p>
                 </div>
               ) : (
                 <div className="flex items-center space-x-3">
@@ -147,15 +162,22 @@ const BoardManagement: React.FC<BoardManagementProps> = ({ board, setBoard, boar
         </div>
       </div>
 
-      {/* CARGOS DE LA DIRECTIVA */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {(isEditing ? tempBoard : board).map((pos) => (
           <div key={pos.role} className="flex flex-col space-y-4 animate-in slide-in-from-bottom-4 duration-500">
-            <div className="bg-slate-900 text-white p-5 rounded-3xl text-center font-black uppercase tracking-widest text-xs shadow-xl flex items-center justify-center border-b-4 border-emerald-500">
-              {pos.role}
+            <div className="bg-slate-900 text-white p-5 rounded-3xl text-center font-black uppercase tracking-widest text-xs shadow-xl flex items-center justify-between border-b-4 border-emerald-500">
+              <span className="flex-1 text-center">{pos.role}</span>
+              {!isEditing && (
+                <button 
+                  onClick={() => handlePrintID(pos.primary, pos.role)}
+                  className="p-1.5 bg-white/10 hover:bg-white/30 rounded-lg transition"
+                  title="Imprimir Credencial Titular"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
+                </button>
+              )}
             </div>
             
-            {/* Titular */}
             <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 flex-1 relative flex flex-col hover:border-emerald-200 transition">
               <span className="absolute -top-3 left-6 bg-emerald-600 text-white text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest shadow-lg shadow-emerald-100">Titular</span>
               <div className="mt-6 space-y-4 flex-1">
@@ -184,7 +206,6 @@ const BoardManagement: React.FC<BoardManagementProps> = ({ board, setBoard, boar
                         </div>
                       )}
                     </div>
-
                     <div className="pt-4 border-t border-slate-100 space-y-4">
                       <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
                         <p className="text-[10px] font-black text-slate-400 uppercase">Nombre</p>
@@ -225,7 +246,6 @@ const BoardManagement: React.FC<BoardManagementProps> = ({ board, setBoard, boar
               </div>
             </div>
 
-            {/* Suplente */}
             <div className="bg-slate-50 p-6 rounded-3xl shadow-sm border-2 border-dashed border-slate-200 flex-1 relative flex flex-col hover:bg-white transition group">
               <span className="absolute -top-3 left-6 bg-slate-200 text-slate-600 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest border border-slate-300 group-hover:bg-slate-800 group-hover:text-white transition-colors">Suplente</span>
               <div className="mt-6 space-y-4 flex-1">
@@ -254,7 +274,6 @@ const BoardManagement: React.FC<BoardManagementProps> = ({ board, setBoard, boar
                         </div>
                       )}
                     </div>
-
                     <div className="pt-4 border-t border-slate-200 space-y-4">
                       <div className="bg-white p-3 rounded-xl border border-slate-100">
                         <p className="text-[10px] font-black text-slate-400 uppercase">Nombre</p>
@@ -290,6 +309,17 @@ const BoardManagement: React.FC<BoardManagementProps> = ({ board, setBoard, boar
                         <span className="font-bold text-slate-600">{pos.substitute.phone}</span>
                       </div>
                     </div>
+                    {!isEditing && pos.substitute.name && (
+                      <div className="mt-4 pt-4 border-t border-slate-200 flex justify-center">
+                         <button 
+                          onClick={() => handlePrintID(pos.substitute, `Suplente ${pos.role}`)}
+                          className="text-[9px] font-black uppercase text-slate-400 hover:text-emerald-600 flex items-center transition"
+                        >
+                          <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
+                          Credencial Suplente
+                        </button>
+                      </div>
+                    )}
                   </>
                 )}
               </div>
@@ -311,7 +341,7 @@ const BoardManagement: React.FC<BoardManagementProps> = ({ board, setBoard, boar
             El <strong>Periodo de Duración</strong> es fundamental para la vigencia jurídica del comité ante bancos, municipios y el Ministerio de Vivienda. Asegúrese de que el rango de años coincida exactamente con lo establecido en la última Acta de Elección de Directorio.
           </p>
           <p>
-            Tanto titulares como suplentes deben ser socios con estado <strong>ACTIVO</strong> y con sus cuotas al día para ejercer representación oficial.
+            Habilite la impresión de la <strong>Nómina Oficial</strong> para trámites externos que requieran la lista completa de representantes certificados.
           </p>
         </div>
       </div>

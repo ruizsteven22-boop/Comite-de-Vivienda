@@ -1,5 +1,318 @@
 
-import { Assembly, Member, BoardPosition, BoardRole } from "../types";
+import { Assembly, Member, BoardPosition, BoardRole, Transaction } from "../types";
+
+export const printBoardIDCard = (person: { name: string, rut: string, phone: string }, role: string, period: string) => {
+  const printWindow = window.open('', '_blank');
+  if (!printWindow) return;
+
+  printWindow.document.write(`
+    <html>
+      <head>
+        <title>Credencial - ${person.name}</title>
+        <style>
+          @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+          body { margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #f1f5f9; font-family: 'Inter', sans-serif; }
+          .card { 
+            width: 85.6mm; 
+            height: 54mm; 
+            background: white; 
+            border-radius: 12px; 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1); 
+            overflow: hidden; 
+            position: relative; 
+            border: 1px solid #e2e8f0;
+            display: flex;
+            flex-direction: column;
+          }
+          .header { 
+            background: linear-gradient(135deg, #064e3b 0%, #065f46 100%); 
+            padding: 12px; 
+            color: white; 
+            text-align: center;
+          }
+          .header h1 { margin: 0; font-size: 10pt; font-weight: 900; letter-spacing: 2px; text-transform: uppercase; }
+          .header p { margin: 2px 0 0; font-size: 6pt; opacity: 0.8; font-weight: bold; }
+          .content { flex: 1; padding: 15px; display: flex; align-items: center; gap: 15px; }
+          .photo-placeholder { 
+            width: 60px; 
+            height: 70px; 
+            background: #f8fafc; 
+            border: 2px solid #059669; 
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #059669;
+            font-size: 20pt;
+            font-weight: 900;
+          }
+          .details { flex: 1; }
+          .role-badge { 
+            background: #ecfdf5; 
+            color: #065f46; 
+            padding: 2px 8px; 
+            border-radius: 4px; 
+            font-size: 7pt; 
+            font-weight: 900; 
+            text-transform: uppercase; 
+            display: inline-block;
+            margin-bottom: 5px;
+          }
+          .name { font-size: 11pt; font-weight: 900; color: #1e293b; margin: 0; line-height: 1.1; }
+          .rut { font-family: monospace; font-size: 8pt; color: #64748b; font-weight: bold; margin-top: 2px; }
+          .period { position: absolute; bottom: 10px; right: 15px; font-size: 6pt; color: #94a3b8; font-weight: bold; }
+          .footer-strip { background: #f8fafc; height: 4px; width: 100%; border-top: 1px solid #e2e8f0; }
+          .seal { position: absolute; bottom: -10px; left: -10px; width: 60px; height: 60px; background: rgba(5, 150, 105, 0.05); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24pt; color: rgba(5, 150, 105, 0.1); font-weight: 900; transform: rotate(-15deg); }
+          @media print { 
+            body { background: white; } 
+            .card { box-shadow: none; border: 1px solid #ccc; -webkit-print-color-adjust: exact; } 
+          }
+        </style>
+      </head>
+      <body>
+        <div class="card">
+          <div class="seal">TE</div>
+          <div class="header">
+            <h1>Tierra Esperanza</h1>
+            <p>Comité de Vivienda • Credencial Directiva</p>
+          </div>
+          <div class="content">
+            <div class="photo-placeholder">${person.name.charAt(0)}</div>
+            <div class="details">
+              <span class="role-badge">${role}</span>
+              <h2 class="name">${person.name}</h2>
+              <div class="rut">RUT: ${person.rut}</div>
+              <div class="rut" style="font-size: 7pt; margin-top: 5px;">Fono: ${person.phone}</div>
+            </div>
+          </div>
+          <div class="period">VIGENCIA: ${period}</div>
+          <div class="footer-strip"></div>
+        </div>
+        <script>
+          window.onload = function() { window.print(); window.onafterprint = function() { window.close(); }; }
+        </script>
+      </body>
+    </html>
+  `);
+  printWindow.document.close();
+};
+
+export const printBoardReport = (board: BoardPosition[], period: string) => {
+  const printWindow = window.open('', '_blank');
+  if (!printWindow) return;
+
+  const rows = board.map(pos => `
+    <tr>
+      <td style="font-weight: 800; color: #064e3b; text-transform: uppercase; background: #f8fafc;">${pos.role}</td>
+      <td>
+        <div style="font-weight: bold;">${pos.primary.name}</div>
+        <div style="font-size: 8pt; color: #64748b;">RUT: ${pos.primary.rut} | Fono: ${pos.primary.phone}</div>
+      </td>
+      <td>
+        <div style="font-weight: bold; color: #475569;">${pos.substitute.name || 'No asignado'}</div>
+        <div style="font-size: 8pt; color: #94a3b8;">${pos.substitute.rut ? `RUT: ${pos.substitute.rut}` : ''}</div>
+      </td>
+    </tr>
+  `).join('');
+
+  printWindow.document.write(`
+    <html>
+      <head>
+        <title>Nómina Directiva - Tierra Esperanza</title>
+        <style>
+          @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
+          body { font-family: 'Inter', sans-serif; padding: 50px; color: #1e293b; line-height: 1.5; }
+          .header { text-align: center; border-bottom: 3px solid #059669; padding-bottom: 20px; margin-bottom: 40px; }
+          .header h1 { margin: 0; color: #059669; font-size: 24pt; font-weight: 800; text-transform: uppercase; }
+          .header p { margin: 5px 0; color: #64748b; font-weight: bold; font-size: 10pt; letter-spacing: 2px; }
+          .period-box { background: #f1f5f9; padding: 15px; border-radius: 12px; text-align: center; margin-bottom: 30px; border: 1px solid #e2e8f0; }
+          .period-box span { font-size: 9pt; text-transform: uppercase; color: #64748b; font-weight: 800; display: block; margin-bottom: 5px; }
+          .period-box strong { font-size: 16pt; color: #0f172a; }
+          table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+          th { background: #064e3b; color: white; text-align: left; padding: 12px 15px; font-size: 9pt; text-transform: uppercase; letter-spacing: 1px; }
+          td { padding: 15px; border-bottom: 1px solid #e2e8f0; vertical-align: middle; }
+          .signatures { margin-top: 80px; display: grid; grid-template-columns: 1fr 1fr; gap: 50px; text-align: center; }
+          .sig-line { border-top: 2px solid #1e293b; padding-top: 10px; font-size: 9pt; font-weight: 800; text-transform: uppercase; }
+          .footer { margin-top: 60px; text-align: center; font-size: 8pt; color: #94a3b8; border-top: 1px solid #f1f5f9; padding-top: 20px; font-style: italic; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>Comité Tierra Esperanza</h1>
+          <p>Nómina Oficial de Directorio Vigente</p>
+        </div>
+
+        <div class="period-box">
+          <span>Periodo de Ejercicio de Funciones</span>
+          <strong>${period}</strong>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 200px;">Cargo / Responsabilidad</th>
+              <th>Titular Vigente</th>
+              <th>Suplente / Reemplazo</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+
+        <div style="margin-top: 40px; background: #fffbeb; border: 1px solid #fcd34d; padding: 20px; border-radius: 12px; font-size: 9pt; color: #92400e;">
+          <strong>Certificación administrativa:</strong> Se deja constancia que los socios arriba mencionados han sido electos conforme a los estatutos vigentes de la organización y se encuentran facultados para representar al comité en las materias de su competencia.
+        </div>
+
+        <div class="signatures">
+          <div style="padding-top: 50px;"><div class="sig-line">Presidente(a) Directiva</div></div>
+          <div style="padding-top: 50px;"><div class="sig-line">Ministro de Fe / Secretario(a)</div></div>
+        </div>
+
+        <div class="footer">
+          Documento generado por el Sistema de Gestión Tierra Esperanza el ${new Date().toLocaleDateString('es-CL')}.
+        </div>
+
+        <script>
+          window.onload = function() { window.print(); window.onafterprint = function() { window.close(); }; }
+        </script>
+      </body>
+    </html>
+  `);
+  printWindow.document.close();
+};
+
+export const printMemberFile = (member: Member, transactions: Transaction[], assemblies: Assembly[], board: BoardPosition[]) => {
+  const memberPayments = transactions.filter(t => t.memberId === member.id);
+  const memberAttendance = assemblies.map(a => ({
+    ...a,
+    present: a.attendees.includes(member.rut)
+  })).filter(a => a.status === 'Finalizada');
+
+  const president = board.find(b => b.role === BoardRole.PRESIDENT)?.primary.name || '____________________';
+  const treasurer = board.find(b => b.role === BoardRole.TREASURER)?.primary.name || '____________________';
+
+  const familyRows = member.familyMembers.length > 0 
+    ? member.familyMembers.map(fm => `
+        <tr>
+          <td>${fm.name}</td>
+          <td>${fm.rut}</td>
+          <td>${fm.relationship}</td>
+        </tr>`).join('')
+    : '<tr><td colspan="3" style="text-align:center; color:#999;">No registra cargas familiares</td></tr>';
+
+  const paymentRows = memberPayments.length > 0
+    ? memberPayments.map(t => `
+        <tr>
+          <td>${t.date}</td>
+          <td>${t.description}</td>
+          <td>${t.paymentMethod}</td>
+          <td style="text-align:right; font-weight:bold;">$${t.amount.toLocaleString('es-CL')}</td>
+        </tr>`).join('')
+    : '<tr><td colspan="4" style="text-align:center; color:#999;">Sin movimientos financieros registrados</td></tr>';
+
+  const printWindow = window.open('', '_blank');
+  if (!printWindow) return;
+
+  printWindow.document.write(`
+    <html>
+      <head>
+        <title>Ficha Socio - ${member.name}</title>
+        <style>
+          @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
+          body { font-family: 'Inter', sans-serif; padding: 40px; color: #1e293b; line-height: 1.4; }
+          .header { border-bottom: 3px solid #059669; padding-bottom: 20px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center; }
+          .header h1 { margin: 0; color: #059669; font-size: 20pt; font-weight: 800; }
+          .header p { margin: 2px 0; font-size: 9pt; color: #64748b; font-weight: bold; text-transform: uppercase; }
+          .profile-section { display: flex; gap: 30px; margin-bottom: 30px; }
+          .photo-box { width: 120px; height: 120px; border: 4px solid #f1f5f9; border-radius: 15px; overflow: hidden; }
+          .photo-box img { width: 100%; height: 100%; object-fit: cover; }
+          .info-grid { flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+          .info-item { border-bottom: 1px solid #f1f5f9; padding-bottom: 5px; }
+          .info-label { font-size: 8pt; color: #94a3b8; font-weight: bold; text-transform: uppercase; }
+          .info-value { font-size: 11pt; font-weight: 600; color: #1e293b; }
+          .section-title { background: #f8fafc; padding: 8px 15px; border-radius: 8px; font-size: 10pt; font-weight: 800; color: #065f46; text-transform: uppercase; margin: 25px 0 15px 0; border-left: 4px solid #059669; }
+          table { width: 100%; border-collapse: collapse; font-size: 9pt; margin-bottom: 20px; }
+          th { text-align: left; padding: 10px; border-bottom: 2px solid #e2e8f0; color: #64748b; }
+          td { padding: 10px; border-bottom: 1px solid #f1f5f9; }
+          .signatures { margin-top: 60px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 30px; }
+          .sig-box { text-align: center; border-top: 1px solid #334155; padding-top: 10px; font-size: 8pt; font-weight: bold; }
+          .watermark { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-45deg); font-size: 80pt; color: rgba(5, 150, 105, 0.03); font-weight: 900; white-space: nowrap; pointer-events: none; z-index: -1; }
+          @media print { body { padding: 0; } .no-print { display: none; } }
+        </style>
+      </head>
+      <body>
+        <div class="watermark">TIERRA ESPERANZA</div>
+        <div class="header">
+          <div>
+            <h1>Comité Tierra Esperanza</h1>
+            <p>Expediente Maestro de Socio • Folio #${member.id}</p>
+          </div>
+          <div style="text-align: right">
+            <p style="font-size: 8pt">Fecha de Emisión</p>
+            <p style="font-size: 10pt; color: #1e293b">${new Date().toLocaleDateString('es-CL')}</p>
+          </div>
+        </div>
+
+        <div class="profile-section">
+          <div class="photo-box">
+            <img src="${member.photoUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(member.name)}&background=047857&color=fff&size=200`}" />
+          </div>
+          <div class="info-grid">
+            <div class="info-item"><div class="info-label">Nombre Completo</div><div class="info-value">${member.name}</div></div>
+            <div class="info-item"><div class="info-label">RUT / Identidad</div><div class="info-value">${member.rut}</div></div>
+            <div class="info-item"><div class="info-label">Fecha de Ingreso</div><div class="info-value">${member.joinDate}</div></div>
+            <div class="info-item"><div class="info-label">Estado Actual</div><div class="info-value">${member.status}</div></div>
+            <div class="info-item"><div class="info-label">Correo Electrónico</div><div class="info-value">${member.email || 'No registrado'}</div></div>
+            <div class="info-item"><div class="info-label">Teléfono</div><div class="info-value">${member.phone || 'No registrado'}</div></div>
+            <div class="info-item" style="grid-column: span 2;"><div class="info-label">Dirección Particular</div><div class="info-value">${member.address || 'No registrada'}</div></div>
+          </div>
+        </div>
+
+        <div class="section-title">I. Núcleo Familiar Registrado</div>
+        <table>
+          <thead>
+            <tr><th>Nombre del Integrante</th><th>RUT</th><th>Vínculo / Relación</th></tr>
+          </thead>
+          <tbody>${familyRows}</tbody>
+        </table>
+
+        <div class="section-title">II. Resumen de Obligaciones Financieras (Últimos Movimientos)</div>
+        <table>
+          <thead>
+            <tr><th>Fecha</th><th>Concepto</th><th>Método</th><th style="text-align:right;">Monto</th></tr>
+          </thead>
+          <tbody>${paymentRows}</tbody>
+        </table>
+
+        <div class="section-title">III. Registro de Participación en Asambleas</div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+          <div style="background: #f1f5f9; padding: 15px; border-radius: 10px; text-align: center;">
+            <div class="info-label">Total Asistencias</div>
+            <div style="font-size: 18pt; font-weight: 800;">${memberAttendance.filter(a => a.present).length}</div>
+          </div>
+          <div style="background: #f1f5f9; padding: 15px; border-radius: 10px; text-align: center;">
+            <div class="info-label">Total Inasistencias</div>
+            <div style="font-size: 18pt; font-weight: 800; color: #dc2626;">${memberAttendance.filter(a => !a.present).length}</div>
+          </div>
+        </div>
+
+        <div class="signatures">
+          <div class="sig-box">Firma del Socio<br/><br/><br/>${member.name}</div>
+          <div class="sig-box">Tesorería General<br/><br/><br/>${treasurer}</div>
+          <div class="sig-box">Presidencia / Timbre<br/><br/><br/>${president}</div>
+        </div>
+
+        <div style="margin-top: 40px; font-size: 7pt; color: #94a3b8; text-align: center;">
+          Este documento es una copia oficial del registro digital de "Tierra Esperanza". Para validez ante terceros requiere timbre original.
+        </div>
+
+        <script>
+          window.onload = function() { window.print(); window.onafterprint = function() { window.close(); }; }
+        </script>
+      </body>
+    </html>
+  `);
+  printWindow.document.close();
+};
 
 export const printAssemblyMinutes = (assembly: Assembly, members: Member[], board: BoardPosition[]) => {
   const quorumPercentage = Math.round((assembly.attendees.length / members.length) * 100);

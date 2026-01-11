@@ -97,9 +97,9 @@ const App: React.FC = () => {
         summonsTime: '19:30',
         location: 'Sede Comunitaria Tierra Esperanza',
         description: 'Asamblea Mensual - Avances Proyecto', 
-        attendees: [], 
+        attendees: ['12.345.678-9'], 
         type: AssemblyType.ORDINARY, 
-        status: AssemblyStatus.SCHEDULED 
+        status: AssemblyStatus.FINISHED 
       }
     ];
   });
@@ -155,7 +155,7 @@ const App: React.FC = () => {
   const renderView = () => {
     switch (view) {
       case 'dashboard': return <Dashboard members={members} transactions={transactions} assemblies={assemblies} />;
-      case 'members': return <MemberManagement members={members} setMembers={setMembers} assemblies={assemblies} viewingMemberId={viewingMemberId} onClearViewingMember={() => setViewingMemberId(null)} />;
+      case 'members': return <MemberManagement members={members} setMembers={setMembers} assemblies={assemblies} transactions={transactions} board={board} viewingMemberId={viewingMemberId} onClearViewingMember={() => setViewingMemberId(null)} />;
       case 'treasury': return <Treasury transactions={transactions} setTransactions={setTransactions} members={members} onViewMember={handleViewMember} />;
       case 'board': return <BoardManagement board={board} setBoard={setBoard} boardPeriod={boardPeriod} setBoardPeriod={setBoardPeriod} members={members} />;
       case 'assemblies': return <AssemblyManagement assemblies={assemblies} setAssemblies={setAssemblies} members={members} board={board} />;
@@ -173,13 +173,11 @@ const App: React.FC = () => {
 
   return (
     <div className="flex flex-col md:flex-row min-h-screen bg-[#F1F5F9]">
-      {/* Sidebar con Contraste Mejorado */}
       <aside className={`w-full md:w-72 flex-shrink-0 text-white flex flex-col shadow-[10px_0_30px_rgba(0,0,0,0.1)] transition-all duration-500 overflow-hidden relative z-50 ${
         isSupport 
         ? 'bg-gradient-to-br from-[#1e1b4b] via-[#1e1b4b] to-[#312e81]' 
         : 'bg-gradient-to-br from-[#064e3b] via-[#064e3b] to-[#0f766e]'
       }`}>
-        {/* Glow Decorativo más tenue para no lavar el texto */}
         <div className="absolute -top-24 -left-24 w-48 h-48 bg-emerald-400/10 blur-[100px] rounded-full"></div>
         
         <div className="p-10 relative">

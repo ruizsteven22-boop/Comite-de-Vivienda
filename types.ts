@@ -98,7 +98,7 @@ export interface Assembly {
 export interface User {
   id: string;
   username: string;
-  password?: string; // Solo para validación local simple
+  password?: string;
   role: SystemRole;
   name: string;
   lastLogin?: string;

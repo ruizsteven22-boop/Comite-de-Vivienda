@@ -11,7 +11,7 @@ interface DashboardProps {
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ members, transactions, assemblies }) => {
-  const [aiSummary, setAiSummary] = useState<string>('Analizando actividad comunitaria...');
+  const [aiSummary, setAiSummary] = useState<string>('Realizando análisis financiero avanzado...');
 
   const totalIncome = transactions
     .filter(t => t.type === TransactionType.INCOME)
@@ -25,8 +25,12 @@ const Dashboard: React.FC<DashboardProps> = ({ members, transactions, assemblies
 
   useEffect(() => {
     const fetchSummary = async () => {
-      const summary = await getFinancialSummary(transactions);
-      setAiSummary(summary || 'No se pudo generar el resumen.');
+      if (transactions.length > 0) {
+        const summary = await getFinancialSummary(transactions);
+        setAiSummary(summary || 'No se pudo generar el resumen en este momento.');
+      } else {
+        setAiSummary('Sin movimientos financieros registrados para analizar.');
+      }
     };
     fetchSummary();
   }, [transactions]);
@@ -36,74 +40,84 @@ const Dashboard: React.FC<DashboardProps> = ({ members, transactions, assemblies
     { name: 'Egresos', value: totalExpense },
   ];
 
+  const upcomingAssemblies = assemblies
+    .filter(a => a.status === 'Programada' || a.status === 'En Curso')
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+    .slice(0, 2);
+
   return (
-    <div className="space-y-12">
-      <header className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+    <div className="space-y-10">
+      <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
-          <h2 className="text-5xl font-black text-slate-900 tracking-tighter leading-tight">
-            Estado de <br/><span className="text-emerald-700 underline decoration-emerald-300 underline-offset-8">Tierra Esperanza</span>
+          <h2 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tighter leading-tight">
+            Panel <span className="text-emerald-700">Tierra Esperanza</span>
           </h2>
-          <p className="text-slate-600 mt-4 font-bold uppercase tracking-widest text-xs">Reporte Ejecutivo • {new Date().toLocaleDateString('es-CL', { month: 'long', year: 'numeric' })}</p>
+          <p className="text-slate-500 mt-2 font-bold uppercase tracking-widest text-[10px]">Gestión de Vivienda • Control Maestro</p>
         </div>
-        <div className="bg-white px-6 py-4 rounded-[2rem] shadow-sm border border-slate-200 flex items-center space-x-4">
-           <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" /></svg>
+        <div className="bg-white px-6 py-4 rounded-3xl shadow-sm border border-slate-200 flex items-center space-x-4">
+           <div className="w-10 h-10 rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-600">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
            </div>
            <div>
-              <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Sincronización</p>
-              <p className="text-sm font-bold text-slate-800">Sistema en Línea</p>
+              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Sincronización</p>
+              <p className="text-sm font-black text-slate-800">{new Date().toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })} hrs</p>
            </div>
         </div>
       </header>
 
-      {/* KPI Cards con Contraste Reforzado */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+      {/* KPI Section */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {[
-          { label: 'Socios', val: members.length, sub: 'Miembros activos', from: 'from-emerald-600', to: 'to-teal-700', icon: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z' },
-          { label: 'Caja', val: `$${balance.toLocaleString('es-CL')}`, sub: 'Saldo Disponible', from: 'from-cyan-600', to: 'to-blue-700', icon: 'M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z' },
-          { label: 'Ingresos', val: `$${totalIncome.toLocaleString('es-CL')}`, sub: 'Acumulado', from: 'from-blue-600', to: 'to-indigo-700', icon: 'M13 7h8m0 0v8m0-8l-8 8-4-4-6 6' },
-          { label: 'Eventos', val: assemblies.length, sub: 'Registrados', from: 'from-amber-600', to: 'to-orange-700', icon: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z' },
+          { label: 'Socios', val: members.length, sub: 'Inscritos totales', icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z', color: 'bg-emerald-600' },
+          { label: 'Caja Actual', val: `$${balance.toLocaleString('es-CL')}`, sub: 'Saldo neto', icon: 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z', color: 'bg-cyan-600' },
+          { label: 'Recaudación', val: `$${totalIncome.toLocaleString('es-CL')}`, sub: 'Total histórico', icon: 'M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z', color: 'bg-indigo-600' },
+          { label: 'Asambleas', val: assemblies.length, sub: 'Total sesiones', icon: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z', color: 'bg-rose-600' },
         ].map((kpi, idx) => (
-          <div key={idx} className="relative group">
-            <div className={`absolute inset-0 bg-gradient-to-br ${kpi.from} ${kpi.to} rounded-[2.5rem] blur-2xl opacity-5 group-hover:opacity-10 transition-opacity duration-500`}></div>
-            <div className="bg-white p-8 rounded-[2.5rem] shadow-[0_10px_40px_rgba(0,0,0,0.04)] border border-slate-200 hover:border-emerald-500 transition-all duration-500 relative flex flex-col items-center text-center">
-              <div className={`w-16 h-16 rounded-[1.5rem] bg-gradient-to-br ${kpi.from} ${kpi.to} text-white flex items-center justify-center mb-6 shadow-xl`}>
-                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d={kpi.icon} /></svg>
-              </div>
-              <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mb-2">{kpi.label}</p>
-              <p className="text-3xl font-black text-slate-900 tracking-tighter">{kpi.val}</p>
-              <p className="text-xs text-slate-600 mt-2 font-bold bg-slate-100 px-4 py-1.5 rounded-full">{kpi.sub}</p>
+          <div key={idx} className="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 flex items-center space-x-6 hover:shadow-lg transition-all duration-300">
+            <div className={`w-14 h-14 rounded-2xl ${kpi.color} text-white flex items-center justify-center shadow-lg`}>
+              <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d={kpi.icon} /></svg>
+            </div>
+            <div>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{kpi.label}</p>
+              <p className="text-2xl font-black text-slate-800">{kpi.val}</p>
+              <p className="text-[10px] text-slate-500 font-bold">{kpi.sub}</p>
             </div>
           </div>
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-        {/* Chart Card */}
-        <div className="lg:col-span-2 bg-white p-12 rounded-[3rem] shadow-[0_10px_40px_rgba(0,0,0,0.03)] border border-slate-200 flex flex-col overflow-hidden relative">
-          <div className="flex justify-between items-center mb-12 relative z-10">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Main Chart */}
+        <div className="lg:col-span-2 bg-white p-10 rounded-[2.5rem] shadow-sm border border-slate-100 flex flex-col">
+          <div className="flex justify-between items-center mb-10">
             <div>
-              <h3 className="text-2xl font-black text-slate-900 tracking-tight">Análisis Financiero</h3>
-              <p className="text-slate-600 text-sm font-bold mt-1">Comparativa de flujos</p>
+              <h3 className="text-xl font-black text-slate-800">Flujo de Caja</h3>
+              <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">Resumen de ingresos vs egresos</p>
             </div>
-            <div className="flex items-center space-x-6">
-               <div className="flex items-center space-x-3"><span className="w-4 h-4 rounded-full bg-emerald-600"></span><span className="text-[11px] font-black text-slate-600 uppercase tracking-widest">Entradas</span></div>
-               <div className="flex items-center space-x-3"><span className="w-4 h-4 rounded-full bg-rose-600"></span><span className="text-[11px] font-black text-slate-600 uppercase tracking-widest">Salidas</span></div>
+            <div className="flex space-x-4">
+              <div className="flex items-center space-x-2">
+                <span className="w-3 h-3 rounded-full bg-emerald-500"></span>
+                <span className="text-[10px] font-black text-slate-500 uppercase">Entradas</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <span className="w-3 h-3 rounded-full bg-rose-500"></span>
+                <span className="text-[10px] font-black text-slate-500 uppercase">Salidas</span>
+              </div>
             </div>
           </div>
-          <div className="h-80 relative z-10">
+          <div className="h-72 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="10 10" vertical={false} stroke="#e2e8f0" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fontWeight: 800, fill: '#475569' }} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fontWeight: 800, fill: '#475569' }} />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1F5F9" />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 800, fill: '#94a3b8' }} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 800, fill: '#94a3b8' }} />
                 <Tooltip 
-                  cursor={{ fill: '#f1f5f9' }} 
-                  contentStyle={{ borderRadius: '20px', border: '1px solid #e2e8f0', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)', fontWeight: 'bold' }}
+                  cursor={{ fill: '#F8FAFC' }} 
+                  contentStyle={{ borderRadius: '15px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', fontWeight: 'bold' }}
                 />
-                <Bar dataKey="value" radius={[15, 15, 15, 15]} barSize={70}>
+                <Bar dataKey="value" radius={[10, 10, 10, 10]} barSize={60}>
                   {chartData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={index === 0 ? '#059669' : '#e11d48'} />
+                    <Cell key={`cell-${index}`} fill={index === 0 ? '#10b981' : '#f43f5e'} />
                   ))}
                 </Bar>
               </BarChart>
@@ -111,30 +125,41 @@ const Dashboard: React.FC<DashboardProps> = ({ members, transactions, assemblies
           </div>
         </div>
 
-        {/* AI Insight Box con Contraste de Texto Mejorado */}
-        <div className="bg-gradient-to-br from-[#064e3b] to-[#1e1b4b] text-white p-12 rounded-[3.5rem] shadow-2xl relative overflow-hidden group">
-          <div className="relative z-10 h-full flex flex-col">
-            <div className="inline-flex items-center space-x-4 bg-white/10 backdrop-blur-md border border-white/20 px-6 py-3 rounded-full mb-10 w-fit">
-              <span className="relative flex h-3 w-3">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-3 w-3 bg-cyan-400"></span>
-              </span>
-              <span className="text-xs font-black uppercase tracking-[0.2em] text-white">Insight Estratégico</span>
+        {/* AI Insight and Next Event */}
+        <div className="space-y-6">
+          <div className="bg-slate-900 text-white p-8 rounded-[2.5rem] shadow-2xl relative overflow-hidden group">
+            <div className="absolute top-0 right-0 p-4 opacity-10 scale-150 rotate-12 group-hover:rotate-45 transition-transform duration-700">
+              <svg className="w-24 h-24" fill="currentColor" viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
             </div>
-            
-            <div className="text-lg leading-relaxed space-y-6 font-semibold text-emerald-50 flex-1 tracking-tight">
-              {aiSummary}
-            </div>
-            
-            <div className="mt-12 pt-8 border-t border-white/20 flex justify-between items-center">
-              <div>
-                <p className="text-[10px] font-black text-cyan-300 uppercase tracking-widest">Inteligencia de Datos</p>
-                <p className="text-xs font-bold text-white/70">Análisis Progresivo</p>
+            <div className="relative z-10">
+              <div className="flex items-center space-x-2 mb-6">
+                <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+                <p className="text-[10px] font-black uppercase tracking-widest text-cyan-400">Análisis Inteligente</p>
               </div>
-              <button className="w-12 h-12 flex items-center justify-center bg-white/20 hover:bg-white/30 rounded-2xl transition-all border border-white/20">
-                <svg className="w-5 h-5 text-emerald-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
-              </button>
+              <div className="text-sm leading-relaxed text-slate-300 font-medium italic min-h-[120px]">
+                "{aiSummary}"
+              </div>
             </div>
+          </div>
+
+          <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100">
+             <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6">Próximos Eventos</h4>
+             <div className="space-y-4">
+                {upcomingAssemblies.length > 0 ? upcomingAssemblies.map(a => (
+                  <div key={a.id} className="flex items-center space-x-4 p-4 rounded-2xl bg-slate-50 border border-slate-100">
+                     <div className="w-12 h-12 rounded-xl bg-white border border-slate-200 flex flex-col items-center justify-center">
+                        <span className="text-[9px] font-black text-slate-400 uppercase">{a.date.split('-')[1]}</span>
+                        <span className="text-lg font-black text-slate-800 leading-none">{a.date.split('-')[2]}</span>
+                     </div>
+                     <div className="flex-1">
+                        <p className="text-xs font-black text-slate-800 line-clamp-1">{a.description}</p>
+                        <p className="text-[10px] text-slate-400 font-bold uppercase">{a.summonsTime} hrs • {a.type}</p>
+                     </div>
+                  </div>
+                )) : (
+                  <p className="text-center py-6 text-xs text-slate-400 italic">No hay asambleas programadas.</p>
+                )}
+             </div>
           </div>
         </div>
       </div>
