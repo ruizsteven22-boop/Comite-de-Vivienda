@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
+import { Analytics } from '@vercel/analytics/react';
 import { Member, Transaction, BoardPosition, Assembly, User, BoardRole } from './types';
 import { Icons } from './constants';
 import Dashboard from './components/Dashboard';
@@ -235,6 +236,7 @@ const App: React.FC = () => {
           {renderView()}
         </div>
       </main>
+      <Analytics />
     </div>
   );
 };
