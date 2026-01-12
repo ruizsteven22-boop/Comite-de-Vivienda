@@ -4,12 +4,12 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 8080;
 
-// Servir archivos estáticos desde la raíz
-app.use(express.static(__dirname));
+// Servir archivos estáticos desde la carpeta de salida del build
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Asegurar que todas las rutas carguen el index.html (soporte SPA)
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'index.html'));
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 app.listen(PORT, () => {

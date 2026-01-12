@@ -8,6 +8,6 @@
   },
   "scripts": {
     "start": "node server.js",
-    "build": "mkdir -p public && cp index.html index.tsx types.ts constants.tsx metadata.json public/ && cp -r components services public/"
+    "build": "mkdir -p public && cp index.html index.tsx App.tsx types.ts constants.tsx metadata.json public/ && cp -r components services public/"
   }
 }

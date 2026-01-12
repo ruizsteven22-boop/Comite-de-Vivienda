@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Member, Transaction, BoardPosition, Assembly, User, MemberStatus, TransactionType, BoardRole, AssemblyType, AssemblyStatus, PaymentMethod, SystemRole } from './types';
+import { Member, Transaction, BoardPosition, Assembly, User, BoardRole } from './types';
 import { Icons } from './constants';
 import Dashboard from './components/Dashboard';
 import MemberManagement from './components/MemberManagement';
@@ -14,25 +14,25 @@ import Login from './components/Login';
 const INITIAL_USERS: User[] = [
   { id: '1', username: 'soporte', password: 'soporte.password', role: 'SUPPORT', name: 'Soporte Técnico' },
   { id: '2', username: 'admin', password: 'admin.password', role: 'ADMINISTRATOR', name: 'Administrador General' },
-  { id: '3', username: 'presi', password: 'te2024', role: BoardRole.PRESIDENT, name: 'Presidente (Pendiente)' },
-  { id: '4', username: 'teso', password: 'te2024', role: BoardRole.TREASURER, name: 'Tesorero (Pendiente)' },
-  { id: '5', username: 'secre', password: 'te2024', role: BoardRole.SECRETARY, name: 'Secretario (Pendiente)' }
+  { id: '3', username: 'presi', password: 'te2024', role: BoardRole.PRESIDENT, name: 'Presidente' },
+  { id: '4', username: 'teso', password: 'te2024', role: BoardRole.TREASURER, name: 'Tesorero' },
+  { id: '5', username: 'secre', password: 'te2024', role: BoardRole.SECRETARY, name: 'Secretario' }
 ];
 
 const INITIAL_BOARD: BoardPosition[] = [
   {
     role: BoardRole.PRESIDENT,
-    primary: { name: '', rut: '', phone: '' },
+    primary: { name: 'Juan Pérez', rut: '12.345.678-9', phone: '+56912345678' },
     substitute: { name: '', rut: '', phone: '' }
   },
   {
     role: BoardRole.SECRETARY,
-    primary: { name: '', rut: '', phone: '' },
+    primary: { name: 'María López', rut: '15.678.901-2', phone: '+56987654321' },
     substitute: { name: '', rut: '', phone: '' }
   },
   {
     role: BoardRole.TREASURER,
-    primary: { name: '', rut: '', phone: '' },
+    primary: { name: 'Carlos Ruiz', rut: '18.901.234-5', phone: '+56955566677' },
     substitute: { name: '', rut: '', phone: '' }
   }
 ];
@@ -40,6 +40,7 @@ const INITIAL_BOARD: BoardPosition[] = [
 const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [view, setView] = useState<'dashboard' | 'members' | 'treasury' | 'board' | 'attendance' | 'assemblies' | 'support'>('dashboard');
+  const [isInitialized, setIsInitialized] = useState(false);
   
   const [users, setUsers] = useState<User[]>(() => {
     const saved = localStorage.getItem('te_users');
@@ -74,15 +75,22 @@ const App: React.FC = () => {
 
   useEffect(() => {
     const savedUser = localStorage.getItem('te_session');
-    if (savedUser) setCurrentUser(JSON.parse(savedUser));
+    if (savedUser) {
+      try {
+        setCurrentUser(JSON.parse(savedUser));
+      } catch (e) {
+        localStorage.removeItem('te_session');
+      }
+    }
+    setIsInitialized(true);
   }, []);
 
-  useEffect(() => { localStorage.setItem('te_users', JSON.stringify(users)); }, [users]);
-  useEffect(() => { localStorage.setItem('te_members', JSON.stringify(members)); }, [members]);
-  useEffect(() => { localStorage.setItem('te_transactions', JSON.stringify(transactions)); }, [transactions]);
-  useEffect(() => { localStorage.setItem('te_board', JSON.stringify(board)); }, [board]);
-  useEffect(() => { localStorage.setItem('te_board_period', boardPeriod); }, [boardPeriod]);
-  useEffect(() => { localStorage.setItem('te_assemblies', JSON.stringify(assemblies)); }, [assemblies]);
+  useEffect(() => { if (isInitialized) localStorage.setItem('te_users', JSON.stringify(users)); }, [users, isInitialized]);
+  useEffect(() => { if (isInitialized) localStorage.setItem('te_members', JSON.stringify(members)); }, [members, isInitialized]);
+  useEffect(() => { if (isInitialized) localStorage.setItem('te_transactions', JSON.stringify(transactions)); }, [transactions, isInitialized]);
+  useEffect(() => { if (isInitialized) localStorage.setItem('te_board', JSON.stringify(board)); }, [board, isInitialized]);
+  useEffect(() => { if (isInitialized) localStorage.setItem('te_board_period', boardPeriod); }, [boardPeriod, isInitialized]);
+  useEffect(() => { if (isInitialized) localStorage.setItem('te_assemblies', JSON.stringify(assemblies)); }, [assemblies, isInitialized]);
 
   const handleLogin = (user: User) => {
     setCurrentUser(user);
@@ -110,7 +118,7 @@ const App: React.FC = () => {
 
     switch (viewName) {
       case 'dashboard': return true;
-      case 'members': return true; // Todos ven socios
+      case 'members': return true;
       case 'treasury': return role === BoardRole.TREASURER || role === BoardRole.PRESIDENT;
       case 'board': return role === BoardRole.PRESIDENT || role === BoardRole.SECRETARY;
       case 'assemblies': return role === BoardRole.PRESIDENT || role === BoardRole.SECRETARY;
@@ -119,9 +127,11 @@ const App: React.FC = () => {
     }
   };
 
+  // Pre-verificación de sesión para evitar flashes de contenido o errores de nulidad
+  if (!isInitialized) return null;
+  if (!currentUser) return <Login users={users} onLogin={handleLogin} />;
+
   const renderView = () => {
-    if (!currentUser) return null;
-    
     switch (view) {
       case 'dashboard': return <Dashboard members={members} transactions={transactions} assemblies={assemblies} currentUser={currentUser} />;
       case 'members': return <MemberManagement members={members} setMembers={setMembers} assemblies={assemblies} transactions={transactions} board={board} viewingMemberId={viewingMemberId} onClearViewingMember={() => setViewingMemberId(null)} currentUser={currentUser} />;
@@ -203,7 +213,7 @@ const App: React.FC = () => {
             <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black text-white shadow-2xl relative group ${
               isSupport ? 'bg-indigo-600 border border-indigo-400' : 'bg-emerald-600 border border-emerald-400'
             }`}>
-              {currentUser.name.charAt(0)}
+              {currentUser.name ? currentUser.name.charAt(0) : '?'}
             </div>
             <div className="overflow-hidden">
               <p className="text-sm font-black truncate text-white">{currentUser.name}</p>
