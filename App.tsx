@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Member, Transaction, BoardPosition, Assembly, User, MemberStatus, TransactionType, BoardRole, AssemblyType, AssemblyStatus, PaymentMethod } from './types';
+import { Member, Transaction, BoardPosition, Assembly, User, MemberStatus, TransactionType, BoardRole, AssemblyType, AssemblyStatus, PaymentMethod, SystemRole } from './types';
 import { Icons } from './constants';
 import Dashboard from './components/Dashboard';
 import MemberManagement from './components/MemberManagement';
@@ -14,62 +14,26 @@ import Login from './components/Login';
 const INITIAL_USERS: User[] = [
   { id: '1', username: 'soporte', password: 'soporte.password', role: 'SUPPORT', name: 'Soporte Técnico' },
   { id: '2', username: 'admin', password: 'admin.password', role: 'ADMINISTRATOR', name: 'Administrador General' },
-  { id: '3', username: 'presi', password: 'te2024', role: BoardRole.PRESIDENT, name: 'Carlos Valdivia' },
-  { id: '4', username: 'teso', password: 'te2024', role: BoardRole.TREASURER, name: 'Raúl Sánchez' },
-  { id: '5', username: 'secre', password: 'te2024', role: BoardRole.SECRETARY, name: 'Marta Lagos' }
+  { id: '3', username: 'presi', password: 'te2024', role: BoardRole.PRESIDENT, name: 'Presidente (Pendiente)' },
+  { id: '4', username: 'teso', password: 'te2024', role: BoardRole.TREASURER, name: 'Tesorero (Pendiente)' },
+  { id: '5', username: 'secre', password: 'te2024', role: BoardRole.SECRETARY, name: 'Secretario (Pendiente)' }
 ];
 
-const MOCK_MEMBERS: Member[] = [
-  {
-    id: '1',
-    rut: '12.345.678-9',
-    name: 'Juan Pérez González',
-    joinDate: '2023-01-15',
-    status: MemberStatus.ACTIVE,
-    email: 'juan.perez@email.com',
-    address: 'Calle Esperanza 123, Block B, Depto 102',
-    phone: '+56912345678',
-    photoUrl: 'https://picsum.photos/seed/juan/200/200',
-    familyMembers: [
-      { id: 'f1', name: 'María Soto', rut: '18.765.432-1', relationship: 'Cónyuge' },
-      { id: 'f2', name: 'Pedro Pérez', rut: '24.555.666-k', relationship: 'Hijo' }
-    ]
-  },
-  {
-    id: '2',
-    rut: '15.222.333-4',
-    name: 'Ana María Rojas',
-    joinDate: '2023-02-10',
-    status: MemberStatus.ACTIVE,
-    email: 'ana.rojas@email.com',
-    address: 'Av. Las Parcelas 456',
-    phone: '+56987654321',
-    photoUrl: 'https://picsum.photos/seed/ana/200/200',
-    familyMembers: []
-  }
-];
-
-const MOCK_TRANSACTIONS: Transaction[] = [
-  { id: 'T1', date: '2024-05-01', amount: 15000, type: TransactionType.INCOME, paymentMethod: PaymentMethod.TRANSFER, description: 'Cuota Mensual Mayo', memberId: '1' },
-  { id: 'T2', date: '2024-05-02', amount: 5000, type: TransactionType.EXPENSE, paymentMethod: PaymentMethod.CASH, description: 'Artículos de limpieza sede' },
-  { id: 'T3', date: '2024-05-05', amount: 15000, type: TransactionType.INCOME, paymentMethod: PaymentMethod.TRANSFER, description: 'Cuota Mensual Mayo', memberId: '2' }
-];
-
-const MOCK_BOARD: BoardPosition[] = [
+const INITIAL_BOARD: BoardPosition[] = [
   {
     role: BoardRole.PRESIDENT,
-    primary: { name: 'Carlos Valdivia', rut: '10.111.222-3', phone: '+56911111111' },
-    substitute: { name: 'Elena Torres', rut: '11.222.333-4', phone: '+56922222222' }
+    primary: { name: '', rut: '', phone: '' },
+    substitute: { name: '', rut: '', phone: '' }
   },
   {
     role: BoardRole.SECRETARY,
-    primary: { name: 'Marta Lagos', rut: '12.333.444-5', phone: '+56933333333' },
-    substitute: { name: 'Diego Ríos', rut: '13.444.555-6', phone: '+56944444444' }
+    primary: { name: '', rut: '', phone: '' },
+    substitute: { name: '', rut: '', phone: '' }
   },
   {
     role: BoardRole.TREASURER,
-    primary: { name: 'Raúl Sánchez', rut: '14.555.666-7', phone: '+56955555555' },
-    substitute: { name: 'Sonia Parra', rut: '15.666.777-8', phone: '+56966666666' }
+    primary: { name: '', rut: '', phone: '' },
+    substitute: { name: '', rut: '', phone: '' }
   }
 ];
 
@@ -82,40 +46,43 @@ const App: React.FC = () => {
     return saved ? JSON.parse(saved) : INITIAL_USERS;
   });
 
-  const [members, setMembers] = useState<Member[]>(MOCK_MEMBERS);
-  const [transactions, setTransactions] = useState<Transaction[]>(MOCK_TRANSACTIONS);
-  const [board, setBoard] = useState<BoardPosition[]>(MOCK_BOARD);
-  const [boardPeriod, setBoardPeriod] = useState<string>('2024 - 2026');
-  const [viewingMemberId, setViewingMemberId] = useState<string | null>(null);
-  
+  const [members, setMembers] = useState<Member[]>(() => {
+    const saved = localStorage.getItem('te_members');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  const [transactions, setTransactions] = useState<Transaction[]>(() => {
+    const saved = localStorage.getItem('te_transactions');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  const [board, setBoard] = useState<BoardPosition[]>(() => {
+    const saved = localStorage.getItem('te_board');
+    return saved ? JSON.parse(saved) : INITIAL_BOARD;
+  });
+
+  const [boardPeriod, setBoardPeriod] = useState<string>(() => {
+    return localStorage.getItem('te_board_period') || '2025 - 2027';
+  });
+
   const [assemblies, setAssemblies] = useState<Assembly[]>(() => {
     const saved = localStorage.getItem('te_assemblies');
-    return saved ? JSON.parse(saved) : [
-      { 
-        id: 'A1', 
-        date: '2024-05-20', 
-        summonsTime: '19:30',
-        location: 'Sede Comunitaria Tierra Esperanza',
-        description: 'Asamblea Mensual - Avances Proyecto', 
-        attendees: ['12.345.678-9'], 
-        type: AssemblyType.ORDINARY, 
-        status: AssemblyStatus.FINISHED 
-      }
-    ];
+    return saved ? JSON.parse(saved) : [];
   });
+
+  const [viewingMemberId, setViewingMemberId] = useState<string | null>(null);
 
   useEffect(() => {
     const savedUser = localStorage.getItem('te_session');
     if (savedUser) setCurrentUser(JSON.parse(savedUser));
   }, []);
 
-  useEffect(() => {
-    localStorage.setItem('te_users', JSON.stringify(users));
-  }, [users]);
-
-  useEffect(() => {
-    localStorage.setItem('te_assemblies', JSON.stringify(assemblies));
-  }, [assemblies]);
+  useEffect(() => { localStorage.setItem('te_users', JSON.stringify(users)); }, [users]);
+  useEffect(() => { localStorage.setItem('te_members', JSON.stringify(members)); }, [members]);
+  useEffect(() => { localStorage.setItem('te_transactions', JSON.stringify(transactions)); }, [transactions]);
+  useEffect(() => { localStorage.setItem('te_board', JSON.stringify(board)); }, [board]);
+  useEffect(() => { localStorage.setItem('te_board_period', boardPeriod); }, [boardPeriod]);
+  useEffect(() => { localStorage.setItem('te_assemblies', JSON.stringify(assemblies)); }, [assemblies]);
 
   const handleLogin = (user: User) => {
     setCurrentUser(user);
@@ -142,9 +109,9 @@ const App: React.FC = () => {
 
     switch (viewName) {
       case 'dashboard': return true;
-      case 'members': return currentUser.role !== BoardRole.TREASURER;
-      case 'treasury': return currentUser.role === BoardRole.TREASURER;
-      case 'board': return currentUser.role !== BoardRole.TREASURER;
+      case 'members': return true; // Todos pueden ver la comunidad
+      case 'treasury': return currentUser.role === BoardRole.TREASURER || currentUser.role === BoardRole.PRESIDENT;
+      case 'board': return currentUser.role === BoardRole.PRESIDENT || currentUser.role === BoardRole.SECRETARY;
       case 'assemblies': return currentUser.role !== BoardRole.TREASURER;
       case 'attendance': return currentUser.role !== BoardRole.TREASURER;
       case 'support': return false;
@@ -153,15 +120,18 @@ const App: React.FC = () => {
   };
 
   const renderView = () => {
+    if (!currentUser) return null;
+    
     switch (view) {
-      case 'dashboard': return <Dashboard members={members} transactions={transactions} assemblies={assemblies} />;
+      case 'dashboard': return <Dashboard members={members} transactions={transactions} assemblies={assemblies} currentUser={currentUser} />;
+      /* Removed unused userRole prop to fix TypeScript assignability errors */
       case 'members': return <MemberManagement members={members} setMembers={setMembers} assemblies={assemblies} transactions={transactions} board={board} viewingMemberId={viewingMemberId} onClearViewingMember={() => setViewingMemberId(null)} />;
       case 'treasury': return <Treasury transactions={transactions} setTransactions={setTransactions} members={members} onViewMember={handleViewMember} />;
       case 'board': return <BoardManagement board={board} setBoard={setBoard} boardPeriod={boardPeriod} setBoardPeriod={setBoardPeriod} members={members} />;
       case 'assemblies': return <AssemblyManagement assemblies={assemblies} setAssemblies={setAssemblies} members={members} board={board} />;
       case 'attendance': return <Attendance members={members} assemblies={assemblies} setAssemblies={setAssemblies} board={board} />;
       case 'support': return <SupportManagement users={users} setUsers={setUsers} />;
-      default: return <Dashboard members={members} transactions={transactions} assemblies={assemblies} />;
+      default: return <Dashboard members={members} transactions={transactions} assemblies={assemblies} currentUser={currentUser} />;
     }
   };
 
@@ -190,11 +160,11 @@ const App: React.FC = () => {
         
         <nav className="mt-4 px-6 space-y-2 flex-1 relative">
           {[
-            { id: 'dashboard', icon: <Icons.Dashboard />, label: 'Panel Principal' },
-            { id: 'members', icon: <Icons.Users />, label: 'Comunidad' },
-            { id: 'treasury', icon: <Icons.Wallet />, label: 'Finanzas' },
+            { id: 'dashboard', icon: <Icons.Dashboard />, label: 'Inicio' },
+            { id: 'members', icon: <Icons.Users />, label: 'Socios' },
+            { id: 'treasury', icon: <Icons.Wallet />, label: 'Tesorería' },
             { id: 'board', icon: <Icons.Shield />, label: 'Directiva' },
-            { id: 'assemblies', icon: <Icons.Calendar />, label: 'Eventos' },
+            { id: 'assemblies', icon: <Icons.Calendar />, label: 'Asambleas' },
             { id: 'attendance', icon: <Icons.Clipboard />, label: 'Asistencia' },
           ].map((item) => (
             canAccess(item.id) && (
@@ -228,7 +198,7 @@ const App: React.FC = () => {
               }`}
             >
               <Icons.Settings />
-              <span className="font-bold text-sm">Configuración</span>
+              <span className="font-bold text-sm">Soporte TI</span>
             </button>
           </div>
         )}
@@ -242,7 +212,7 @@ const App: React.FC = () => {
             </div>
             <div className="overflow-hidden">
               <p className="text-sm font-black truncate text-white">{currentUser.name}</p>
-              <p className={`text-[10px] uppercase tracking-widest font-black truncate text-white/60`}>{currentUser.role}</p>
+              <p className={`text-[9px] uppercase tracking-widest font-black truncate text-white/60`}>{currentUser.role}</p>
             </div>
           </div>
           <button 
@@ -250,7 +220,7 @@ const App: React.FC = () => {
             className="w-full flex items-center justify-center space-x-3 px-4 py-4 bg-red-500/20 hover:bg-red-500/30 text-red-100 rounded-2xl text-[10px] font-black transition-all uppercase tracking-widest border border-red-500/30"
           >
             <Icons.Logout />
-            <span>Desconectar</span>
+            <span>Cerrar Sesión</span>
           </button>
         </div>
       </aside>
