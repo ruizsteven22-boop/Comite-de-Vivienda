@@ -105,16 +105,16 @@ const App: React.FC = () => {
 
   const canAccess = (viewName: string): boolean => {
     if (!currentUser) return false;
-    if (currentUser.role === 'SUPPORT' || currentUser.role === 'ADMINISTRATOR') return true;
+    const role = currentUser.role;
+    if (role === 'SUPPORT' || role === 'ADMINISTRATOR') return true;
 
     switch (viewName) {
       case 'dashboard': return true;
-      case 'members': return true; // Todos pueden ver la comunidad
-      case 'treasury': return currentUser.role === BoardRole.TREASURER || currentUser.role === BoardRole.PRESIDENT;
-      case 'board': return currentUser.role === BoardRole.PRESIDENT || currentUser.role === BoardRole.SECRETARY;
-      case 'assemblies': return currentUser.role !== BoardRole.TREASURER;
-      case 'attendance': return currentUser.role !== BoardRole.TREASURER;
-      case 'support': return false;
+      case 'members': return true; // Todos ven socios
+      case 'treasury': return role === BoardRole.TREASURER || role === BoardRole.PRESIDENT;
+      case 'board': return role === BoardRole.PRESIDENT || role === BoardRole.SECRETARY;
+      case 'assemblies': return role === BoardRole.PRESIDENT || role === BoardRole.SECRETARY;
+      case 'attendance': return role === BoardRole.PRESIDENT || role === BoardRole.SECRETARY;
       default: return false;
     }
   };
@@ -124,20 +124,15 @@ const App: React.FC = () => {
     
     switch (view) {
       case 'dashboard': return <Dashboard members={members} transactions={transactions} assemblies={assemblies} currentUser={currentUser} />;
-      /* Removed unused userRole prop to fix TypeScript assignability errors */
-      case 'members': return <MemberManagement members={members} setMembers={setMembers} assemblies={assemblies} transactions={transactions} board={board} viewingMemberId={viewingMemberId} onClearViewingMember={() => setViewingMemberId(null)} />;
-      case 'treasury': return <Treasury transactions={transactions} setTransactions={setTransactions} members={members} onViewMember={handleViewMember} />;
-      case 'board': return <BoardManagement board={board} setBoard={setBoard} boardPeriod={boardPeriod} setBoardPeriod={setBoardPeriod} members={members} />;
-      case 'assemblies': return <AssemblyManagement assemblies={assemblies} setAssemblies={setAssemblies} members={members} board={board} />;
-      case 'attendance': return <Attendance members={members} assemblies={assemblies} setAssemblies={setAssemblies} board={board} />;
+      case 'members': return <MemberManagement members={members} setMembers={setMembers} assemblies={assemblies} transactions={transactions} board={board} viewingMemberId={viewingMemberId} onClearViewingMember={() => setViewingMemberId(null)} currentUser={currentUser} />;
+      case 'treasury': return <Treasury transactions={transactions} setTransactions={setTransactions} members={members} onViewMember={handleViewMember} currentUser={currentUser} />;
+      case 'board': return <BoardManagement board={board} setBoard={setBoard} boardPeriod={boardPeriod} setBoardPeriod={setBoardPeriod} members={members} currentUser={currentUser} />;
+      case 'assemblies': return <AssemblyManagement assemblies={assemblies} setAssemblies={setAssemblies} members={members} board={board} currentUser={currentUser} />;
+      case 'attendance': return <Attendance members={members} assemblies={assemblies} setAssemblies={setAssemblies} board={board} currentUser={currentUser} />;
       case 'support': return <SupportManagement users={users} setUsers={setUsers} />;
       default: return <Dashboard members={members} transactions={transactions} assemblies={assemblies} currentUser={currentUser} />;
     }
   };
-
-  if (!currentUser) {
-    return <Login users={users} onLogin={handleLogin} />;
-  }
 
   const isSupport = currentUser.role === 'SUPPORT' || currentUser.role === 'ADMINISTRATOR';
 

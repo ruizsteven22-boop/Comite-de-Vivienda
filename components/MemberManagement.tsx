@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Member, MemberStatus, FamilyMember, Assembly, Transaction, BoardPosition } from '../types';
+import { Member, MemberStatus, FamilyMember, Assembly, Transaction, BoardPosition, User, BoardRole } from '../types';
 import { formatRut } from '../services/utils';
 import { Icons } from '../constants';
 import { printMemberFile } from '../services/printService';
@@ -13,6 +13,7 @@ interface MemberManagementProps {
   board: BoardPosition[];
   viewingMemberId: string | null;
   onClearViewingMember: () => void;
+  currentUser: User;
 }
 
 const MemberManagement: React.FC<MemberManagementProps> = ({ 
@@ -22,7 +23,8 @@ const MemberManagement: React.FC<MemberManagementProps> = ({
   transactions,
   board,
   viewingMemberId, 
-  onClearViewingMember 
+  onClearViewingMember,
+  currentUser
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<MemberStatus | 'ALL'>('ALL');
@@ -34,6 +36,11 @@ const MemberManagement: React.FC<MemberManagementProps> = ({
 
   const [showFamilyForm, setShowFamilyForm] = useState(false);
   const [newFamilyMember, setNewFamilyMember] = useState({ name: '', rut: '', relationship: '' });
+
+  const canEdit = currentUser.role === 'SUPPORT' || 
+                  currentUser.role === 'ADMINISTRATOR' || 
+                  currentUser.role === BoardRole.PRESIDENT || 
+                  currentUser.role === BoardRole.SECRETARY;
 
   useEffect(() => {
     if (viewingMemberId) {
@@ -55,7 +62,7 @@ const MemberManagement: React.FC<MemberManagementProps> = ({
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedMember) return;
+    if (!selectedMember || !canEdit) return;
 
     if (selectedMember.id) {
       setMembers(prev => prev.map(m => m.id === selectedMember.id ? selectedMember as Member : m));
@@ -83,6 +90,7 @@ const MemberManagement: React.FC<MemberManagementProps> = ({
   };
 
   const openNew = () => {
+    if (!canEdit) return;
     setSelectedMember({
       name: '',
       rut: '',
@@ -146,12 +154,14 @@ const MemberManagement: React.FC<MemberManagementProps> = ({
           <h2 className="text-3xl font-black text-slate-900 tracking-tight">Comunidad de Socios</h2>
           <p className="text-slate-500 font-bold uppercase tracking-widest text-[10px] mt-1">Gestión y Expedientes Históricos</p>
         </div>
-        <button 
-          onClick={openNew}
-          className="bg-emerald-700 hover:bg-emerald-800 text-white px-8 py-3.5 rounded-2xl font-black transition-all shadow-xl shadow-emerald-700/20 active:scale-95 flex items-center justify-center uppercase text-xs tracking-widest"
-        >
-          <span className="mr-2 text-xl font-light">+</span> Nuevo Socio
-        </button>
+        {canEdit && (
+          <button 
+            onClick={openNew}
+            className="bg-emerald-700 hover:bg-emerald-800 text-white px-8 py-3.5 rounded-2xl font-black transition-all shadow-xl shadow-emerald-700/20 active:scale-95 flex items-center justify-center uppercase text-xs tracking-widest"
+          >
+            <span className="mr-2 text-xl font-light">+</span> Nuevo Socio
+          </button>
+        )}
       </div>
 
       <div className="bg-white rounded-[2.5rem] shadow-sm border border-slate-200 overflow-hidden">
@@ -238,13 +248,15 @@ const MemberManagement: React.FC<MemberManagementProps> = ({
                       >
                         <Icons.Users />
                       </button>
-                      <button 
-                        onClick={() => { setSelectedMember(member); setIsEditing(true); }}
-                        className="p-3 text-slate-300 hover:text-amber-600 hover:bg-amber-50 rounded-2xl transition-all"
-                        title="Editar"
-                      >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-                      </button>
+                      {canEdit && (
+                        <button 
+                          onClick={() => { setSelectedMember(member); setIsEditing(true); }}
+                          className="p-3 text-slate-300 hover:text-amber-600 hover:bg-amber-50 rounded-2xl transition-all"
+                          title="Editar"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -261,11 +273,9 @@ const MemberManagement: React.FC<MemberManagementProps> = ({
         </div>
       </div>
 
-      {/* Viewing Modal (Compact & Elegant) */}
       {isViewing && selectedMember && (
         <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-xl flex items-center justify-center z-[100] p-6 overflow-y-auto">
           <div className="bg-white w-full max-w-5xl rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 flex flex-col max-h-[90vh]">
-             {/* Header Section */}
              <div className="relative h-64 bg-gradient-to-br from-[#064e3b] to-[#1e1b4b] p-12 flex items-end">
                 <button onClick={closeModal} className="absolute top-8 right-8 w-12 h-12 rounded-2xl bg-white/10 hover:bg-white/20 text-white flex items-center justify-center text-3xl font-light transition-all duration-300">&times;</button>
                 <div className="flex items-center space-x-10 translate-y-20 relative z-10">
@@ -286,7 +296,6 @@ const MemberManagement: React.FC<MemberManagementProps> = ({
                 </div>
              </div>
              
-             {/* Main Content Modal */}
              <div className="pt-28 px-12 pb-12 overflow-y-auto flex-1">
                 <nav className="flex space-x-10 border-b border-slate-100 mb-10">
                   {[
@@ -448,8 +457,7 @@ const MemberManagement: React.FC<MemberManagementProps> = ({
         </div>
       )}
 
-      {/* Editing/Creation Modal */}
-      {isEditing && selectedMember && (
+      {isEditing && selectedMember && canEdit && (
         <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-xl flex items-center justify-center z-[100] p-6 overflow-y-auto">
           <div className="bg-white w-full max-w-4xl rounded-[3.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
             <div className="bg-slate-900 p-10 text-white flex justify-between items-center">
@@ -553,7 +561,6 @@ const MemberManagement: React.FC<MemberManagementProps> = ({
                 </div>
               </div>
 
-              {/* Family Section */}
               <div className="mt-12 pt-10 border-t border-slate-100">
                  <div className="flex justify-between items-center mb-6">
                     <h4 className="text-sm font-black text-slate-900 uppercase tracking-[0.2em]">Cargas Familiares</h4>
@@ -569,9 +576,6 @@ const MemberManagement: React.FC<MemberManagementProps> = ({
                           <button type="button" onClick={() => removeFamilyMember(fm.id)} className="w-8 h-8 rounded-xl bg-white text-rose-400 hover:text-rose-600 flex items-center justify-center text-xl shadow-sm border border-slate-100 transition-all">&times;</button>
                        </div>
                     ))}
-                    {(!selectedMember.familyMembers || selectedMember.familyMembers.length === 0) && (
-                      <p className="col-span-full py-6 text-center text-slate-400 font-bold text-[11px] italic">No hay familiares vinculados.</p>
-                    )}
                  </div>
               </div>
 
@@ -580,33 +584,6 @@ const MemberManagement: React.FC<MemberManagementProps> = ({
                 <button type="submit" className="px-12 py-4 bg-emerald-700 text-white rounded-[1.5rem] font-black shadow-2xl shadow-emerald-700/30 hover:bg-emerald-800 transition-all uppercase text-xs tracking-[0.2em]">Guardar Expediente</button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
-
-      {/* Mini Modal for adding family member */}
-      {showFamilyForm && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center z-[110] p-6">
-          <div className="bg-white w-full max-w-sm rounded-[3rem] p-10 shadow-2xl animate-in zoom-in-95">
-            <h4 className="text-2xl font-black text-slate-900 tracking-tighter mb-8 text-center">Nuevo Integrante</h4>
-            <div className="space-y-5">
-               <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Nombre</label>
-                  <input className="w-full px-5 py-3.5 border-2 border-slate-100 rounded-2xl outline-none focus:border-emerald-600 font-black bg-slate-50 text-sm" value={newFamilyMember.name} onChange={e => setNewFamilyMember({...newFamilyMember, name: e.target.value})}/>
-               </div>
-               <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">RUT</label>
-                  <input className="w-full px-5 py-3.5 border-2 border-slate-100 rounded-2xl outline-none focus:border-emerald-600 font-black bg-slate-50 font-mono text-sm" value={newFamilyMember.rut} onChange={e => setNewFamilyMember({...newFamilyMember, rut: formatRut(e.target.value)})}/>
-               </div>
-               <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Parentesco</label>
-                  <input className="w-full px-5 py-3.5 border-2 border-slate-100 rounded-2xl outline-none focus:border-emerald-600 font-black bg-slate-50 text-sm" value={newFamilyMember.relationship} onChange={e => setNewFamilyMember({...newFamilyMember, relationship: e.target.value})}/>
-               </div>
-               <div className="flex space-x-4 pt-6">
-                  <button type="button" onClick={() => setShowFamilyForm(false)} className="flex-1 py-4 font-black text-slate-400 text-[10px] uppercase tracking-widest">Cerrar</button>
-                  <button type="button" onClick={handleAddFamilyMember} className="flex-1 py-4 bg-slate-900 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl shadow-slate-900/20">Vincular</button>
-               </div>
-            </div>
           </div>
         </div>
       )}
