@@ -1,116 +1,22 @@
 
 import { Assembly, Member, BoardPosition, BoardRole, Transaction } from "../types";
 
-export const printBoardIDCard = (person: { name: string, rut: string, phone: string }, role: string, period: string) => {
-  const printWindow = window.open('', '_blank');
-  if (!printWindow) return;
-
-  printWindow.document.write(`
-    <html>
-      <head>
-        <title>Credencial - ${person.name}</title>
-        <style>
-          @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
-          body { margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #f1f5f9; font-family: 'Inter', sans-serif; }
-          .card { 
-            width: 85.6mm; 
-            height: 54mm; 
-            background: white; 
-            border-radius: 12px; 
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1); 
-            overflow: hidden; 
-            position: relative; 
-            border: 1px solid #e2e8f0;
-            display: flex;
-            flex-direction: column;
-          }
-          .header { 
-            background: linear-gradient(135deg, #064e3b 0%, #065f46 100%); 
-            padding: 12px; 
-            color: white; 
-            text-align: center;
-          }
-          .header h1 { margin: 0; font-size: 10pt; font-weight: 900; letter-spacing: 2px; text-transform: uppercase; }
-          .header p { margin: 2px 0 0; font-size: 6pt; opacity: 0.8; font-weight: bold; }
-          .content { flex: 1; padding: 15px; display: flex; align-items: center; gap: 15px; }
-          .photo-placeholder { 
-            width: 60px; 
-            height: 70px; 
-            background: #f8fafc; 
-            border: 2px solid #059669; 
-            border-radius: 6px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #059669;
-            font-size: 20pt;
-            font-weight: 900;
-          }
-          .details { flex: 1; }
-          .role-badge { 
-            background: #ecfdf5; 
-            color: #065f46; 
-            padding: 2px 8px; 
-            border-radius: 4px; 
-            font-size: 7pt; 
-            font-weight: 900; 
-            text-transform: uppercase; 
-            display: inline-block;
-            margin-bottom: 5px;
-          }
-          .name { font-size: 11pt; font-weight: 900; color: #1e293b; margin: 0; line-height: 1.1; }
-          .rut { font-family: monospace; font-size: 8pt; color: #64748b; font-weight: bold; margin-top: 2px; }
-          .period { position: absolute; bottom: 10px; right: 15px; font-size: 6pt; color: #94a3b8; font-weight: bold; }
-          .footer-strip { background: #f8fafc; height: 4px; width: 100%; border-top: 1px solid #e2e8f0; }
-          .seal { position: absolute; bottom: -10px; left: -10px; width: 60px; height: 60px; background: rgba(5, 150, 105, 0.05); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24pt; color: rgba(5, 150, 105, 0.1); font-weight: 900; transform: rotate(-15deg); }
-          @media print { 
-            body { background: white; } 
-            .card { box-shadow: none; border: 1px solid #ccc; -webkit-print-color-adjust: exact; } 
-          }
-        </style>
-      </head>
-      <body>
-        <div class="card">
-          <div class="seal">TE</div>
-          <div class="header">
-            <h1>Tierra Esperanza</h1>
-            <p>Comité de Vivienda • Credencial Directiva</p>
-          </div>
-          <div class="content">
-            <div class="photo-placeholder">${person.name.charAt(0)}</div>
-            <div class="details">
-              <span class="role-badge">${role}</span>
-              <h2 class="name">${person.name}</h2>
-              <div class="rut">RUT: ${person.rut}</div>
-              <div class="rut" style="font-size: 7pt; margin-top: 5px;">Fono: ${person.phone}</div>
-            </div>
-          </div>
-          <div class="period">VIGENCIA: ${period}</div>
-          <div class="footer-strip"></div>
-        </div>
-        <script>
-          window.onload = function() { window.print(); window.onafterprint = function() { window.close(); }; }
-        </script>
-      </body>
-    </html>
-  `);
-  printWindow.document.close();
-};
-
 export const printBoardReport = (board: BoardPosition[], period: string) => {
   const printWindow = window.open('', '_blank');
   if (!printWindow) return;
 
   const rows = board.map(pos => `
     <tr>
-      <td style="font-weight: 800; color: #064e3b; text-transform: uppercase; background: #f8fafc;">${pos.role}</td>
-      <td>
-        <div style="font-weight: bold;">${pos.primary.name}</div>
-        <div style="font-size: 8pt; color: #64748b;">RUT: ${pos.primary.rut} | Fono: ${pos.primary.phone}</div>
+      <td style="font-weight: 800; color: #064e3b; text-transform: uppercase; background: #f8fafc; font-size: 10pt;">${pos.role}</td>
+      <td style="border-right: 2px solid #e2e8f0;">
+        <div style="font-weight: 900; font-size: 11pt; color: #0f172a;">${pos.primary.name || 'Vacante'}</div>
+        <div style="font-size: 8pt; color: #64748b; font-weight: bold; margin-top: 4px;">RUT: ${pos.primary.rut || 'N/A'}</div>
       </td>
       <td>
-        <div style="font-weight: bold; color: #475569;">${pos.substitute.name || 'No asignado'}</div>
-        <div style="font-size: 8pt; color: #94a3b8;">${pos.substitute.rut ? `RUT: ${pos.substitute.rut}` : ''}</div>
+        <div style="padding: 6px 0;">
+          <div style="font-weight: bold; font-size: 10pt; color: #475569;">${pos.substitute.name || '---'}</div>
+          <div style="font-size: 8pt; color: #94a3b8; margin-top: 4px;">${pos.substitute.rut ? `RUT: ${pos.substitute.rut}` : ''}</div>
+        </div>
       </td>
     </tr>
   `).join('');
@@ -120,55 +26,56 @@ export const printBoardReport = (board: BoardPosition[], period: string) => {
       <head>
         <title>Nómina Directiva - Tierra Esperanza</title>
         <style>
-          @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
+          @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap');
           body { font-family: 'Inter', sans-serif; padding: 50px; color: #1e293b; line-height: 1.5; }
-          .header { text-align: center; border-bottom: 3px solid #059669; padding-bottom: 20px; margin-bottom: 40px; }
-          .header h1 { margin: 0; color: #059669; font-size: 24pt; font-weight: 800; text-transform: uppercase; }
-          .header p { margin: 5px 0; color: #64748b; font-weight: bold; font-size: 10pt; letter-spacing: 2px; }
-          .period-box { background: #f1f5f9; padding: 15px; border-radius: 12px; text-align: center; margin-bottom: 30px; border: 1px solid #e2e8f0; }
-          .period-box span { font-size: 9pt; text-transform: uppercase; color: #64748b; font-weight: 800; display: block; margin-bottom: 5px; }
-          .period-box strong { font-size: 16pt; color: #0f172a; }
-          table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-          th { background: #064e3b; color: white; text-align: left; padding: 12px 15px; font-size: 9pt; text-transform: uppercase; letter-spacing: 1px; }
-          td { padding: 15px; border-bottom: 1px solid #e2e8f0; vertical-align: middle; }
-          .signatures { margin-top: 80px; display: grid; grid-template-columns: 1fr 1fr; gap: 50px; text-align: center; }
-          .sig-line { border-top: 2px solid #1e293b; padding-top: 10px; font-size: 9pt; font-weight: 800; text-transform: uppercase; }
-          .footer { margin-top: 60px; text-align: center; font-size: 8pt; color: #94a3b8; border-top: 1px solid #f1f5f9; padding-top: 20px; font-style: italic; }
+          .header { text-align: center; border-bottom: 4px solid #059669; padding-bottom: 25px; margin-bottom: 40px; }
+          .header h1 { margin: 0; color: #059669; font-size: 26pt; font-weight: 900; text-transform: uppercase; letter-spacing: -1px; }
+          .header p { margin: 5px 0; color: #64748b; font-weight: 800; font-size: 10pt; letter-spacing: 3px; text-transform: uppercase; }
+          .period-box { background: #f8fafc; padding: 20px; border-radius: 16px; text-align: center; margin-bottom: 30px; border: 2px solid #e2e8f0; }
+          .period-box span { font-size: 8pt; text-transform: uppercase; color: #94a3b8; font-weight: 900; display: block; margin-bottom: 5px; letter-spacing: 2px; }
+          .period-box strong { font-size: 20pt; color: #0f172a; font-weight: 900; }
+          table { width: 100%; border-collapse: collapse; margin-top: 20px; table-layout: fixed; }
+          th { background: #064e3b; color: white; text-align: left; padding: 15px; font-size: 9pt; text-transform: uppercase; letter-spacing: 1px; font-weight: 900; }
+          td { padding: 15px; border-bottom: 1px solid #e2e8f0; vertical-align: top; }
+          .signatures { margin-top: 100px; display: grid; grid-template-columns: 1fr 1fr; gap: 60px; text-align: center; }
+          .sig-line { border-top: 2px solid #1e293b; padding-top: 12px; font-size: 9pt; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; }
+          .footer { margin-top: 80px; text-align: center; font-size: 8pt; color: #94a3b8; border-top: 1px solid #f1f5f9; padding-top: 20px; font-style: italic; font-weight: 600; }
+          @media print { body { padding: 20px; } table { page-break-inside: auto; } tr { page-break-inside: avoid; } }
         </style>
       </head>
       <body>
         <div class="header">
           <h1>Comité Tierra Esperanza</h1>
-          <p>Nómina Oficial de Directorio Vigente</p>
+          <p>Nómina Oficial de Directorio y Suplencias</p>
         </div>
 
         <div class="period-box">
-          <span>Periodo de Ejercicio de Funciones</span>
+          <span>Periodo de Vigencia de Funciones</span>
           <strong>${period}</strong>
         </div>
 
         <table>
           <thead>
             <tr>
-              <th style="width: 200px;">Cargo / Responsabilidad</th>
-              <th>Titular Vigente</th>
-              <th>Suplente / Reemplazo</th>
+              <th style="width: 25%;">Cargo</th>
+              <th style="width: 40%;">Titular Vigente</th>
+              <th style="width: 35%;">Suplente Oficial</th>
             </tr>
           </thead>
           <tbody>${rows}</tbody>
         </table>
 
-        <div style="margin-top: 40px; background: #fffbeb; border: 1px solid #fcd34d; padding: 20px; border-radius: 12px; font-size: 9pt; color: #92400e;">
-          <strong>Certificación administrativa:</strong> Se deja constancia que los socios arriba mencionados han sido electos conforme a los estatutos vigentes de la organización y se encuentran facultados para representar al comité en las materias de su competencia.
+        <div style="margin-top: 40px; background: #fffbeb; border: 1px solid #fcd34d; padding: 25px; border-radius: 20px; font-size: 9pt; color: #92400e; font-weight: 600; line-height: 1.6;">
+          <strong>Certificación de Validez:</strong> Se hace entrega de la presente nómina oficial que acredita la composición del directorio de la organización comunal "Tierra Esperanza". El suplente listado está facultado para asumir las funciones del titular en caso de ausencia temporal o definitiva del mismo.
         </div>
 
         <div class="signatures">
-          <div style="padding-top: 50px;"><div class="sig-line">Presidente(a) Directiva</div></div>
-          <div style="padding-top: 50px;"><div class="sig-line">Ministro de Fe / Secretario(a)</div></div>
+          <div style="padding-top: 60px;"><div class="sig-line">Presidente(a) del Directorio</div></div>
+          <div style="padding-top: 60px;"><div class="sig-line">Secretario(a) de Actas / Ministro de Fe</div></div>
         </div>
 
         <div class="footer">
-          Documento generado por el Sistema de Gestión Tierra Esperanza el ${new Date().toLocaleDateString('es-CL')}.
+          Documento oficial generado por el Sistema de Gestión Tierra Esperanza el ${new Date().toLocaleDateString('es-CL')}.
         </div>
 
         <script>
@@ -385,7 +292,7 @@ export const printAssemblyMinutes = (assembly: Assembly, members: Member[], boar
           En la comuna de Santiago, a fecha de <strong>${assembly.date}</strong>, siendo las ${assembly.startTime || '--:--'} horas (citación original: ${assembly.summonsTime} hrs.), se constituye la Asamblea General de carácter ${assembly.type.toLowerCase()} de los socios del Comité Tierra Esperanza en dependencias de: <strong>${assembly.location || 'lugar por definir'}</strong>. La sesión es presidida por la directiva vigente para tratar la siguiente materia: <em>"${assembly.description}"</em>.
         </div>
         <div class="text-block">
-          Se deja constancia fehaciente que la asamblea cuenta con un registro de asistencia de <strong>${assembly.attendees.length}</strong> socios habilitados de un total de <strong>${members.length}</strong> inscritos, lo cual representa una participación del <strong>${quorumPercentage}%</strong>. Según los estatutos, el quórum de esta sesión es de carácter <strong>${isQuorumReached ? 'RESOLUTIVO' : 'INFORMATIVO'}</strong>.
+          Se deja constancia fehaciente que la asamblea cuenta con un registro de asistencia de <strong>${assembly.attendees.length}</strong> socios habilitados de un total de <strong>${members.length}</strong> inscritos, lo cual representa una participación del <strong>${quorumPercentage}%</strong>. Según los estatutos, el quórum de esta sesión es de carácter <strong>${isQuorumReached ? 'RESOLUTERO' : 'INFORMATIVO'}</strong>.
         </div>
         <div class="section-title">I. Tabla de la Sesión</div>
         <ul>${agendaHtml}</ul>

@@ -2,21 +2,17 @@
 import React from 'react';
 
 export const COLORS = {
-  primary: '#047857', // Emerald 700 (Más oscuro para legibilidad)
-  secondary: '#0891b2', // Cyan 600
-  accent: '#6d28d9', // Violet 700
+  primary: '#047857',
+  secondary: '#0891b2',
+  accent: '#6d28d9',
   success: '#15803d',
   warning: '#b45309',
   danger: '#b91c1c',
   background: '#f8fafc',
   text: {
-    main: '#0f172a',    // Slate 900
-    secondary: '#475569', // Slate 600 (Mejor contraste)
-    muted: '#64748b'    // Slate 500
-  },
-  sidebar: {
-    from: '#064e3b',
-    to: '#1e1b4b'
+    main: '#0f172a',
+    secondary: '#475569',
+    muted: '#64748b'
   }
 };
 
@@ -38,7 +34,7 @@ export const Icons = {
   ),
   Clipboard: () => (
     <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 02-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
     </svg>
   ),
   Shield: () => (
@@ -49,6 +45,16 @@ export const Icons = {
   Calendar: () => (
     <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+    </svg>
+  ),
+  Pencil: () => (
+    <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+    </svg>
+  ),
+  WhatsApp: () => (
+    <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12c0 1.891.524 3.66 1.435 5.17L2 22l4.97-1.385A9.957 9.957 0 0012 22z" />
     </svg>
   ),
   Settings: () => (

@@ -3,7 +3,7 @@ export enum MemberStatus {
   ACTIVE = 'Activo',
   INACTIVE = 'Inactivo',
   PENDING = 'Pendiente',
-  SUSPENDED = 'Suspendido'
+  SUSPENDED = 'Suspido'
 }
 
 export enum BoardRole {
@@ -66,18 +66,16 @@ export interface Transaction {
   memberId?: string;
 }
 
+export interface Person {
+  name: string;
+  rut: string;
+  phone: string;
+}
+
 export interface BoardPosition {
   role: BoardRole;
-  primary: {
-    name: string;
-    rut: string;
-    phone: string;
-  };
-  substitute: {
-    name: string;
-    rut: string;
-    phone: string;
-  };
+  primary: Person;
+  substitute: Person;
 }
 
 export interface Assembly {

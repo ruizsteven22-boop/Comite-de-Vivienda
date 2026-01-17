@@ -2,7 +2,6 @@
 import React, { useState } from 'react';
 import { Transaction, TransactionType, Member, PaymentMethod, User, BoardRole } from '../types';
 import { generateReceiptText } from '../services/geminiService';
-// Fix: Import Icons from constants to allow access to Icons.Clipboard and Icons.Dashboard
 import { Icons } from '../constants';
 
 interface TreasuryProps {
@@ -59,138 +58,20 @@ const Treasury: React.FC<TreasuryProps> = ({ transactions, setTransactions, memb
       alert("No hay transacciones para exportar.");
       return;
     }
-
     const headers = ["ID", "Fecha", "Monto", "Tipo", "Metodo", "Referencia", "Descripcion", "Socio"];
     const rows = filteredTransactions.map(tx => {
       const member = members.find(m => m.id === tx.memberId);
-      return [
-        tx.id,
-        tx.date,
-        tx.amount,
-        tx.type,
-        tx.paymentMethod,
-        tx.referenceNumber || "",
-        `"${tx.description.replace(/"/g, '""')}"`,
-        `"${(member ? member.name : "N/A").replace(/"/g, '""')}"`
-      ];
+      return [tx.id, tx.date, tx.amount, tx.type, tx.paymentMethod, tx.referenceNumber || "", `"${tx.description.replace(/"/g, '""')}"`, `"${(member ? member.name : "N/A").replace(/"/g, '""')}"`];
     });
-
-    const csvContent = [
-      headers.join(","),
-      ...rows.map(row => row.join(","))
-    ].join("\n");
-
+    const csvContent = [headers.join(","), ...rows.map(row => row.join(","))].join("\n");
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.setAttribute("href", url);
-    link.setAttribute("download", `tesoreria_tierra_esperanza_${new Date().toISOString().split('T')[0]}.csv`);
-    link.style.visibility = 'hidden';
+    link.setAttribute("download", `tesoreria_te_${new Date().toISOString().split('T')[0]}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-  };
-
-  const handlePrintReport = () => {
-    if (filteredTransactions.length === 0) {
-      alert("No hay datos para generar el reporte.");
-      return;
-    }
-
-    const totalIncome = filteredTransactions.filter(t => t.type === TransactionType.INCOME).reduce((acc, t) => acc + t.amount, 0);
-    const totalExpense = filteredTransactions.filter(t => t.type === TransactionType.EXPENSE).reduce((acc, t) => acc + t.amount, 0);
-    const balance = totalIncome - totalExpense;
-
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) return;
-
-    const tableRows = filteredTransactions.map(tx => {
-      const member = members.find(m => m.id === tx.memberId);
-      return `
-        <tr>
-          <td>${tx.date}</td>
-          <td><strong>${tx.id}</strong></td>
-          <td>${tx.description}<br/><small style="color: #64748b">${member ? member.name : 'N/A'}</small></td>
-          <td>${tx.paymentMethod}</td>
-          <td style="text-align: right; font-weight: bold; color: ${tx.type === TransactionType.INCOME ? '#059669' : '#dc2626'}">
-            ${tx.type === TransactionType.INCOME ? '+' : '-'}$${tx.amount.toLocaleString('es-CL')}
-          </td>
-        </tr>
-      `;
-    }).join('');
-
-    printWindow.document.write(`
-      <html>
-        <head>
-          <title>Reporte de Tesorería - Tierra Esperanza</title>
-          <style>
-            @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
-            body { font-family: 'Inter', sans-serif; color: #1e293b; padding: 40px; }
-            .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #e2e8f0; padding-bottom: 20px; margin-bottom: 30px; }
-            .title h1 { margin: 0; color: #059669; font-size: 24px; }
-            .title p { margin: 5px 0 0; color: #64748b; font-size: 12px; text-transform: uppercase; }
-            .summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 30px; }
-            .summary-card { background: #f8fafc; padding: 15px; border-radius: 12px; border: 1px solid #e2e8f0; }
-            .summary-card h4 { margin: 0; font-size: 10px; color: #64748b; text-transform: uppercase; }
-            .summary-card p { margin: 5px 0 0; font-size: 20px; font-weight: 800; }
-            table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 12px; }
-            th { text-align: left; padding: 12px; border-bottom: 2px solid #e2e8f0; color: #64748b; text-transform: uppercase; }
-            td { padding: 12px; border-bottom: 1px solid #f1f5f9; }
-            .footer { margin-top: 50px; text-align: center; font-size: 10px; color: #94a3b8; border-top: 1px solid #f1f5f9; padding-top: 20px; }
-            @media print { body { padding: 0; } .no-print { display: none; } }
-          </style>
-        </head>
-        <body>
-          <div class="header">
-            <div class="title">
-              <h1>Comité Tierra Esperanza</h1>
-              <p>Reporte General de Tesorería</p>
-            </div>
-          </div>
-          <div class="summary">
-            <div class="summary-card"><h4>Total Ingresos</h4><p style="color: #059669">$${totalIncome.toLocaleString('es-CL')}</p></div>
-            <div class="summary-card"><h4>Total Egresos</h4><p style="color: #dc2626">$${totalExpense.toLocaleString('es-CL')}</p></div>
-            <div class="summary-card"><h4>Balance Neto</h4><p>$${balance.toLocaleString('es-CL')}</p></div>
-          </div>
-          <table>
-            <thead><tr><th>Fecha</th><th>Folio</th><th>Descripción / Socio</th><th>Método</th><th style="text-align: right">Monto</th></tr></thead>
-            <tbody>${tableRows}</tbody>
-          </table>
-          <script>window.onload = function() { window.print(); window.onafterprint = function() { window.close(); }; }</script>
-        </body>
-      </html>
-    `);
-    printWindow.document.close();
-  };
-
-  const handlePrintReceipt = (tx: Transaction) => {
-    const member = members.find(m => m.id === tx.memberId);
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) return;
-
-    printWindow.document.write(`
-      <html>
-        <head>
-          <title>Recibo Oficial TE-${tx.id}</title>
-          <style>
-            @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
-            body { font-family: 'Inter', sans-serif; padding: 20px; }
-            .folio-badge { background: #1e293b; color: white; padding: 5px 10px; border-radius: 4px; display: inline-block; font-weight: bold; }
-            .amount-wrap { border: 2px dashed #059669; padding: 20px; text-align: center; margin-top: 20px; }
-            .amount-val { font-size: 32px; color: #059669; font-weight: 800; }
-          </style>
-        </head>
-        <body>
-          <h1>Comité Tierra Esperanza</h1>
-          <div class="folio-badge">FOLIO: ${tx.id}</div>
-          <p>Socio: ${member ? member.name : 'Pago General'}</p>
-          <p>Concepto: ${tx.description}</p>
-          <div class="amount-wrap"><span class="amount-val">$${tx.amount.toLocaleString('es-CL')}</span></div>
-          <script>window.onload = function() { window.print(); window.onafterprint = function() { window.close(); }; }</script>
-        </body>
-      </html>
-    `);
-    printWindow.document.close();
   };
 
   const handleSendReceipt = (tx: Transaction, method: 'whatsapp' | 'email') => {
@@ -198,36 +79,26 @@ const Treasury: React.FC<TreasuryProps> = ({ transactions, setTransactions, memb
     if (!member) return;
     const receiptText = generateReceiptText(member, tx);
     if (method === 'whatsapp') {
-      const url = `https://wa.me/${member.phone.replace('+', '')}?text=${encodeURIComponent(receiptText)}`;
+      const url = `https://wa.me/${member.phone.replace('+', '').replace(/\s/g, '')}?text=${encodeURIComponent(receiptText)}`;
       window.open(url, '_blank');
     } else {
-      window.location.href = `mailto:${member.email}?subject=Recibo TE-${tx.id}&body=${encodeURIComponent(receiptText)}`;
+      window.location.href = `mailto:${member.email}?subject=Recibo Tierra Esperanza ${tx.id}&body=${encodeURIComponent(receiptText)}`;
     }
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div className="space-y-10">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
-          <h2 className="text-2xl font-bold text-slate-800">Tesorería y Finanzas</h2>
-          <p className="text-slate-500">Administración de fondos y emisión de recibos</p>
+          <h2 className="text-4xl font-black text-slate-900 tracking-tighter">Panel de <span className="text-emerald-700">Tesorería</span></h2>
+          <p className="text-slate-500 font-bold uppercase tracking-widest text-[10px] mt-2">Control Financiero y Recaudación</p>
         </div>
-        <div className="flex flex-wrap gap-2">
-           <select 
-            className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-medium outline-none"
-            value={filterMethod}
-            onChange={(e) => setFilterMethod(e.target.value as any)}
-          >
-            <option value="ALL">Todos los métodos</option>
-            <option value={PaymentMethod.CASH}>Efectivo</option>
-            <option value={PaymentMethod.TRANSFER}>Transferencia</option>
-          </select>
-          <button onClick={handlePrintReport} className="bg-emerald-50 text-emerald-700 px-4 py-2 rounded-xl font-semibold text-sm">Reporte PDF</button>
-          <button onClick={handleExportCSV} className="bg-slate-100 text-slate-700 px-4 py-2 rounded-xl font-semibold text-sm">Exportar CSV</button>
+        <div className="flex flex-wrap gap-3">
+          <button onClick={handleExportCSV} className="bg-white border border-slate-200 text-slate-700 px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-50 transition shadow-sm">Exportar CSV</button>
           {canEdit && (
             <button 
               onClick={() => setShowForm(true)}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2 rounded-xl font-bold transition shadow-lg shadow-emerald-600/20"
+              className="bg-emerald-700 text-white px-8 py-3 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-emerald-700/20 hover:bg-emerald-800 transition active:scale-95"
             >
               Nueva Transacción
             </button>
@@ -235,75 +106,132 @@ const Treasury: React.FC<TreasuryProps> = ({ transactions, setTransactions, memb
         </div>
       </div>
 
-      <div className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
+      <div className="bg-white rounded-[2.5rem] shadow-sm border border-slate-100 overflow-hidden">
+        <div className="p-8 border-b border-slate-50 bg-slate-50/50 flex justify-between items-center">
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Historial de Movimientos</p>
+          <select 
+            className="bg-white border-2 border-slate-200 rounded-xl px-4 py-2 text-[10px] font-black uppercase tracking-widest text-slate-600 outline-none focus:border-emerald-600"
+            value={filterMethod}
+            onChange={(e) => setFilterMethod(e.target.value as any)}
+          >
+            <option value="ALL">Todos los métodos</option>
+            <option value={PaymentMethod.CASH}>Efectivo</option>
+            <option value={PaymentMethod.TRANSFER}>Transferencia</option>
+          </select>
+        </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-slate-50 text-slate-500 text-[10px] uppercase tracking-widest font-bold">
-                <th className="px-6 py-5">Folio / Fecha</th>
-                <th className="px-6 py-5">Socio y Concepto</th>
-                <th className="px-6 py-5">Detalle Pago</th>
-                <th className="px-6 py-5 text-right">Monto</th>
-                <th className="px-6 py-5 text-right">Acciones</th>
+          <table className="w-full text-left">
+            <thead className="bg-slate-50/30 text-slate-400 text-[9px] uppercase tracking-[0.2em] font-black border-b border-slate-100">
+              <tr>
+                <th className="px-10 py-5">Identificador</th>
+                <th className="px-10 py-5">Socio / Motivo</th>
+                <th className="px-10 py-5">Método</th>
+                <th className="px-10 py-5 text-right">Monto Neto</th>
+                <th className="px-10 py-5 text-right">Acciones</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-slate-50">
               {filteredTransactions.map(tx => {
                 const member = members.find(m => m.id === tx.memberId);
                 return (
-                  <tr key={tx.id} className="hover:bg-slate-50/50 transition group">
-                    <td className="px-6 py-4">
-                      <p className="text-xs font-black text-slate-400">#{tx.id}</p>
-                      <p className="text-xs text-slate-600">{tx.date}</p>
+                  <tr key={tx.id} className="hover:bg-slate-50/30 transition-colors group">
+                    <td className="px-10 py-5">
+                      <p className="text-[10px] font-black text-slate-400">#{tx.id}</p>
+                      <p className="text-xs font-bold text-slate-600 mt-1">{tx.date}</p>
                     </td>
-                    <td className="px-6 py-4">
-                      <p className="font-bold text-slate-800">{tx.description}</p>
-                      {member && <button onClick={() => onViewMember(member.id)} className="text-xs text-emerald-600 italic hover:underline">{member.name}</button>}
+                    <td className="px-10 py-5">
+                      <p className="font-black text-slate-900 text-sm leading-tight">{tx.description}</p>
+                      {member ? (
+                        <button onClick={() => onViewMember(member.id)} className="text-[10px] text-emerald-700 font-bold hover:underline mt-1">{member.name}</button>
+                      ) : (
+                        <p className="text-[10px] text-slate-400 font-bold mt-1">Gasto General</p>
+                      )}
                     </td>
-                    <td className="px-6 py-4">
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${tx.paymentMethod === PaymentMethod.CASH ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-blue-50 text-blue-700 border-blue-200'}`}>{tx.paymentMethod}</span>
+                    <td className="px-10 py-5">
+                      <span className={`text-[9px] font-black uppercase px-3 py-1.5 rounded-xl border-2 ${
+                        tx.paymentMethod === PaymentMethod.CASH ? 'bg-amber-50 text-amber-800 border-amber-100' : 'bg-blue-50 text-blue-800 border-blue-100'
+                      }`}>
+                        {tx.paymentMethod}
+                      </span>
                     </td>
-                    <td className="px-6 py-4 text-right">
-                      <p className={`text-sm font-black ${tx.type === TransactionType.INCOME ? 'text-emerald-600' : 'text-red-600'}`}>
+                    <td className="px-10 py-5 text-right">
+                      <p className={`text-lg font-black ${tx.type === TransactionType.INCOME ? 'text-emerald-700' : 'text-rose-600'}`}>
                         {tx.type === TransactionType.INCOME ? '+' : '-'}${tx.amount.toLocaleString('es-CL')}
                       </p>
                     </td>
-                    <td className="px-6 py-4 text-right">
+                    <td className="px-10 py-5 text-right">
                       <div className="flex justify-end space-x-2">
-                        <button onClick={() => handlePrintReceipt(tx)} className="p-2 text-slate-400 hover:text-slate-800"><Icons.Clipboard /></button>
                         {tx.type === TransactionType.INCOME && member && (
-                          <button onClick={() => handleSendReceipt(tx, 'whatsapp')} className="p-2 text-emerald-500"><Icons.Dashboard /></button>
+                          <button 
+                            onClick={() => handleSendReceipt(tx, 'whatsapp')} 
+                            className="p-3 bg-emerald-50 text-emerald-600 rounded-2xl hover:bg-emerald-100 transition shadow-sm"
+                            title="Enviar por WhatsApp"
+                          >
+                            <Icons.WhatsApp />
+                          </button>
                         )}
+                        <button className="p-3 bg-slate-50 text-slate-400 rounded-2xl hover:bg-slate-100 transition shadow-sm">
+                          <Icons.Clipboard />
+                        </button>
                       </div>
                     </td>
                   </tr>
                 );
               })}
+              {filteredTransactions.length === 0 && (
+                <tr><td colSpan={5} className="px-10 py-20 text-center text-slate-400 font-bold italic">No hay registros financieros.</td></tr>
+              )}
             </tbody>
           </table>
         </div>
       </div>
 
       {showForm && canEdit && (
-        <div className="fixed inset-0 bg-slate-900/60 flex items-center justify-center p-4 z-50 backdrop-blur-md">
-          <div className="bg-white rounded-[32px] shadow-2xl w-full max-w-xl overflow-hidden">
-            <div className="bg-emerald-600 p-8 text-white"><h3 className="text-2xl font-black">Registrar Movimiento</h3></div>
-            <form onSubmit={handleAdd} className="p-8 space-y-5">
-              <div className="flex bg-slate-100 p-1.5 rounded-2xl">
-                <button type="button" onClick={() => setNewTx({...newTx, type: TransactionType.INCOME})} className={`flex-1 py-3 rounded-xl text-sm font-black transition ${newTx.type === TransactionType.INCOME ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-400'}`}>INGRESO</button>
-                <button type="button" onClick={() => setNewTx({...newTx, type: TransactionType.EXPENSE})} className={`flex-1 py-3 rounded-xl text-sm font-black transition ${newTx.type === TransactionType.EXPENSE ? 'bg-white text-red-600 shadow-sm' : 'text-slate-400'}`}>EGRESO</button>
+        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-xl flex items-center justify-center z-[100] p-6 overflow-y-auto">
+          <div className="bg-white w-full max-w-xl rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95">
+            <div className="bg-slate-900 p-10 text-white flex justify-between items-center">
+              <div>
+                <h3 className="text-3xl font-black tracking-tighter">Nuevo Registro</h3>
+                <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.3em] mt-2">Caja Tierra Esperanza</p>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <input type="number" required className="w-full px-4 py-3 border rounded-xl font-black" placeholder="Monto" value={newTx.amount} onChange={e => setNewTx({...newTx, amount: parseInt(e.target.value) || 0})}/>
-                <input type="text" required className="w-full px-4 py-3 border rounded-xl" placeholder="Descripción" value={newTx.description} onChange={e => setNewTx({...newTx, description: e.target.value})}/>
+              <button onClick={() => setShowForm(false)} className="w-12 h-12 rounded-2xl bg-white/10 hover:bg-white/20 text-white flex items-center justify-center text-3xl font-light transition-all">&times;</button>
+            </div>
+            <form onSubmit={handleAdd} className="p-10 space-y-6">
+              <div className="flex bg-slate-100 p-1.5 rounded-[1.5rem] shadow-inner">
+                <button type="button" onClick={() => setNewTx({...newTx, type: TransactionType.INCOME})} className={`flex-1 py-4 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all ${newTx.type === TransactionType.INCOME ? 'bg-white text-emerald-700 shadow-md' : 'text-slate-400'}`}>Ingreso de Fondos</button>
+                <button type="button" onClick={() => setNewTx({...newTx, type: TransactionType.EXPENSE})} className={`flex-1 py-4 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all ${newTx.type === TransactionType.EXPENSE ? 'bg-white text-rose-600 shadow-md' : 'text-slate-400'}`}>Egreso / Pago</button>
               </div>
-              <select className="w-full px-4 py-3 border rounded-xl" value={newTx.memberId || ''} onChange={e => setNewTx({...newTx, memberId: e.target.value})}>
-                <option value="">-- Sin socio --</option>
-                {members.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
-              </select>
-              <div className="flex justify-end space-x-4 pt-6">
-                <button type="button" onClick={() => setShowForm(false)} className="px-6 py-3 text-slate-400">Cancelar</button>
-                <button type="submit" className="px-10 py-3 bg-emerald-600 text-white rounded-2xl font-black">REGISTRAR</button>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-2">Monto ($ CLP)</label>
+                  <input type="number" required className="w-full px-6 py-4 border-2 border-slate-100 rounded-2xl focus:border-emerald-600 outline-none transition font-black text-lg bg-slate-50/50" value={newTx.amount} onChange={e => setNewTx({...newTx, amount: parseInt(e.target.value) || 0})}/>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-2">Método</label>
+                  <select className="w-full px-6 py-4 border-2 border-slate-100 rounded-2xl focus:border-emerald-600 outline-none font-black text-[11px] uppercase tracking-wider bg-slate-50/50" value={newTx.paymentMethod} onChange={e => setNewTx({...newTx, paymentMethod: e.target.value as PaymentMethod})}>
+                    <option value={PaymentMethod.CASH}>Efectivo</option>
+                    <option value={PaymentMethod.TRANSFER}>Transferencia</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-2">Concepto del Movimiento</label>
+                <input type="text" required className="w-full px-6 py-4 border-2 border-slate-100 rounded-2xl focus:border-emerald-600 outline-none transition font-black text-slate-900 bg-slate-50/50" placeholder="Ej: Pago cuota social Junio" value={newTx.description} onChange={e => setNewTx({...newTx, description: e.target.value})}/>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-2">Socio Vinculado (Opcional)</label>
+                <select className="w-full px-6 py-4 border-2 border-slate-100 rounded-2xl focus:border-emerald-600 outline-none font-black text-[11px] bg-slate-50/50" value={newTx.memberId || ''} onChange={e => setNewTx({...newTx, memberId: e.target.value})}>
+                  <option value="">-- Pago General --</option>
+                  {members.map(m => <option key={m.id} value={m.id}>{m.name} ({m.rut})</option>)}
+                </select>
+              </div>
+
+              <div className="flex justify-end space-x-6 pt-6 border-t border-slate-50">
+                <button type="button" onClick={() => setShowForm(false)} className="px-6 py-3 font-black text-slate-400 uppercase tracking-widest text-xs">Cancelar</button>
+                <button type="submit" className="px-10 py-4 bg-emerald-700 text-white rounded-[1.5rem] font-black shadow-2xl shadow-emerald-700/30 uppercase text-xs tracking-widest">Registrar Movimiento</button>
               </div>
             </form>
           </div>
