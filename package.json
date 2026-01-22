@@ -1,13 +1,17 @@
 
 {
-  "name": "tierra-esperanza",
-  "version": "1.0.0",
+  "name": "tierra-esperanza-gestion",
+  "version": "1.1.0",
   "private": true,
+  "description": "Sistema de Gestión de Comité de Vivienda Tierra Esperanza",
   "dependencies": {
     "express": "^4.18.2"
   },
   "scripts": {
     "start": "node server.js",
-    "build": "mkdir -p public && cp index.html index.tsx App.tsx types.ts constants.tsx metadata.json public/ && cp -r components services public/"
+    "dev": "node server.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }

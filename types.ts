@@ -3,7 +3,7 @@ export enum MemberStatus {
   ACTIVE = 'Activo',
   INACTIVE = 'Inactivo',
   PENDING = 'Pendiente',
-  SUSPENDED = 'Suspido'
+  SUSPENDED = 'Suspendido'
 }
 
 export enum BoardRole {

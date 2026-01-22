@@ -4,14 +4,18 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 8080;
 
-// Servir archivos estáticos desde la carpeta de salida del build
-app.use(express.static(path.join(__dirname, 'public')));
+// Servir todos los archivos del directorio raíz
+app.use(express.static(path.join(__dirname)));
 
-// Asegurar que todas las rutas carguen el index.html (soporte SPA)
+// Manejar cualquier ruta devolviendo el index.html (Soporte SPA)
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 app.listen(PORT, () => {
-  console.log(`Servidor Tierra Esperanza corriendo en el puerto ${PORT}`);
+  console.log(`--------------------------------------------------`);
+  console.log(`🚀 Tierra Esperanza en línea`);
+  console.log(`📍 Puerto: ${PORT}`);
+  console.log(`🛠️ Modo: Producción`);
+  console.log(`--------------------------------------------------`);
 });
