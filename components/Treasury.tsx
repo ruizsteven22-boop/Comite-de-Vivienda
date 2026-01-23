@@ -28,9 +28,11 @@ const Treasury: React.FC<TreasuryProps> = ({ transactions, setTransactions, memb
                   currentUser.role === 'ADMINISTRATOR' || 
                   currentUser.role === BoardRole.TREASURER;
 
+  const sortedTransactions = [...transactions].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
   const filteredTransactions = filterMethod === 'ALL' 
-    ? transactions 
-    : transactions.filter(t => t.paymentMethod === filterMethod);
+    ? sortedTransactions 
+    : sortedTransactions.filter(t => t.paymentMethod === filterMethod);
 
   const handleAdd = (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,6 +53,13 @@ const Treasury: React.FC<TreasuryProps> = ({ transactions, setTransactions, memb
       description: '',
       referenceNumber: ''
     });
+  };
+
+  const handleDeleteTx = (id: string) => {
+    if (!canEdit) return;
+    if (confirm("¿Está seguro de eliminar este registro contable?")) {
+      setTransactions(prev => prev.filter(t => t.id !== id));
+    }
   };
 
   const handleExportCSV = () => {
@@ -108,7 +117,7 @@ const Treasury: React.FC<TreasuryProps> = ({ transactions, setTransactions, memb
 
       <div className="bg-white rounded-[2.5rem] shadow-sm border border-slate-100 overflow-hidden">
         <div className="p-8 border-b border-slate-50 bg-slate-50/50 flex justify-between items-center">
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Historial de Movimientos</p>
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Historial de Movimientos (Recientes primero)</p>
           <select 
             className="bg-white border-2 border-slate-200 rounded-xl px-4 py-2 text-[10px] font-black uppercase tracking-widest text-slate-600 outline-none focus:border-emerald-600"
             value={filterMethod}
@@ -170,9 +179,11 @@ const Treasury: React.FC<TreasuryProps> = ({ transactions, setTransactions, memb
                             <Icons.WhatsApp />
                           </button>
                         )}
-                        <button className="p-3 bg-slate-50 text-slate-400 rounded-2xl hover:bg-slate-100 transition shadow-sm">
-                          <Icons.Clipboard />
-                        </button>
+                        {canEdit && (
+                          <button onClick={() => handleDeleteTx(tx.id)} className="p-3 text-rose-300 hover:text-rose-600 rounded-2xl transition">
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>

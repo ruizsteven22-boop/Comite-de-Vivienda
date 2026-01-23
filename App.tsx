@@ -65,8 +65,9 @@ const App: React.FC = () => {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
+        if (!Array.isArray(parsed)) return INITIAL_BOARD;
         return parsed.map((p: any) => ({
-          role: p.role,
+          role: p.role || BoardRole.PRESIDENT,
           primary: p.primary || { ...EMPTY_PERSON },
           substitute: p.substitute || (Array.isArray(p.substitutes) ? p.substitutes[0] : { ...EMPTY_PERSON })
         }));
@@ -142,6 +143,19 @@ const App: React.FC = () => {
     }
   };
 
+  const menuItems = [
+    { id: 'dashboard', icon: <Icons.Dashboard />, label: 'Panel de Control' },
+    { id: 'members', icon: <Icons.Users />, label: 'Gestión de Socios' },
+    { id: 'treasury', icon: <Icons.Wallet />, label: 'Tesorería' },
+    { id: 'board', icon: <Icons.Shield />, label: 'Directiva' },
+    { id: 'assemblies', icon: <Icons.Calendar />, label: 'Asambleas' },
+    { id: 'attendance', icon: <Icons.Clipboard />, label: 'Asistencia' },
+  ];
+
+  if (isSupport) {
+    menuItems.push({ id: 'support', icon: <Icons.Settings />, label: 'Gestión de Accesos' });
+  }
+
   return (
     <div className="flex flex-col md:flex-row min-h-screen bg-[#F8FAFC]">
       {/* Sidebar Responsive */}
@@ -152,14 +166,7 @@ const App: React.FC = () => {
         </div>
 
         <nav className="flex-1 px-6 space-y-2">
-          {[
-            { id: 'dashboard', icon: <Icons.Dashboard />, label: 'Panel de Control' },
-            { id: 'members', icon: <Icons.Users />, label: 'Gestión de Socios' },
-            { id: 'treasury', icon: <Icons.Wallet />, label: 'Tesorería' },
-            { id: 'board', icon: <Icons.Shield />, label: 'Directiva' },
-            { id: 'assemblies', icon: <Icons.Calendar />, label: 'Asambleas' },
-            { id: 'attendance', icon: <Icons.Clipboard />, label: 'Asistencia' },
-          ].map(item => canAccess(item.id) && (
+          {menuItems.map(item => canAccess(item.id) && (
             <button key={item.id} onClick={() => { setView(item.id as any); setIsSidebarOpen(false); }} className={`w-full flex items-center space-x-4 px-6 py-4 rounded-2xl transition-all ${view === item.id ? 'bg-emerald-600 text-white shadow-xl' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}>
               {item.icon}
               <span className="font-bold text-sm">{item.label}</span>
@@ -183,7 +190,9 @@ const App: React.FC = () => {
       <main className="flex-1 overflow-y-auto">
         <header className="md:hidden p-4 bg-slate-900 text-white flex justify-between items-center sticky top-0 z-[60]">
           <h2 className="font-black italic">Tierra Esperanza</h2>
-          <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 bg-emerald-600 rounded-lg">Menu</button>
+          <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 bg-emerald-600 rounded-lg">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16m-7 6h7" /></svg>
+          </button>
         </header>
 
         <div className="p-6 md:p-12 max-w-7xl mx-auto">

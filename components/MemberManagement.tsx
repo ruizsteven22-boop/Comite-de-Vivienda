@@ -78,6 +78,14 @@ const MemberManagement: React.FC<MemberManagementProps> = ({
     closeModal();
   };
 
+  const handleDeleteMember = (id: string) => {
+    if (!canEdit) return;
+    if (confirm("¿Está seguro de eliminar a este socio? Esta acción no se puede deshacer.")) {
+      setMembers(prev => prev.filter(m => m.id !== id));
+      closeModal();
+    }
+  };
+
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -132,6 +140,12 @@ const MemberManagement: React.FC<MemberManagementProps> = ({
     onClearViewingMember();
   };
 
+  const handlePrint = () => {
+    if (selectedMember && selectedMember.id) {
+      printMemberFile(selectedMember as Member, transactions, assemblies, board);
+    }
+  };
+
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
@@ -146,7 +160,6 @@ const MemberManagement: React.FC<MemberManagementProps> = ({
         )}
       </div>
 
-      {/* Buscador y Tabla */}
       <div className="bg-white rounded-[3rem] shadow-sm border border-slate-200 overflow-hidden">
         <div className="p-8 border-b border-slate-100 flex flex-col md:flex-row gap-4 bg-slate-50/50">
           <input 
@@ -214,7 +227,7 @@ const MemberManagement: React.FC<MemberManagementProps> = ({
       {/* Modal de Edición */}
       {isEditing && selectedMember && (
         <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-xl flex items-center justify-center z-[100] p-6 overflow-y-auto">
-          <div className="bg-white w-full max-w-4xl rounded-[4rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 relative">
+          <div className="bg-white w-full max-w-4xl rounded-[4rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 relative my-auto">
             <div className="bg-slate-900 p-12 text-white flex justify-between items-center">
               <div>
                 <h3 className="text-3xl font-black tracking-tighter">{selectedMember.id ? 'Editar Expediente' : 'Nueva Incorporación'}</h3>
@@ -229,7 +242,7 @@ const MemberManagement: React.FC<MemberManagementProps> = ({
                    <div className="relative group w-full max-w-[220px]">
                       <img src={selectedMember.photoUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedMember.name || 'S')}&background=f1f5f9&color=94a3b8&size=512`} className="w-full aspect-square rounded-[3rem] object-cover border-8 border-slate-50 shadow-2xl" />
                       <button type="button" onClick={() => fileInputRef.current?.click()} className="absolute inset-0 bg-black/60 rounded-[3rem] opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center transition-all duration-300 backdrop-blur-sm">
-                        <span className="text-white text-[9px] font-black uppercase tracking-widest">Cambiar Foto</span>
+                        <span className="text-white text-[9px] font-black uppercase tracking-widest text-center px-4">Cambiar Foto de Perfil</span>
                       </button>
                       <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handlePhotoUpload} />
                    </div>
@@ -247,6 +260,16 @@ const MemberManagement: React.FC<MemberManagementProps> = ({
                   <div>
                     <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-2">Fecha de Ingreso</label>
                     <input type="date" required className="w-full px-8 py-5 border-2 border-slate-100 rounded-[2rem] focus:border-emerald-600 outline-none transition font-black text-slate-900 bg-slate-50/50" value={selectedMember.joinDate} onChange={e => setSelectedMember({...selectedMember, joinDate: e.target.value})}/>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-2">Estado</label>
+                    <select className="w-full px-8 py-5 border-2 border-slate-100 rounded-[2rem] focus:border-emerald-600 outline-none transition font-black text-slate-900 bg-slate-50/50 uppercase text-xs" value={selectedMember.status} onChange={e => setSelectedMember({...selectedMember, status: e.target.value as MemberStatus})}>
+                      {Object.values(MemberStatus).map(s => <option key={s} value={s}>{s}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-2">Teléfono</label>
+                    <input className="w-full px-8 py-5 border-2 border-slate-100 rounded-[2rem] focus:border-emerald-600 outline-none transition font-black text-slate-900 bg-slate-50/50" value={selectedMember.phone} onChange={e => setSelectedMember({...selectedMember, phone: e.target.value})} placeholder="+569..."/>
                   </div>
                 </div>
               </div>
@@ -275,9 +298,14 @@ const MemberManagement: React.FC<MemberManagementProps> = ({
                  </div>
               </div>
 
-              <div className="flex justify-end space-x-6 pt-12">
-                <button type="button" onClick={closeModal} className="px-10 py-5 font-black text-slate-400 uppercase tracking-widest text-xs hover:text-slate-600">Descartar</button>
-                <button type="submit" className="px-12 py-5 bg-emerald-700 text-white rounded-[2rem] font-black shadow-2xl shadow-emerald-700/30 hover:bg-emerald-800 transition-all uppercase text-xs tracking-widest">Guardar Cambios</button>
+              <div className="flex flex-col md:flex-row justify-between items-center pt-12 border-t border-slate-100">
+                {selectedMember.id ? (
+                  <button type="button" onClick={() => handleDeleteMember(selectedMember.id!)} className="px-8 py-4 bg-rose-50 text-rose-600 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-rose-600 hover:text-white transition-all mb-4 md:mb-0">Eliminar Socio</button>
+                ) : <div></div>}
+                <div className="flex space-x-6">
+                  <button type="button" onClick={closeModal} className="px-10 py-5 font-black text-slate-400 uppercase tracking-widest text-xs hover:text-slate-600">Descartar</button>
+                  <button type="submit" className="px-12 py-5 bg-emerald-700 text-white rounded-[2rem] font-black shadow-2xl shadow-emerald-700/30 hover:bg-emerald-800 transition-all uppercase text-xs tracking-widest">Guardar Cambios</button>
+                </div>
               </div>
             </form>
 
@@ -287,7 +315,7 @@ const MemberManagement: React.FC<MemberManagementProps> = ({
                 <div className="w-full max-w-md bg-white rounded-[3rem] shadow-2xl border border-slate-100 p-12 space-y-10">
                   <div className="text-center">
                     <h4 className="text-3xl font-black text-slate-900 tracking-tight">Vincular Familiar</h4>
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-2">Añadir integrante al grupo de {selectedMember.name}</p>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-2">Añadir integrante al grupo de {selectedMember.name || 'Socio'}</p>
                   </div>
                   <div className="space-y-6">
                     <div>
@@ -318,6 +346,64 @@ const MemberManagement: React.FC<MemberManagementProps> = ({
                 </div>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Vista (Ficha) */}
+      {isViewing && selectedMember && (
+        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-xl flex items-center justify-center z-[100] p-6">
+          <div className="bg-white w-full max-w-4xl rounded-[4rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 flex flex-col max-h-[90vh]">
+            <div className="bg-emerald-700 p-10 text-white flex justify-between items-center">
+               <div className="flex items-center space-x-6">
+                  <img src={selectedMember.photoUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedMember.name || 'S')}&background=fff&color=047857&bold=true&size=128`} className="w-16 h-16 rounded-2xl object-cover shadow-lg border-2 border-white/20" />
+                  <div>
+                    <h3 className="text-2xl font-black tracking-tight">{selectedMember.name}</h3>
+                    <p className="text-emerald-100 text-[10px] font-black uppercase tracking-widest">Socio Folio #{selectedMember.id}</p>
+                  </div>
+               </div>
+               <button onClick={closeModal} className="w-12 h-12 rounded-2xl bg-white/10 hover:bg-white/20 text-white flex items-center justify-center text-3xl font-light">&times;</button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-12">
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                  <div className="space-y-6">
+                    <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2">Información de Perfil</h4>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                       <p className="text-slate-500 font-bold uppercase text-[9px]">RUT</p>
+                       <p className="font-black text-slate-800">{selectedMember.rut}</p>
+                       <p className="text-slate-500 font-bold uppercase text-[9px]">Ingreso</p>
+                       <p className="font-black text-slate-800">{selectedMember.joinDate}</p>
+                       <p className="text-slate-500 font-bold uppercase text-[9px]">Estado</p>
+                       <span className="font-black text-emerald-600">{selectedMember.status}</span>
+                       <p className="text-slate-500 font-bold uppercase text-[9px]">Dirección</p>
+                       <p className="font-black text-slate-800">{selectedMember.address || 'No registrada'}</p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-6">
+                    <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2">Núcleo Familiar</h4>
+                    <div className="space-y-3">
+                       {selectedMember.familyMembers?.map(fm => (
+                         <div key={fm.id} className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                           <p className="font-black text-slate-800 text-xs">{fm.name}</p>
+                           <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">{fm.relationship} • {fm.rut}</p>
+                         </div>
+                       ))}
+                       {(!selectedMember.familyMembers || selectedMember.familyMembers.length === 0) && (
+                         <p className="text-xs text-slate-400 italic">Sin familiares registrados.</p>
+                       )}
+                    </div>
+                  </div>
+               </div>
+            </div>
+
+            <div className="p-8 border-t border-slate-100 bg-slate-50 flex justify-end space-x-4">
+               <button onClick={handlePrint} className="px-8 py-3 bg-slate-900 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-black transition shadow-xl">Imprimir Ficha</button>
+               {canEdit && (
+                 <button onClick={() => { setIsViewing(false); setIsEditing(true); }} className="px-8 py-3 bg-emerald-100 text-emerald-800 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-emerald-200 transition">Editar Datos</button>
+               )}
+            </div>
           </div>
         </div>
       )}

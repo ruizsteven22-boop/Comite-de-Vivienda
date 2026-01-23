@@ -6,23 +6,26 @@ import { Member, Transaction, Assembly } from "../types";
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 export const getFinancialSummary = async (transactions: Transaction[]) => {
-  const prompt = `Analiza los siguientes movimientos financieros de un comité de vivienda llamado "Tierra Esperanza" y genera un resumen ejecutivo breve (máximo 3 párrafos). 
+  const prompt = `Actúa como un asesor financiero experto para organizaciones comunitarias. Analiza los siguientes movimientos contables del comité de vivienda "Tierra Esperanza" y genera un informe ejecutivo estratégico. 
+  
   Datos de transacciones (formato JSON): ${JSON.stringify(transactions.slice(0, 50))}
-  Incluye: 
-  1. Balance general actual.
-  2. Análisis de tendencias de ingresos vs egresos.
-  3. Una sugerencia estratégica para mejorar la recaudación o ahorro.
-  Responde de forma profesional y motivadora para los socios.`;
+  
+  Estructura del informe:
+  1. Estado de Salud Financiera: Resume el balance y si los fondos son suficientes para el gasto operativo.
+  2. Alertas o Hallazgos: Identifica gastos inusuales o meses de baja recaudación.
+  3. Propuesta de Mejora: Sugiere una acción concreta para aumentar el fondo común o reducir costos.
+  
+  Responde con un tono profesional, claro y constructivo. Máximo 300 palabras.`;
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview', // Correct model for analysis
+      model: 'gemini-3-flash-preview', 
       contents: prompt,
     });
-    return response.text; // Access .text property directly
+    return response.text;
   } catch (error) {
     console.error("Error calling Gemini:", error);
-    return "En este momento no se puede generar el análisis automático de finanzas.";
+    return "En este momento no se puede generar el análisis automático de finanzas. Por favor revise el balance manual en el módulo de Tesorería.";
   }
 };
 
