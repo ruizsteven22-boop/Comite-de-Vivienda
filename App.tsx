@@ -63,7 +63,11 @@ const App: React.FC = () => {
 
   const [config, setConfig] = useState<CommitteeConfig>(() => {
     const saved = localStorage.getItem('te_config');
-    return saved ? JSON.parse(saved) : INITIAL_CONFIG;
+    try {
+      return saved ? JSON.parse(saved) : INITIAL_CONFIG;
+    } catch (e) {
+      return INITIAL_CONFIG;
+    }
   });
 
   const [members, setMembers] = useState<Member[]>(() => {
@@ -85,7 +89,7 @@ const App: React.FC = () => {
         return parsed.map((p: any) => ({
           role: p.role || BoardRole.PRESIDENT,
           primary: p.primary || { ...EMPTY_PERSON },
-          substitute: p.substitute || (Array.isArray(p.substitutes) ? p.substitutes[0] : { ...EMPTY_PERSON })
+          substitute: p.substitute || (p.substitute ? p.substitute : { ...EMPTY_PERSON })
         }));
       } catch (e) {
         return INITIAL_BOARD;
@@ -174,13 +178,18 @@ const App: React.FC = () => {
     menuItems.push({ id: 'support', icon: <Icons.Settings />, label: 'Accesos Sistema' });
   }
 
+  // Logic to render trade name logo with two colors
+  const tradeParts = config.tradeName.split(' ');
+  const tradeFirst = tradeParts[0];
+  const tradeRest = tradeParts.slice(1).join(' ');
+
   return (
     <div className="flex flex-col md:flex-row min-h-screen bg-[#F8FAFC]">
       {/* Sidebar Responsive */}
       <aside className={`fixed md:relative inset-y-0 left-0 w-72 md:w-80 bg-slate-900 text-white flex flex-col z-50 transition-transform duration-300 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
         <div className="p-10">
-          <h1 className="text-2xl font-black italic tracking-tighter">
-            {config.tradeName.split(' ')[0]} <span className="text-emerald-400">{config.tradeName.split(' ').slice(1).join(' ')}</span>
+          <h1 className="text-2xl font-black italic tracking-tighter truncate">
+            {tradeFirst} {tradeRest && <span className="text-emerald-400">{tradeRest}</span>}
           </h1>
           <p className="text-[10px] uppercase font-black tracking-widest text-slate-500 mt-2">Portal de Gestión</p>
         </div>
@@ -202,14 +211,16 @@ const App: React.FC = () => {
               <p className="text-[9px] uppercase font-black text-emerald-400">{currentUser.role}</p>
             </div>
           </div>
-          <button onClick={handleLogout} className="w-full py-3 bg-red-500/10 text-red-400 rounded-xl text-xs font-black uppercase hover:bg-red-500 hover:text-white transition-all">Cerrar Sesión</button>
+          <button onClick={handleLogout} className="w-full py-3 bg-red-500/10 text-red-400 rounded-xl text-xs font-black uppercase hover:bg-red-500 hover:text-white transition-all flex items-center justify-center">
+            <span className="mr-2"><Icons.Logout /></span> Cerrar Sesión
+          </button>
         </div>
       </aside>
 
       {/* Main Content */}
       <main className="flex-1 overflow-y-auto">
         <header className="md:hidden p-4 bg-slate-900 text-white flex justify-between items-center sticky top-0 z-[60]">
-          <h2 className="font-black italic">{config.tradeName}</h2>
+          <h2 className="font-black italic truncate max-w-[200px]">{config.tradeName}</h2>
           <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 bg-emerald-600 rounded-lg">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16m-7 6h7" /></svg>
           </button>
@@ -217,11 +228,11 @@ const App: React.FC = () => {
 
         <div className="p-6 md:p-12 max-w-7xl mx-auto">
           {view === 'dashboard' && <Dashboard members={members} transactions={transactions} assemblies={assemblies} currentUser={currentUser} config={config} />}
-          {view === 'members' && <MemberManagement members={members} setMembers={setMembers} assemblies={assemblies} transactions={transactions} board={board} viewingMemberId={viewingMemberId} onClearViewingMember={() => setViewingMemberId(null)} currentUser={currentUser} />}
+          {view === 'members' && <MemberManagement members={members} setMembers={setMembers} assemblies={assemblies} transactions={transactions} board={board} viewingMemberId={viewingMemberId} onClearViewingMember={() => setViewingMemberId(null)} currentUser={currentUser} config={config} />}
           {view === 'treasury' && <Treasury transactions={transactions} setTransactions={setTransactions} members={members} onViewMember={handleViewMember} currentUser={currentUser} />}
-          {view === 'board' && <BoardManagement board={board} setBoard={setBoard} boardPeriod={boardPeriod} setBoardPeriod={setBoardPeriod} members={members} currentUser={currentUser} />}
-          {view === 'assemblies' && <AssemblyManagement assemblies={assemblies} setAssemblies={setAssemblies} members={members} board={board} currentUser={currentUser} />}
-          {view === 'attendance' && <Attendance members={members} assemblies={assemblies} setAssemblies={setAssemblies} board={board} currentUser={currentUser} />}
+          {view === 'board' && <BoardManagement board={board} setBoard={setBoard} boardPeriod={boardPeriod} setBoardPeriod={setBoardPeriod} members={members} currentUser={currentUser} config={config} />}
+          {view === 'assemblies' && <AssemblyManagement assemblies={assemblies} setAssemblies={setAssemblies} members={members} board={board} currentUser={currentUser} config={config} />}
+          {view === 'attendance' && <Attendance members={members} assemblies={assemblies} setAssemblies={setAssemblies} board={board} currentUser={currentUser} config={config} />}
           {view === 'support' && isSupport && <SupportManagement users={users} setUsers={setUsers} />}
           {view === 'settings' && isSupport && <SettingsManagement config={config} setConfig={setConfig} />}
         </div>

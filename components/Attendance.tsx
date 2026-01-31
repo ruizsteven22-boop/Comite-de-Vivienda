@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Assembly, Member, AssemblyStatus, AssemblyType, BoardPosition, BoardRole, User } from '../types';
+import { Assembly, Member, AssemblyStatus, AssemblyType, BoardPosition, BoardRole, User, CommitteeConfig } from '../types';
 import { Icons } from '../constants';
 import { generateAssemblyReminderText, generateMassNotificationDraft } from '../services/geminiService';
 import { printAssemblyMinutes, printAttendanceReport } from '../services/printService';
@@ -12,9 +12,10 @@ interface AttendanceProps {
   setAssemblies: React.Dispatch<React.SetStateAction<Assembly[]>>;
   board: BoardPosition[];
   currentUser: User;
+  config: CommitteeConfig;
 }
 
-const Attendance: React.FC<AttendanceProps> = ({ members, assemblies, setAssemblies, board, currentUser }) => {
+const Attendance: React.FC<AttendanceProps> = ({ members, assemblies, setAssemblies, board, currentUser, config }) => {
   const [selectedAssemblyId, setSelectedAssemblyId] = useState('');
   const [rutInput, setRutInput] = useState('');
   const [feedback, setFeedback] = useState<{msg: string, type: 'success' | 'error'} | null>(null);
@@ -69,7 +70,7 @@ const Attendance: React.FC<AttendanceProps> = ({ members, assemblies, setAssembl
       <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
           <h2 className="text-4xl font-black text-slate-900 tracking-tighter">Control de <span className="text-emerald-700">Asistencia</span></h2>
-          <p className="text-slate-500 font-bold uppercase tracking-widest text-[10px] mt-2">Registro Biométrico / Manual de Sesiones</p>
+          <p className="text-slate-500 font-bold uppercase tracking-widest text-[10px] mt-2">Registro de Sesiones {config.tradeName}</p>
         </div>
         <div className="flex bg-white px-6 py-4 rounded-3xl shadow-sm border border-slate-100 items-center space-x-6">
            <div className="text-center">
@@ -146,8 +147,8 @@ const Attendance: React.FC<AttendanceProps> = ({ members, assemblies, setAssembl
                <h4 className="text-[10px] font-black uppercase tracking-widest text-emerald-400">Documentación Generada</h4>
                <p className="text-xs text-slate-300">El registro de asistencia para esta asamblea está cerrado. Puede imprimir el reporte oficial o el acta de la sesión.</p>
                <div className="flex space-x-2">
-                 <button onClick={() => printAttendanceReport(selectedAssembly, members, board)} className="flex-1 py-3 bg-white/10 hover:bg-white/20 rounded-xl font-bold text-[10px] uppercase tracking-widest transition">Reporte</button>
-                 <button onClick={() => printAssemblyMinutes(selectedAssembly, members, board)} className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 rounded-xl font-bold text-[10px] uppercase tracking-widest transition">Acta PDF</button>
+                 <button onClick={() => printAttendanceReport(selectedAssembly, members, board, config)} className="flex-1 py-3 bg-white/10 hover:bg-white/20 rounded-xl font-bold text-[10px] uppercase tracking-widest transition">Reporte</button>
+                 <button onClick={() => printAssemblyMinutes(selectedAssembly, members, board, config)} className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 rounded-xl font-bold text-[10px] uppercase tracking-widest transition">Acta PDF</button>
                </div>
             </div>
           )}

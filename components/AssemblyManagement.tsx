@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Assembly, AssemblyType, AssemblyStatus, Member, BoardPosition, User, BoardRole } from '../types';
+import { Assembly, AssemblyType, AssemblyStatus, Member, BoardPosition, User, BoardRole, CommitteeConfig } from '../types';
 import { printAssemblyMinutes } from '../services/printService';
 import { Icons } from '../constants';
 
@@ -10,9 +10,10 @@ interface AssemblyManagementProps {
   members: Member[];
   board: BoardPosition[];
   currentUser: User;
+  config: CommitteeConfig;
 }
 
-const AssemblyManagement: React.FC<AssemblyManagementProps> = ({ assemblies, setAssemblies, members, board, currentUser }) => {
+const AssemblyManagement: React.FC<AssemblyManagementProps> = ({ assemblies, setAssemblies, members, board, currentUser, config }) => {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState<Partial<Assembly>>({
@@ -59,7 +60,7 @@ const AssemblyManagement: React.FC<AssemblyManagementProps> = ({ assemblies, set
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
           <h2 className="text-4xl font-black text-slate-900 tracking-tighter">Gestión de <span className="text-emerald-700">Asambleas</span></h2>
-          <p className="text-slate-500 font-bold uppercase tracking-widest text-[10px] mt-2">Planificación y Toma de Decisiones</p>
+          <p className="text-slate-500 font-bold uppercase tracking-widest text-[10px] mt-2">Planificación y Toma de Decisiones {config.tradeName}</p>
         </div>
         {canEdit && (
           <button 
@@ -104,7 +105,7 @@ const AssemblyManagement: React.FC<AssemblyManagementProps> = ({ assemblies, set
                   </button>
                 )}
                 {assembly.status === AssemblyStatus.FINISHED && (
-                  <button onClick={() => printAssemblyMinutes(assembly, members, board)} className="px-4 py-2 bg-emerald-700 text-white text-[10px] font-black rounded-xl uppercase tracking-widest hover:bg-emerald-800 transition shadow-lg shadow-emerald-700/10">Acta PDF</button>
+                  <button onClick={() => printAssemblyMinutes(assembly, members, board, config)} className="px-4 py-2 bg-emerald-700 text-white text-[10px] font-black rounded-xl uppercase tracking-widest hover:bg-emerald-800 transition shadow-lg shadow-emerald-700/10">Acta PDF</button>
                 )}
               </div>
             </div>
@@ -124,7 +125,7 @@ const AssemblyManagement: React.FC<AssemblyManagementProps> = ({ assemblies, set
              <div className="bg-slate-900 p-10 text-white flex justify-between items-center">
               <div>
                 <h3 className="text-3xl font-black tracking-tighter">{editingId ? 'Editar Asamblea' : 'Agendar Asamblea'}</h3>
-                <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.3em] mt-2">Calendario Tierra Esperanza</p>
+                <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.3em] mt-2">Calendario {config.tradeName}</p>
               </div>
               <button onClick={closeForm} className="w-12 h-12 rounded-2xl bg-white/10 hover:bg-white/20 text-white flex items-center justify-center text-3xl font-light transition-all">&times;</button>
             </div>

@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { BoardPosition, BoardRole, Member, User, Person } from '../types';
+import { BoardPosition, BoardRole, Member, User, Person, CommitteeConfig } from '../types';
 import { formatRut } from '../services/utils';
 import { printBoardReport } from '../services/printService';
 import { Icons } from '../constants';
@@ -12,9 +12,10 @@ interface BoardManagementProps {
   setBoardPeriod: (period: string) => void;
   members: Member[];
   currentUser: User;
+  config: CommitteeConfig;
 }
 
-const BoardManagement: React.FC<BoardManagementProps> = ({ board, setBoard, boardPeriod, setBoardPeriod, members, currentUser }) => {
+const BoardManagement: React.FC<BoardManagementProps> = ({ board, setBoard, boardPeriod, setBoardPeriod, members, currentUser, config }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [tempBoard, setTempBoard] = useState<BoardPosition[]>(board);
   const [tempPeriod, setTempPeriod] = useState(boardPeriod);
@@ -48,11 +49,11 @@ const BoardManagement: React.FC<BoardManagementProps> = ({ board, setBoard, boar
       <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
           <h2 className="text-4xl font-black text-slate-900 tracking-tighter leading-none">Cuerpo <span className="text-emerald-700">Directivo</span></h2>
-          <p className="text-slate-500 font-bold uppercase tracking-widest text-[10px] mt-4">Autoridades Vigentes Tierra Esperanza</p>
+          <p className="text-slate-500 font-bold uppercase tracking-widest text-[10px] mt-4">Autoridades Vigentes {config.tradeName}</p>
         </div>
         {!isEditing ? (
           <div className="flex space-x-3">
-            <button onClick={() => printBoardReport(board, boardPeriod)} className="bg-white border-2 border-slate-200 text-slate-700 px-8 py-4 rounded-3xl font-black text-xs uppercase tracking-widest hover:bg-slate-50 transition shadow-sm">Generar Nómina</button>
+            <button onClick={() => printBoardReport(board, boardPeriod, config)} className="bg-white border-2 border-slate-200 text-slate-700 px-8 py-4 rounded-3xl font-black text-xs uppercase tracking-widest hover:bg-slate-50 transition shadow-sm">Generar Nómina</button>
             {canEdit && (
               <button onClick={() => setIsEditing(true)} className="bg-slate-900 text-white px-10 py-4 rounded-3xl font-black text-xs uppercase tracking-widest shadow-xl active:scale-95 transition">Modificar Directorio</button>
             )}
@@ -98,7 +99,7 @@ const BoardManagement: React.FC<BoardManagementProps> = ({ board, setBoard, boar
                 {isEditing ? (
                   <div className="space-y-4">
                     <input className="w-full px-5 py-3 border-2 border-slate-50 rounded-2xl font-black text-sm bg-slate-50/50 outline-none focus:border-emerald-600" placeholder="Nombre completo" value={pos.primary.name} onChange={e => handleUpdatePosition(pos.role, 'primary', 'name', e.target.value)}/>
-                    <input className="w-full px-5 py-3 border-2 border-slate-50 rounded-2xl font-mono text-xs bg-slate-50/50 outline-none focus:border-emerald-600" placeholder="RUT" value={pos.primary.rut} onChange={e => handleUpdatePosition(pos.role, 'primary', 'rut', e.target.value)}/>
+                    <input className="w-full px-5 py-3 border-2 border-slate-100 rounded-2xl font-mono text-xs bg-slate-50/50 outline-none focus:border-emerald-600" placeholder="RUT" value={pos.primary.rut} onChange={e => handleUpdatePosition(pos.role, 'primary', 'rut', e.target.value)}/>
                   </div>
                 ) : (
                   <div>
@@ -115,8 +116,8 @@ const BoardManagement: React.FC<BoardManagementProps> = ({ board, setBoard, boar
                 </div>
                 {isEditing ? (
                   <div className="space-y-4">
-                    <input className="w-full px-5 py-3 border-2 border-slate-50 rounded-2xl font-black text-sm bg-slate-50/50 outline-none focus:border-amber-600" placeholder="Nombre del suplente" value={pos.substitute.name} onChange={e => handleUpdatePosition(pos.role, 'substitute', 'name', e.target.value)}/>
-                    <input className="w-full px-5 py-3 border-2 border-slate-50 rounded-2xl font-mono text-xs bg-slate-50/50 outline-none focus:border-amber-600" placeholder="RUT" value={pos.substitute.rut} onChange={e => handleUpdatePosition(pos.role, 'substitute', 'rut', e.target.value)}/>
+                    <input className="w-full px-5 py-3 border-2 border-slate-100 rounded-2xl font-black text-sm bg-slate-50/50 outline-none focus:border-amber-600" placeholder="Nombre del suplente" value={pos.substitute.name} onChange={e => handleUpdatePosition(pos.role, 'substitute', 'name', e.target.value)}/>
+                    <input className="w-full px-5 py-3 border-2 border-slate-100 rounded-2xl font-mono text-xs bg-slate-50/50 outline-none focus:border-amber-600" placeholder="RUT" value={pos.substitute.rut} onChange={e => handleUpdatePosition(pos.role, 'substitute', 'rut', e.target.value)}/>
                   </div>
                 ) : (
                   <div>

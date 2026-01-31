@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Member, MemberStatus, FamilyMember, Assembly, Transaction, BoardPosition, User, BoardRole } from '../types';
+import { Member, MemberStatus, FamilyMember, Assembly, Transaction, BoardPosition, User, BoardRole, CommitteeConfig } from '../types';
 import { formatRut } from '../services/utils';
 import { Icons } from '../constants';
 import { printMemberFile } from '../services/printService';
@@ -14,6 +14,7 @@ interface MemberManagementProps {
   viewingMemberId: string | null;
   onClearViewingMember: () => void;
   currentUser: User;
+  config: CommitteeConfig;
 }
 
 const MemberManagement: React.FC<MemberManagementProps> = ({ 
@@ -24,7 +25,8 @@ const MemberManagement: React.FC<MemberManagementProps> = ({
   board,
   viewingMemberId, 
   onClearViewingMember,
-  currentUser
+  currentUser,
+  config
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<MemberStatus | 'ALL'>('ALL');
@@ -142,7 +144,7 @@ const MemberManagement: React.FC<MemberManagementProps> = ({
 
   const handlePrint = () => {
     if (selectedMember && selectedMember.id) {
-      printMemberFile(selectedMember as Member, transactions, assemblies, board);
+      printMemberFile(selectedMember as Member, transactions, assemblies, board, config);
     }
   };
 
@@ -151,7 +153,7 @@ const MemberManagement: React.FC<MemberManagementProps> = ({
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
           <h2 className="text-3xl font-black text-slate-900 tracking-tight">Censo de Socios</h2>
-          <p className="text-slate-500 font-bold uppercase tracking-widest text-[10px] mt-1">Gestión administrativa Tierra Esperanza</p>
+          <p className="text-slate-500 font-bold uppercase tracking-widest text-[10px] mt-1">Gestión administrativa {config.tradeName}</p>
         </div>
         {canEdit && (
           <button onClick={openNew} className="bg-emerald-700 hover:bg-emerald-800 text-white px-8 py-4 rounded-3xl font-black transition-all shadow-xl shadow-emerald-900/20 active:scale-95 flex items-center justify-center uppercase text-xs tracking-widest">
@@ -231,7 +233,7 @@ const MemberManagement: React.FC<MemberManagementProps> = ({
             <div className="bg-slate-900 p-12 text-white flex justify-between items-center">
               <div>
                 <h3 className="text-3xl font-black tracking-tighter">{selectedMember.id ? 'Editar Expediente' : 'Nueva Incorporación'}</h3>
-                <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.3em] mt-2">Registros de Comunidad Tierra Esperanza</p>
+                <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.3em] mt-2">Registros de Comunidad {config.tradeName}</p>
               </div>
               <button onClick={closeModal} className="w-12 h-12 rounded-2xl bg-white/10 hover:bg-white/20 text-white flex items-center justify-center text-3xl font-light transition-all">&times;</button>
             </div>
