@@ -1,0 +1,14 @@
+
+[build]
+  # Forzamos el comando de construcción para evitar el error 'remix command not found'
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "22.22.0"
+
+[[redirects]]
+  # Soporte para Single Page Application (SPA)
+  from = "/*"
+  to = "/index.html"
+  status = 200
