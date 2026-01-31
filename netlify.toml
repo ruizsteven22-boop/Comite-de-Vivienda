@@ -1,6 +1,6 @@
 
 [build]
-  # Forzamos el comando de construcción para evitar el error 'remix command not found'
+  # Forzamos el uso de npm scripts para que se utilicen los binarios locales de node_modules
   command = "npm run build"
   publish = "dist"
 
@@ -8,7 +8,7 @@
   NODE_VERSION = "22.22.0"
 
 [[redirects]]
-  # Soporte para Single Page Application (SPA)
+  # Soporte vital para Single Page Application (SPA) en Netlify
   from = "/*"
   to = "/index.html"
   status = 200
