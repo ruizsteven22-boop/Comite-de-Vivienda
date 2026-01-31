@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Member, Transaction, BoardPosition, Assembly, User, BoardRole, MemberStatus } from './types';
+import { Member, Transaction, BoardPosition, Assembly, User, BoardRole, MemberStatus, CommitteeConfig } from './types';
 import { Icons } from './constants';
 import Dashboard from './components/Dashboard';
 import MemberManagement from './components/MemberManagement';
@@ -9,6 +9,7 @@ import BoardManagement from './components/BoardManagement';
 import Attendance from './components/Attendance';
 import AssemblyManagement from './components/AssemblyManagement';
 import SupportManagement from './components/SupportManagement';
+import SettingsManagement from './components/SettingsManagement';
 import Login from './components/Login';
 
 const INITIAL_USERS: User[] = [
@@ -18,6 +19,16 @@ const INITIAL_USERS: User[] = [
   { id: '4', username: 'teso', password: 'te2024', role: BoardRole.TREASURER, name: 'Tesorero' },
   { id: '5', username: 'secre', password: 'te2024', role: BoardRole.SECRETARY, name: 'Secretario' }
 ];
+
+const INITIAL_CONFIG: CommitteeConfig = {
+  legalName: 'Comité de Vivienda Tierra Esperanza',
+  tradeName: 'Tierra Esperanza',
+  rut: '76.123.456-7',
+  email: 'contacto@tierraesperanza.cl',
+  phone: '+56 9 1234 5678',
+  municipalRes: 'Res. Exenta N° 456/2023',
+  legalRes: 'Pers. Jurídica N° 7890-S'
+};
 
 const EMPTY_PERSON = { name: '', rut: '', phone: '' };
 
@@ -41,13 +52,18 @@ const INITIAL_BOARD: BoardPosition[] = [
 
 const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [view, setView] = useState<'dashboard' | 'members' | 'treasury' | 'board' | 'attendance' | 'assemblies' | 'support'>('dashboard');
+  const [view, setView] = useState<'dashboard' | 'members' | 'treasury' | 'board' | 'attendance' | 'assemblies' | 'support' | 'settings'>('dashboard');
   const [isInitialized, setIsInitialized] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   
   const [users, setUsers] = useState<User[]>(() => {
     const saved = localStorage.getItem('te_users');
     return saved ? JSON.parse(saved) : INITIAL_USERS;
+  });
+
+  const [config, setConfig] = useState<CommitteeConfig>(() => {
+    const saved = localStorage.getItem('te_config');
+    return saved ? JSON.parse(saved) : INITIAL_CONFIG;
   });
 
   const [members, setMembers] = useState<Member[]>(() => {
@@ -102,6 +118,7 @@ const App: React.FC = () => {
   }, []);
 
   useEffect(() => { if (isInitialized) localStorage.setItem('te_users', JSON.stringify(users)); }, [users, isInitialized]);
+  useEffect(() => { if (isInitialized) localStorage.setItem('te_config', JSON.stringify(config)); }, [config, isInitialized]);
   useEffect(() => { if (isInitialized) localStorage.setItem('te_members', JSON.stringify(members)); }, [members, isInitialized]);
   useEffect(() => { if (isInitialized) localStorage.setItem('te_transactions', JSON.stringify(transactions)); }, [transactions, isInitialized]);
   useEffect(() => { if (isInitialized) localStorage.setItem('te_board', JSON.stringify(board)); }, [board, isInitialized]);
@@ -153,7 +170,8 @@ const App: React.FC = () => {
   ];
 
   if (isSupport) {
-    menuItems.push({ id: 'support', icon: <Icons.Settings />, label: 'Gestión de Accesos' });
+    menuItems.push({ id: 'settings', icon: <Icons.Briefcase />, label: 'Parámetros Comité' });
+    menuItems.push({ id: 'support', icon: <Icons.Settings />, label: 'Accesos Sistema' });
   }
 
   return (
@@ -161,7 +179,9 @@ const App: React.FC = () => {
       {/* Sidebar Responsive */}
       <aside className={`fixed md:relative inset-y-0 left-0 w-72 md:w-80 bg-slate-900 text-white flex flex-col z-50 transition-transform duration-300 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
         <div className="p-10">
-          <h1 className="text-2xl font-black italic tracking-tighter">Tierra <span className="text-emerald-400">Esperanza</span></h1>
+          <h1 className="text-2xl font-black italic tracking-tighter">
+            {config.tradeName.split(' ')[0]} <span className="text-emerald-400">{config.tradeName.split(' ').slice(1).join(' ')}</span>
+          </h1>
           <p className="text-[10px] uppercase font-black tracking-widest text-slate-500 mt-2">Portal de Gestión</p>
         </div>
 
@@ -189,20 +209,21 @@ const App: React.FC = () => {
       {/* Main Content */}
       <main className="flex-1 overflow-y-auto">
         <header className="md:hidden p-4 bg-slate-900 text-white flex justify-between items-center sticky top-0 z-[60]">
-          <h2 className="font-black italic">Tierra Esperanza</h2>
+          <h2 className="font-black italic">{config.tradeName}</h2>
           <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 bg-emerald-600 rounded-lg">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16m-7 6h7" /></svg>
           </button>
         </header>
 
         <div className="p-6 md:p-12 max-w-7xl mx-auto">
-          {view === 'dashboard' && <Dashboard members={members} transactions={transactions} assemblies={assemblies} currentUser={currentUser} />}
+          {view === 'dashboard' && <Dashboard members={members} transactions={transactions} assemblies={assemblies} currentUser={currentUser} config={config} />}
           {view === 'members' && <MemberManagement members={members} setMembers={setMembers} assemblies={assemblies} transactions={transactions} board={board} viewingMemberId={viewingMemberId} onClearViewingMember={() => setViewingMemberId(null)} currentUser={currentUser} />}
           {view === 'treasury' && <Treasury transactions={transactions} setTransactions={setTransactions} members={members} onViewMember={handleViewMember} currentUser={currentUser} />}
           {view === 'board' && <BoardManagement board={board} setBoard={setBoard} boardPeriod={boardPeriod} setBoardPeriod={setBoardPeriod} members={members} currentUser={currentUser} />}
           {view === 'assemblies' && <AssemblyManagement assemblies={assemblies} setAssemblies={setAssemblies} members={members} board={board} currentUser={currentUser} />}
           {view === 'attendance' && <Attendance members={members} assemblies={assemblies} setAssemblies={setAssemblies} board={board} currentUser={currentUser} />}
           {view === 'support' && isSupport && <SupportManagement users={users} setUsers={setUsers} />}
+          {view === 'settings' && isSupport && <SettingsManagement config={config} setConfig={setConfig} />}
         </div>
       </main>
     </div>

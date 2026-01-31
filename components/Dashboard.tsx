@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Member, Transaction, Assembly, TransactionType, User, SystemRole, BoardRole } from '../types';
+import { Member, Transaction, Assembly, TransactionType, User, SystemRole, BoardRole, CommitteeConfig } from '../types';
 import { getFinancialSummary } from '../services/geminiService';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
@@ -9,9 +9,10 @@ interface DashboardProps {
   transactions: Transaction[];
   assemblies: Assembly[];
   currentUser: User;
+  config: CommitteeConfig;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ members, transactions, assemblies, currentUser }) => {
+const Dashboard: React.FC<DashboardProps> = ({ members, transactions, assemblies, currentUser, config }) => {
   const [aiSummary, setAiSummary] = useState<string>('Analizando datos del comité...');
 
   const isTesoOrAdmin = currentUser.role === BoardRole.TREASURER || 
@@ -33,7 +34,7 @@ const Dashboard: React.FC<DashboardProps> = ({ members, transactions, assemblies
     const fetchSummary = async () => {
       // Solo el tesorero o admin reciben el análisis financiero de IA
       if (!isTesoOrAdmin) {
-        setAiSummary(`Bienvenido(a) ${currentUser.name}. El sistema está operativo y listo para gestionar las asambleas y socios del comité Tierra Esperanza.`);
+        setAiSummary(`Bienvenido(a) ${currentUser.name}. El sistema está operativo y listo para gestionar las asambleas y socios del comité ${config.tradeName}.`);
         return;
       }
 
@@ -45,7 +46,7 @@ const Dashboard: React.FC<DashboardProps> = ({ members, transactions, assemblies
       }
     };
     fetchSummary();
-  }, [transactions, currentUser, isTesoOrAdmin]);
+  }, [transactions, currentUser, isTesoOrAdmin, config.tradeName]);
 
   const chartData = [
     { name: 'Ingresos', value: totalIncome },
@@ -62,7 +63,7 @@ const Dashboard: React.FC<DashboardProps> = ({ members, transactions, assemblies
       <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
           <h2 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tighter leading-tight">
-            Gestión <span className="text-emerald-700">Tierra Esperanza</span>
+            Gestión <span className="text-emerald-700">{config.tradeName}</span>
           </h2>
           <p className="text-slate-500 mt-2 font-bold uppercase tracking-widest text-[10px]">Rol: {currentUser.role} • Sesión Activa</p>
         </div>

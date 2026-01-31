@@ -35,6 +35,16 @@ export enum AssemblyStatus {
   FINISHED = 'Finalizada'
 }
 
+export interface CommitteeConfig {
+  legalName: string;
+  tradeName: string;
+  rut: string;
+  email: string;
+  phone: string;
+  municipalRes: string;
+  legalRes: string;
+}
+
 export interface FamilyMember {
   id: string;
   name: string;
