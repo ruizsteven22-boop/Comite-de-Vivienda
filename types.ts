@@ -61,6 +61,8 @@ export interface Member {
   photoUrl?: string;
   email: string;
   address: string;
+  comuna: string;
+  region: string;
   phone: string;
   familyMembers: FamilyMember[];
 }

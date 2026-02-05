@@ -4,6 +4,7 @@ import { Member, MemberStatus, FamilyMember, Assembly, Transaction, BoardPositio
 import { formatRut } from '../services/utils';
 import { Icons } from '../constants';
 import { printMemberFile } from '../services/printService';
+import { CHILE_REGIONS } from '../services/chileData';
 
 interface MemberManagementProps {
   members: Member[];
@@ -108,6 +109,8 @@ const MemberManagement: React.FC<MemberManagementProps> = ({
       status: MemberStatus.ACTIVE,
       email: '',
       address: '',
+      comuna: '',
+      region: '',
       phone: '',
       familyMembers: [],
       photoUrl: ''
@@ -147,6 +150,9 @@ const MemberManagement: React.FC<MemberManagementProps> = ({
       printMemberFile(selectedMember as Member, transactions, assemblies, board, config);
     }
   };
+
+  const currentRegion = CHILE_REGIONS.find(r => r.name === selectedMember?.region);
+  const communes = currentRegion ? currentRegion.communes : [];
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
@@ -276,7 +282,45 @@ const MemberManagement: React.FC<MemberManagementProps> = ({
                 </div>
               </div>
 
-              {/* Sección Núcleo Familiar */}
+              <div className="pt-10 border-t border-slate-100 space-y-8">
+                 <h4 className="text-base font-black text-slate-900 uppercase tracking-widest">Contacto y Localización</h4>
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="md:col-span-2">
+                       <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-2">Correo Electrónico</label>
+                       <input type="email" className="w-full px-8 py-5 border-2 border-slate-100 rounded-[2rem] focus:border-emerald-600 outline-none transition font-black text-slate-900 bg-slate-50/50" value={selectedMember.email} onChange={e => setSelectedMember({...selectedMember, email: e.target.value})} placeholder="correo@ejemplo.com"/>
+                    </div>
+                    <div className="md:col-span-2">
+                       <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-2">Dirección Particular</label>
+                       <input className="w-full px-8 py-5 border-2 border-slate-100 rounded-[2rem] focus:border-emerald-600 outline-none transition font-black text-slate-900 bg-slate-50/50" value={selectedMember.address} onChange={e => setSelectedMember({...selectedMember, address: e.target.value})} placeholder="Ej: Calle Los Alerces #123"/>
+                    </div>
+                    <div>
+                       <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-2">Región</label>
+                       <select 
+                        required
+                        className="w-full px-8 py-5 border-2 border-slate-100 rounded-[2rem] focus:border-emerald-600 outline-none transition font-black text-slate-900 bg-slate-50/50 text-xs uppercase" 
+                        value={selectedMember.region || ''} 
+                        onChange={e => setSelectedMember({...selectedMember, region: e.target.value, comuna: ''})}
+                       >
+                         <option value="">Seleccione Región...</option>
+                         {CHILE_REGIONS.map(r => <option key={r.name} value={r.name}>{r.name}</option>)}
+                       </select>
+                    </div>
+                    <div>
+                       <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-2">Comuna</label>
+                       <select 
+                        required
+                        disabled={!selectedMember.region}
+                        className="w-full px-8 py-5 border-2 border-slate-100 rounded-[2rem] focus:border-emerald-600 outline-none transition font-black text-slate-900 bg-slate-50/50 text-xs uppercase disabled:opacity-50" 
+                        value={selectedMember.comuna || ''} 
+                        onChange={e => setSelectedMember({...selectedMember, comuna: e.target.value})}
+                       >
+                         <option value="">{selectedMember.region ? 'Seleccione Comuna...' : 'Primero elija región'}</option>
+                         {communes.map(c => <option key={c} value={c}>{c}</option>)}
+                       </select>
+                    </div>
+                 </div>
+              </div>
+
               <div className="pt-10 border-t border-slate-100">
                  <div className="flex justify-between items-center mb-8">
                     <h4 className="text-base font-black text-slate-900 uppercase tracking-widest">Núcleo Familiar Vinculado</h4>
@@ -311,7 +355,6 @@ const MemberManagement: React.FC<MemberManagementProps> = ({
               </div>
             </form>
 
-            {/* Sub-modal para Familia */}
             {showFamilyForm && (
               <div className="absolute inset-0 bg-white/95 backdrop-blur-md z-[110] flex items-center justify-center p-12 animate-in fade-in zoom-in-95">
                 <div className="w-full max-w-md bg-white rounded-[3rem] shadow-2xl border border-slate-100 p-12 space-y-10">
@@ -352,7 +395,6 @@ const MemberManagement: React.FC<MemberManagementProps> = ({
         </div>
       )}
 
-      {/* Modal de Vista (Ficha) */}
       {isViewing && selectedMember && (
         <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-xl flex items-center justify-center z-[100] p-6">
           <div className="bg-white w-full max-w-4xl rounded-[4rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 flex flex-col max-h-[90vh]">
@@ -369,17 +411,15 @@ const MemberManagement: React.FC<MemberManagementProps> = ({
 
             <div className="flex-1 overflow-y-auto p-12">
                <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                  <div className="space-y-6">
+                  <div className="space-y-8">
                     <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2">Información de Perfil</h4>
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                       <p className="text-slate-500 font-bold uppercase text-[9px]">RUT</p>
-                       <p className="font-black text-slate-800">{selectedMember.rut}</p>
-                       <p className="text-slate-500 font-bold uppercase text-[9px]">Ingreso</p>
-                       <p className="font-black text-slate-800">{selectedMember.joinDate}</p>
-                       <p className="text-slate-500 font-bold uppercase text-[9px]">Estado</p>
-                       <span className="font-black text-emerald-600">{selectedMember.status}</span>
-                       <p className="text-slate-500 font-bold uppercase text-[9px]">Dirección</p>
-                       <p className="font-black text-slate-800">{selectedMember.address || 'No registrada'}</p>
+                    <div className="grid grid-cols-2 gap-y-4 gap-x-6 text-sm">
+                       <div><p className="text-slate-500 font-bold uppercase text-[9px] mb-1">RUT</p><p className="font-black text-slate-800">{selectedMember.rut}</p></div>
+                       <div><p className="text-slate-500 font-bold uppercase text-[9px] mb-1">Ingreso</p><p className="font-black text-slate-800">{selectedMember.joinDate}</p></div>
+                       <div><p className="text-slate-500 font-bold uppercase text-[9px] mb-1">Estado</p><span className="font-black text-emerald-600">{selectedMember.status}</span></div>
+                       <div><p className="text-slate-500 font-bold uppercase text-[9px] mb-1">Teléfono</p><p className="font-black text-slate-800">{selectedMember.phone || 'N/A'}</p></div>
+                       <div className="col-span-2"><p className="text-slate-500 font-bold uppercase text-[9px] mb-1">Email</p><p className="font-black text-slate-800">{selectedMember.email || 'No registrado'}</p></div>
+                       <div className="col-span-2"><p className="text-slate-500 font-bold uppercase text-[9px] mb-1">Domicilio</p><p className="font-black text-slate-800 leading-tight">{selectedMember.address || 'Sin dirección'}{selectedMember.comuna ? `, ${selectedMember.comuna}` : ''}{selectedMember.region ? `, ${selectedMember.region}` : ''}</p></div>
                     </div>
                   </div>
 

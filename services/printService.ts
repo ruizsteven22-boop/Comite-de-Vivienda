@@ -13,10 +13,8 @@ export const printBoardReport = (board: BoardPosition[], period: string, config:
         <div style="font-size: 8pt; color: #64748b; font-weight: bold; margin-top: 4px;">RUT: ${pos.primary.rut || 'N/A'}</div>
       </td>
       <td>
-        <div style="padding: 6px 0;">
-          <div style="font-weight: bold; font-size: 10pt; color: #475569;">${pos.substitute.name || '---'}</div>
-          <div style="font-size: 8pt; color: #94a3b8; margin-top: 4px;">${pos.substitute.rut ? `RUT: ${pos.substitute.rut}` : ''}</div>
-        </div>
+        <div style="font-weight: bold; font-size: 10pt; color: #475569;">${pos.substitute.name || '---'}</div>
+        <div style="font-size: 8pt; color: #94a3b8; margin-top: 4px;">${pos.substitute.rut ? `RUT: ${pos.substitute.rut}` : ''}</div>
       </td>
     </tr>
   `).join('');
@@ -77,11 +75,7 @@ export const printBoardReport = (board: BoardPosition[], period: string, config:
 
 export const printMemberFile = (member: Member, transactions: Transaction[], assemblies: Assembly[], board: BoardPosition[], config: CommitteeConfig) => {
   const memberPayments = transactions.filter(t => t.memberId === member.id);
-  const memberAttendance = assemblies.map(a => ({
-    ...a,
-    present: a.attendees.includes(member.rut)
-  })).filter(a => a.status === 'Finalizada');
-
+  
   const president = board.find(b => b.role === BoardRole.PRESIDENT)?.primary.name || '____________________';
   const treasurer = board.find(b => b.role === BoardRole.TREASURER)?.primary.name || '____________________';
 
@@ -150,6 +144,8 @@ export const printMemberFile = (member: Member, transactions: Transaction[], ass
             <div><div class="info-label">RUT</div><div class="info-value">${member.rut}</div></div>
             <div><div class="info-label">Ingreso</div><div class="info-value">${member.joinDate}</div></div>
             <div><div class="info-label">Estado</div><div class="info-value">${member.status}</div></div>
+            <div style="grid-column: span 2"><div class="info-label">Email</div><div class="info-value">${member.email || 'N/A'}</div></div>
+            <div style="grid-column: span 2"><div class="info-label">Dirección</div><div class="info-value">${member.address || 'Sin registrar'} ${member.comuna ? ', ' + member.comuna : ''} ${member.region ? ', ' + member.region : ''}</div></div>
           </div>
         </div>
         <div class="section-title">I. Familia</div>
