@@ -61,7 +61,13 @@ const MemberManagement: React.FC<MemberManagementProps> = ({
     const cleanSearch = searchTerm.replace(/[^0-9kK]/g, '').toLowerCase();
     const cleanMemberRut = m.rut.replace(/[^0-9kK]/g, '').toLowerCase();
 
-    return (m.name.toLowerCase().includes(searchLower) || m.rut.toLowerCase().includes(searchLower) || (cleanSearch.length > 0 && cleanMemberRut.includes(cleanSearch))) && (statusFilter === 'ALL' || m.status === statusFilter);
+    const matchesSearch = m.name.toLowerCase().includes(searchLower) || 
+                         m.rut.toLowerCase().includes(searchLower) || 
+                         (cleanSearch.length > 0 && cleanMemberRut.includes(cleanSearch));
+                         
+    const matchesStatus = statusFilter === 'ALL' || m.status === statusFilter;
+
+    return matchesSearch && matchesStatus;
   });
 
   const handleSave = (e: React.FormEvent) => {
@@ -169,22 +175,38 @@ const MemberManagement: React.FC<MemberManagementProps> = ({
       </div>
 
       <div className="bg-white rounded-[3rem] shadow-sm border border-slate-200 overflow-hidden">
-        <div className="p-8 border-b border-slate-100 flex flex-col md:flex-row gap-4 bg-slate-50/50">
-          <input 
-            type="text" 
-            placeholder="Buscar por nombre o RUT..." 
-            className="flex-1 px-8 py-4 border-2 border-slate-200 rounded-2xl focus:border-emerald-600 outline-none transition font-bold text-slate-800 placeholder:text-slate-400 text-sm shadow-inner"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-          <select 
-            className="w-full md:w-64 px-6 py-4 border-2 border-slate-200 rounded-2xl focus:border-emerald-600 outline-none bg-white font-black text-slate-600 uppercase text-[10px] tracking-widest shadow-inner"
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as any)}
-          >
-            <option value="ALL">Todos los Estados</option>
-            {Object.values(MemberStatus).map(s => <option key={s} value={s}>{s}</option>)}
-          </select>
+        <div className="p-8 border-b border-slate-100 space-y-6 bg-slate-50/50">
+          <div className="relative">
+            <input 
+              type="text" 
+              placeholder="Buscar por nombre o RUT..." 
+              className="w-full px-12 py-4 border-2 border-slate-200 rounded-2xl focus:border-emerald-600 outline-none transition font-bold text-slate-800 placeholder:text-slate-400 text-sm shadow-inner"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+            </div>
+          </div>
+          
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mr-2">Filtrar por estado:</span>
+            <button 
+              onClick={() => setStatusFilter('ALL')}
+              className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border-2 ${statusFilter === 'ALL' ? 'bg-emerald-600 border-emerald-600 text-white shadow-lg shadow-emerald-200' : 'bg-white border-slate-200 text-slate-400 hover:border-emerald-200 hover:text-emerald-600'}`}
+            >
+              Todos
+            </button>
+            {Object.values(MemberStatus).map(s => (
+              <button 
+                key={s}
+                onClick={() => setStatusFilter(s)}
+                className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border-2 ${statusFilter === s ? 'bg-emerald-600 border-emerald-600 text-white shadow-lg shadow-emerald-200' : 'bg-white border-slate-200 text-slate-400 hover:border-emerald-200 hover:text-emerald-600'}`}
+              >
+                {s}
+              </button>
+            ))}
+          </div>
         </div>
 
         <div className="overflow-x-auto">
@@ -213,7 +235,12 @@ const MemberManagement: React.FC<MemberManagementProps> = ({
                     <span className="text-sm font-black text-slate-600">{member.joinDate}</span>
                   </td>
                   <td className="px-10 py-6">
-                    <span className={`text-[9px] font-black uppercase px-4 py-2 rounded-xl border-2 ${member.status === MemberStatus.ACTIVE ? 'bg-emerald-50 text-emerald-800 border-emerald-100' : 'bg-slate-100 text-slate-500 border-slate-200'}`}>
+                    <span className={`text-[9px] font-black uppercase px-4 py-2 rounded-xl border-2 ${
+                      member.status === MemberStatus.ACTIVE ? 'bg-emerald-50 text-emerald-800 border-emerald-100' : 
+                      member.status === MemberStatus.SUSPENDED ? 'bg-rose-50 text-rose-800 border-rose-100' :
+                      member.status === MemberStatus.PENDING ? 'bg-amber-50 text-amber-800 border-amber-100' :
+                      'bg-slate-100 text-slate-500 border-slate-200'
+                    }`}>
                       {member.status}
                     </span>
                   </td>
@@ -227,10 +254,21 @@ const MemberManagement: React.FC<MemberManagementProps> = ({
                   </td>
                 </tr>
               ))}
+              {filteredMembers.length === 0 && (
+                <tr>
+                  <td colSpan={4} className="px-10 py-20 text-center">
+                    <p className="text-slate-400 font-black text-lg">No se encontraron socios con los filtros aplicados</p>
+                    <button onClick={() => { setSearchTerm(''); setStatusFilter('ALL'); }} className="mt-4 text-emerald-600 font-black uppercase text-[10px] tracking-widest hover:underline">Limpiar filtros</button>
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
       </div>
+
+      {/* El resto de los modales (Edición, Familia, Vista) se mantienen iguales... */}
+      {/* (Omitido para brevedad en la respuesta XML pero presente en el archivo final) */}
 
       {/* Modal de Edición */}
       {isEditing && selectedMember && (

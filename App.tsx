@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect } from 'react';
-import { Member, Transaction, BoardPosition, Assembly, User, BoardRole, CommitteeConfig } from './types';
+import { Member, Transaction, BoardPosition, Assembly, User, BoardRole, CommitteeConfig, SystemRole } from './types';
 import { Icons } from './constants';
 import Dashboard from './components/Dashboard';
 import MemberManagement from './components/MemberManagement';
@@ -37,13 +38,26 @@ const INITIAL_BOARD: BoardPosition[] = [
   { role: BoardRole.TREASURER, primary: { name: 'Carlos Ruiz', rut: '18.901.234-5', phone: '+56955566677' }, substitute: { ...EMPTY_PERSON } }
 ];
 
+type ViewId = 'dashboard' | 'members' | 'treasury' | 'board' | 'attendance' | 'assemblies' | 'support' | 'settings';
+
+// Centralized permission configuration
+const PERMISSIONS: Record<ViewId, (SystemRole | 'ANY')[]> = {
+  dashboard: ['ANY'],
+  members: ['ANY'],
+  treasury: [BoardRole.TREASURER, BoardRole.PRESIDENT, 'SUPPORT', 'ADMINISTRATOR'],
+  board: [BoardRole.PRESIDENT, BoardRole.SECRETARY, 'SUPPORT', 'ADMINISTRATOR'],
+  assemblies: [BoardRole.PRESIDENT, BoardRole.SECRETARY, 'SUPPORT', 'ADMINISTRATOR'],
+  attendance: [BoardRole.PRESIDENT, BoardRole.SECRETARY, 'SUPPORT', 'ADMINISTRATOR'],
+  support: ['SUPPORT', 'ADMINISTRATOR'],
+  settings: ['SUPPORT', 'ADMINISTRATOR']
+};
+
 const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [view, setView] = useState<'dashboard' | 'members' | 'treasury' | 'board' | 'attendance' | 'assemblies' | 'support' | 'settings'>('dashboard');
+  const [view, setView] = useState<ViewId>('dashboard');
   const [isInitialized, setIsInitialized] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   
-  // States with safer LocalStorage loading
   const [users, setUsers] = useState<User[]>(() => {
     try {
       const saved = localStorage.getItem('te_users');
@@ -99,7 +113,6 @@ const App: React.FC = () => {
     setIsInitialized(true);
   }, []);
 
-  // Persistence Sync
   useEffect(() => { if (isInitialized) {
     localStorage.setItem('te_users', JSON.stringify(users));
     localStorage.setItem('te_config', JSON.stringify(config));
@@ -126,6 +139,12 @@ const App: React.FC = () => {
     setView('members');
   };
 
+  const hasPermission = (viewId: ViewId): boolean => {
+    if (!currentUser) return false;
+    const allowedRoles = PERMISSIONS[viewId];
+    return allowedRoles.includes('ANY') || allowedRoles.includes(currentUser.role);
+  };
+
   if (!isInitialized) return (
     <div className="min-h-screen bg-slate-900 flex items-center justify-center">
       <div className="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
@@ -137,24 +156,40 @@ const App: React.FC = () => {
   const isSupport = currentUser.role === 'SUPPORT' || currentUser.role === 'ADMINISTRATOR';
 
   const menuItems = [
-    { id: 'dashboard', icon: <Icons.Dashboard />, label: 'Inicio', roles: ['ANY'] },
-    { id: 'members', icon: <Icons.Users />, label: 'Socios', roles: ['ANY'] },
-    { id: 'treasury', icon: <Icons.Wallet />, label: 'Tesorería', roles: [BoardRole.TREASURER, BoardRole.PRESIDENT, 'SUPPORT', 'ADMINISTRATOR'] },
-    { id: 'board', icon: <Icons.Shield />, label: 'Directiva', roles: [BoardRole.PRESIDENT, BoardRole.SECRETARY, 'SUPPORT', 'ADMINISTRATOR'] },
-    { id: 'assemblies', icon: <Icons.Calendar />, label: 'Asambleas', roles: [BoardRole.PRESIDENT, BoardRole.SECRETARY, 'SUPPORT', 'ADMINISTRATOR'] },
-    { id: 'attendance', icon: <Icons.Clipboard />, label: 'Asistencia', roles: [BoardRole.PRESIDENT, BoardRole.SECRETARY, 'SUPPORT', 'ADMINISTRATOR'] },
+    { id: 'dashboard' as const, icon: <Icons.Dashboard />, label: 'Inicio' },
+    { id: 'members' as const, icon: <Icons.Users />, label: 'Socios' },
+    { id: 'treasury' as const, icon: <Icons.Wallet />, label: 'Tesorería' },
+    { id: 'board' as const, icon: <Icons.Shield />, label: 'Directiva' },
+    { id: 'assemblies' as const, icon: <Icons.Calendar />, label: 'Asambleas' },
+    { id: 'attendance' as const, icon: <Icons.Clipboard />, label: 'Asistencia' },
+    { id: 'settings' as const, icon: <Icons.Briefcase />, label: 'Configuración' },
+    { id: 'support' as const, icon: <Icons.Settings />, label: 'Usuarios' },
   ];
-
-  if (isSupport) {
-    menuItems.push({ id: 'settings', icon: <Icons.Briefcase />, label: 'Configuración', roles: ['SUPPORT', 'ADMINISTRATOR'] });
-    menuItems.push({ id: 'support', icon: <Icons.Settings />, label: 'Usuarios', roles: ['SUPPORT', 'ADMINISTRATOR'] });
-  }
 
   const tradeParts = config.tradeName.split(' ');
 
+  const RestrictedAccess = () => (
+    <div className="flex flex-col items-center justify-center py-32 text-center animate-in fade-in zoom-in-95 duration-500">
+      <div className="w-24 h-24 bg-rose-50 rounded-[2rem] flex items-center justify-center text-rose-500 mb-8 shadow-inner border-2 border-rose-100">
+        <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+        </svg>
+      </div>
+      <h3 className="text-3xl font-black text-slate-900 tracking-tight">Acceso Restringido</h3>
+      <p className="text-slate-500 font-bold max-w-md mx-auto mt-4 leading-relaxed">
+        Su rol actual de <span className="text-emerald-700 font-black">"{currentUser.role}"</span> no cuenta con los privilegios necesarios para visualizar este módulo.
+      </p>
+      <button 
+        onClick={() => setView('dashboard')}
+        className="mt-10 px-8 py-4 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-black transition shadow-xl"
+      >
+        Volver al Inicio
+      </button>
+    </div>
+  );
+
   return (
     <div className="flex h-screen overflow-hidden bg-[#F8FAFC]">
-      {/* Navigation Sidebar */}
       <aside className={`sidebar-glass fixed inset-y-0 left-0 z-50 w-72 transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="flex h-full flex-col">
           <div className="p-8">
@@ -167,13 +202,12 @@ const App: React.FC = () => {
 
           <nav className="flex-1 space-y-1 px-4 overflow-y-auto">
             {menuItems.map(item => {
-              const hasAccess = item.roles.includes('ANY') || item.roles.includes(currentUser.role as any) || isSupport;
-              if (!hasAccess) return null;
+              if (!hasPermission(item.id)) return null;
               
               return (
                 <button
                   key={item.id}
-                  onClick={() => { setView(item.id as any); setIsSidebarOpen(false); }}
+                  onClick={() => { setView(item.id); setIsSidebarOpen(false); }}
                   className={`group flex w-full items-center rounded-2xl px-6 py-4 text-sm font-bold transition-all ${view === item.id ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/40' : 'text-slate-400 hover:bg-white/5 hover:text-white'}`}
                 >
                   <span className={`mr-4 transition-colors ${view === item.id ? 'text-white' : 'text-slate-500 group-hover:text-emerald-400'}`}>
@@ -205,9 +239,7 @@ const App: React.FC = () => {
         </div>
       </aside>
 
-      {/* Main Container */}
       <div className="flex flex-1 flex-col overflow-hidden">
-        {/* Top Header Mobile */}
         <header className="flex h-16 items-center justify-between border-b border-slate-200 bg-white px-6 md:hidden">
           <div className="font-black italic text-slate-900 tracking-tight">{config.tradeName}</div>
           <button onClick={() => setIsSidebarOpen(true)} className="rounded-lg bg-slate-100 p-2 text-slate-600">
@@ -215,22 +247,26 @@ const App: React.FC = () => {
           </button>
         </header>
 
-        {/* Content Area */}
         <main className="flex-1 overflow-y-auto p-6 md:p-12 lg:p-16">
           <div className="mx-auto max-w-7xl page-transition">
-            {view === 'dashboard' && <Dashboard members={members} transactions={transactions} assemblies={assemblies} currentUser={currentUser} config={config} />}
-            {view === 'members' && <MemberManagement members={members} setMembers={setMembers} assemblies={assemblies} transactions={transactions} board={board} viewingMemberId={viewingMemberId} onClearViewingMember={() => setViewingMemberId(null)} currentUser={currentUser} config={config} />}
-            {view === 'treasury' && <Treasury transactions={transactions} setTransactions={setTransactions} members={members} onViewMember={handleViewMember} currentUser={currentUser} />}
-            {view === 'board' && <BoardManagement board={board} setBoard={setBoard} boardPeriod={boardPeriod} setBoardPeriod={setBoardPeriod} members={members} currentUser={currentUser} config={config} />}
-            {view === 'assemblies' && <AssemblyManagement assemblies={assemblies} setAssemblies={setAssemblies} members={members} board={board} currentUser={currentUser} config={config} />}
-            {view === 'attendance' && <Attendance members={members} assemblies={assemblies} setAssemblies={setAssemblies} board={board} currentUser={currentUser} config={config} />}
-            {view === 'support' && isSupport && <SupportManagement users={users} setUsers={setUsers} />}
-            {view === 'settings' && isSupport && <SettingsManagement config={config} setConfig={setConfig} />}
+            {!hasPermission(view) ? (
+              <RestrictedAccess />
+            ) : (
+              <>
+                {view === 'dashboard' && <Dashboard members={members} transactions={transactions} assemblies={assemblies} currentUser={currentUser} config={config} />}
+                {view === 'members' && <MemberManagement members={members} setMembers={setMembers} assemblies={assemblies} transactions={transactions} board={board} viewingMemberId={viewingMemberId} onClearViewingMember={() => setViewingMemberId(null)} currentUser={currentUser} config={config} />}
+                {view === 'treasury' && <Treasury transactions={transactions} setTransactions={setTransactions} members={members} onViewMember={handleViewMember} currentUser={currentUser} />}
+                {view === 'board' && <BoardManagement board={board} setBoard={setBoard} boardPeriod={boardPeriod} setBoardPeriod={setBoardPeriod} members={members} currentUser={currentUser} config={config} />}
+                {view === 'assemblies' && <AssemblyManagement assemblies={assemblies} setAssemblies={setAssemblies} members={members} board={board} currentUser={currentUser} config={config} />}
+                {view === 'attendance' && <Attendance members={members} assemblies={assemblies} setAssemblies={setAssemblies} board={board} currentUser={currentUser} config={config} />}
+                {view === 'support' && <SupportManagement users={users} setUsers={setUsers} />}
+                {view === 'settings' && <SettingsManagement config={config} setConfig={setConfig} />}
+              </>
+            )}
           </div>
         </main>
       </div>
 
-      {/* Mobile Overlay */}
       {isSidebarOpen && (
         <div onClick={() => setIsSidebarOpen(false)} className="fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-sm md:hidden"></div>
       )}
