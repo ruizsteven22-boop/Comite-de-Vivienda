@@ -1,7 +1,7 @@
 {
-  "name": "Tierra Esperanza - Gestión de Comité",
-  "description": "Plataforma integral para la administración de comités de vivienda, incluyendo gestión de socios, tesorería, directiva y control de asistencia.",
   "requestFramePermissions": [
     "camera"
-  ]
+  ],
+  "name": "",
+  "description": ""
 }
