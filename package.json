@@ -1,3 +1,4 @@
+
 {
   "name": "tierra-esperanza-gestion",
   "version": "1.2.0",
@@ -6,6 +7,7 @@
   "type": "module",
   "dependencies": {
     "@google/genai": "^1.34.0",
+    "express": "^4.19.2",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
     "recharts": "^2.15.0"
@@ -18,6 +20,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "start": "node server.js"
   }
 }

@@ -1,7 +1,7 @@
+
 import React, { useState, useEffect } from 'react';
 import { Assembly, Member, AssemblyStatus, AssemblyType, BoardPosition, BoardRole, User, CommitteeConfig } from '../types';
 import { Icons } from '../constants';
-import { generateAssemblyReminderText, generateMassNotificationDraft } from '../services/geminiService';
 import { printAssemblyMinutes, printAttendanceReport } from '../services/printService';
 import { formatRut } from '../services/utils';
 
@@ -63,8 +63,6 @@ const Attendance: React.FC<AttendanceProps> = ({ members, assemblies, setAssembl
   };
 
   const quorum = selectedAssembly ? Math.round((selectedAssembly.attendees.length / members.length) * 100) : 0;
-
-  // Lógica para determinar qué mostrar en la lista de la derecha
   const isFinished = selectedAssembly?.status === AssemblyStatus.FINISHED;
   
   const attendanceData = members
