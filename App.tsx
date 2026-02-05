@@ -40,17 +40,72 @@ const INITIAL_BOARD: BoardPosition[] = [
 
 type ViewId = 'dashboard' | 'members' | 'treasury' | 'board' | 'attendance' | 'assemblies' | 'support' | 'settings';
 
-// Centralized permission configuration
-const PERMISSIONS: Record<ViewId, (SystemRole | 'ANY')[]> = {
-  dashboard: ['ANY'],
-  members: ['ANY'],
-  treasury: [BoardRole.TREASURER, BoardRole.PRESIDENT, 'SUPPORT', 'ADMINISTRATOR'],
-  board: [BoardRole.PRESIDENT, BoardRole.SECRETARY, 'SUPPORT', 'ADMINISTRATOR'],
-  assemblies: [BoardRole.PRESIDENT, BoardRole.SECRETARY, 'SUPPORT', 'ADMINISTRATOR'],
-  attendance: [BoardRole.PRESIDENT, BoardRole.SECRETARY, 'SUPPORT', 'ADMINISTRATOR'],
-  support: ['SUPPORT', 'ADMINISTRATOR'],
-  settings: ['SUPPORT', 'ADMINISTRATOR']
-};
+interface ViewMetadata {
+  id: ViewId;
+  label: string;
+  icon: React.ReactNode;
+  allowedRoles: (SystemRole | 'ANY')[];
+  description: string;
+}
+
+const VIEWS: ViewMetadata[] = [
+  { 
+    id: 'dashboard', 
+    label: 'Inicio', 
+    icon: <Icons.Dashboard />, 
+    allowedRoles: ['ANY'], 
+    description: 'Resumen general del comité.' 
+  },
+  { 
+    id: 'members', 
+    label: 'Socios', 
+    icon: <Icons.Users />, 
+    allowedRoles: ['ANY'], 
+    description: 'Registro oficial de socios y familias.' 
+  },
+  { 
+    id: 'treasury', 
+    label: 'Tesorería', 
+    icon: <Icons.Wallet />, 
+    allowedRoles: [BoardRole.TREASURER, BoardRole.PRESIDENT, 'SUPPORT', 'ADMINISTRATOR'],
+    description: 'Gestión contable, ingresos y egresos.'
+  },
+  { 
+    id: 'board', 
+    label: 'Directiva', 
+    icon: <Icons.Shield />, 
+    allowedRoles: [BoardRole.PRESIDENT, BoardRole.SECRETARY, 'SUPPORT', 'ADMINISTRATOR'],
+    description: 'Nómina oficial de autoridades.'
+  },
+  { 
+    id: 'assemblies', 
+    label: 'Asambleas', 
+    icon: <Icons.Calendar />, 
+    allowedRoles: [BoardRole.PRESIDENT, BoardRole.SECRETARY, 'SUPPORT', 'ADMINISTRATOR'],
+    description: 'Planificación y actas de sesiones.'
+  },
+  { 
+    id: 'attendance', 
+    label: 'Asistencia', 
+    icon: <Icons.Clipboard />, 
+    allowedRoles: [BoardRole.PRESIDENT, BoardRole.SECRETARY, 'SUPPORT', 'ADMINISTRATOR'],
+    description: 'Control de quórum y participación.'
+  },
+  { 
+    id: 'settings', 
+    label: 'Configuración', 
+    icon: <Icons.Briefcase />, 
+    allowedRoles: ['SUPPORT', 'ADMINISTRATOR'],
+    description: 'Parámetros legales e institucionales.'
+  },
+  { 
+    id: 'support', 
+    label: 'Usuarios', 
+    icon: <Icons.Settings />, 
+    allowedRoles: ['SUPPORT', 'ADMINISTRATOR'],
+    description: 'Control de accesos y credenciales.'
+  },
+];
 
 const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -139,10 +194,11 @@ const App: React.FC = () => {
     setView('members');
   };
 
-  const hasPermission = (viewId: ViewId): boolean => {
+  const checkAccess = (viewId: ViewId): boolean => {
     if (!currentUser) return false;
-    const allowedRoles = PERMISSIONS[viewId];
-    return allowedRoles.includes('ANY') || allowedRoles.includes(currentUser.role);
+    const viewMetadata = VIEWS.find(v => v.id === viewId);
+    if (!viewMetadata) return false;
+    return viewMetadata.allowedRoles.includes('ANY') || viewMetadata.allowedRoles.includes(currentUser.role);
   };
 
   if (!isInitialized) return (
@@ -153,40 +209,40 @@ const App: React.FC = () => {
 
   if (!currentUser) return <Login users={users} onLogin={handleLogin} />;
 
-  const isSupport = currentUser.role === 'SUPPORT' || currentUser.role === 'ADMINISTRATOR';
-
-  const menuItems = [
-    { id: 'dashboard' as const, icon: <Icons.Dashboard />, label: 'Inicio' },
-    { id: 'members' as const, icon: <Icons.Users />, label: 'Socios' },
-    { id: 'treasury' as const, icon: <Icons.Wallet />, label: 'Tesorería' },
-    { id: 'board' as const, icon: <Icons.Shield />, label: 'Directiva' },
-    { id: 'assemblies' as const, icon: <Icons.Calendar />, label: 'Asambleas' },
-    { id: 'attendance' as const, icon: <Icons.Clipboard />, label: 'Asistencia' },
-    { id: 'settings' as const, icon: <Icons.Briefcase />, label: 'Configuración' },
-    { id: 'support' as const, icon: <Icons.Settings />, label: 'Usuarios' },
-  ];
+  const RestrictedAccess = ({ targetView }: { targetView: ViewId }) => {
+    const metadata = VIEWS.find(v => v.id === targetView);
+    return (
+      <div className="flex flex-col items-center justify-center py-32 text-center animate-in fade-in zoom-in-95 duration-500">
+        <div className="w-24 h-24 bg-rose-50 rounded-[2.5rem] flex items-center justify-center text-rose-500 mb-8 shadow-inner border-2 border-rose-100">
+          <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+          </svg>
+        </div>
+        <h3 className="text-3xl font-black text-slate-900 tracking-tight">Acceso Restringido</h3>
+        <p className="text-slate-500 font-bold max-w-md mx-auto mt-4 leading-relaxed">
+          Su rol de <span className="text-rose-600 font-black">"{currentUser.role}"</span> no cuenta con los privilegios necesarios para el módulo de <span className="text-slate-900 font-black">{metadata?.label}</span>.
+        </p>
+        <div className="mt-8 p-6 bg-slate-50 rounded-2xl border border-slate-100 max-w-sm">
+          <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Roles Autorizados</p>
+          <div className="flex flex-wrap justify-center gap-2">
+            {metadata?.allowedRoles.map(role => (
+              <span key={role} className="px-3 py-1 bg-white border border-slate-200 rounded-lg text-[9px] font-black text-slate-600 uppercase">
+                {role}
+              </span>
+            ))}
+          </div>
+        </div>
+        <button 
+          onClick={() => setView('dashboard')}
+          className="mt-12 px-8 py-4 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-black transition shadow-xl active:scale-95"
+        >
+          Volver al Inicio
+        </button>
+      </div>
+    );
+  };
 
   const tradeParts = config.tradeName.split(' ');
-
-  const RestrictedAccess = () => (
-    <div className="flex flex-col items-center justify-center py-32 text-center animate-in fade-in zoom-in-95 duration-500">
-      <div className="w-24 h-24 bg-rose-50 rounded-[2rem] flex items-center justify-center text-rose-500 mb-8 shadow-inner border-2 border-rose-100">
-        <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-        </svg>
-      </div>
-      <h3 className="text-3xl font-black text-slate-900 tracking-tight">Acceso Restringido</h3>
-      <p className="text-slate-500 font-bold max-w-md mx-auto mt-4 leading-relaxed">
-        Su rol actual de <span className="text-emerald-700 font-black">"{currentUser.role}"</span> no cuenta con los privilegios necesarios para visualizar este módulo.
-      </p>
-      <button 
-        onClick={() => setView('dashboard')}
-        className="mt-10 px-8 py-4 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-black transition shadow-xl"
-      >
-        Volver al Inicio
-      </button>
-    </div>
-  );
 
   return (
     <div className="flex h-screen overflow-hidden bg-[#F8FAFC]">
@@ -201,8 +257,9 @@ const App: React.FC = () => {
           </div>
 
           <nav className="flex-1 space-y-1 px-4 overflow-y-auto">
-            {menuItems.map(item => {
-              if (!hasPermission(item.id)) return null;
+            {VIEWS.map(item => {
+              const hasAccess = checkAccess(item.id);
+              if (!hasAccess) return null; // We hide what they can't access in the sidebar
               
               return (
                 <button
@@ -221,19 +278,22 @@ const App: React.FC = () => {
 
           <div className="p-6 bg-slate-950/50 mt-auto border-t border-white/5">
             <div className="flex items-center space-x-3 mb-6">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-600 font-black text-white shadow-md">
-                {currentUser.name.charAt(0)}
+              <div className="relative">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-700 font-black text-white shadow-lg">
+                  {currentUser.name.charAt(0)}
+                </div>
+                <div className="absolute -bottom-1 -right-1 h-4 w-4 rounded-full bg-emerald-500 border-2 border-slate-900 animate-pulse"></div>
               </div>
               <div className="overflow-hidden">
                 <p className="truncate text-sm font-black text-white">{currentUser.name}</p>
-                <p className="text-[9px] font-black uppercase tracking-widest text-emerald-500">{currentUser.role}</p>
+                <p className="text-[9px] font-black uppercase tracking-widest text-emerald-500/80">{currentUser.role}</p>
               </div>
             </div>
             <button
               onClick={handleLogout}
               className="flex w-full items-center justify-center rounded-xl bg-rose-500/10 py-3 text-xs font-black uppercase tracking-widest text-rose-400 transition-all hover:bg-rose-500 hover:text-white"
             >
-              <span className="mr-2"><Icons.Logout /></span> Salir
+              <span className="mr-2"><Icons.Logout /></span> Cerrar Sesión
             </button>
           </div>
         </div>
@@ -249,8 +309,8 @@ const App: React.FC = () => {
 
         <main className="flex-1 overflow-y-auto p-6 md:p-12 lg:p-16">
           <div className="mx-auto max-w-7xl page-transition">
-            {!hasPermission(view) ? (
-              <RestrictedAccess />
+            {!checkAccess(view) ? (
+              <RestrictedAccess targetView={view} />
             ) : (
               <>
                 {view === 'dashboard' && <Dashboard members={members} transactions={transactions} assemblies={assemblies} currentUser={currentUser} config={config} />}
