@@ -33,7 +33,6 @@ const MemberManagement: React.FC<MemberManagementProps> = ({
   const [statusFilter, setStatusFilter] = useState<MemberStatus | 'ALL'>('ALL');
   const [isEditing, setIsEditing] = useState(false);
   const [isViewing, setIsViewing] = useState(false);
-  const [viewTab, setViewTab] = useState<'perfil' | 'familia' | 'historial'>('perfil');
   const [selectedMember, setSelectedMember] = useState<Partial<Member> | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -51,7 +50,6 @@ const MemberManagement: React.FC<MemberManagementProps> = ({
       if (member) {
         setSelectedMember(member);
         setIsViewing(true);
-        setViewTab('perfil');
       }
     }
   }, [viewingMemberId, members]);
@@ -89,10 +87,21 @@ const MemberManagement: React.FC<MemberManagementProps> = ({
 
   const handleDeleteMember = (id: string) => {
     if (!canEdit) return;
-    if (confirm("¿Está seguro de eliminar a este socio? Esta acción no se puede deshacer.")) {
+    if (confirm("¿Está seguro de eliminar a este socio? Esta acción no se puede deshacer y borrará todo su historial.")) {
       setMembers(prev => prev.filter(m => m.id !== id));
-      closeModal();
+      if (selectedMember?.id === id) closeModal();
     }
+  };
+
+  const toggleBlockMember = (id: string) => {
+    if (!canEdit) return;
+    setMembers(prev => prev.map(m => {
+      if (m.id === id) {
+        const newStatus = m.status === MemberStatus.SUSPENDED ? MemberStatus.ACTIVE : MemberStatus.SUSPENDED;
+        return { ...m, status: newStatus };
+      }
+      return m;
+    }));
   };
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -108,10 +117,12 @@ const MemberManagement: React.FC<MemberManagementProps> = ({
 
   const openNew = () => {
     if (!canEdit) return;
+    const now = new Date();
     setSelectedMember({
       name: '',
       rut: '',
-      joinDate: new Date().toISOString().split('T')[0],
+      joinDate: now.toISOString().split('T')[0],
+      joinTime: now.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', hour12: false }),
       status: MemberStatus.ACTIVE,
       email: '',
       address: '',
@@ -232,7 +243,8 @@ const MemberManagement: React.FC<MemberManagementProps> = ({
                     </div>
                   </td>
                   <td className="px-10 py-6">
-                    <span className="text-sm font-black text-slate-600">{member.joinDate}</span>
+                    <p className="text-sm font-black text-slate-600">{member.joinDate}</p>
+                    <p className="text-[10px] font-bold text-slate-400">{member.joinTime || '--:--'} hrs</p>
                   </td>
                   <td className="px-10 py-6">
                     <span className={`text-[9px] font-black uppercase px-4 py-2 rounded-xl border-2 ${
@@ -246,31 +258,27 @@ const MemberManagement: React.FC<MemberManagementProps> = ({
                   </td>
                   <td className="px-10 py-6 text-right">
                     <div className="flex justify-end space-x-2">
-                       <button onClick={() => { setSelectedMember(member); setIsViewing(true); }} className="p-3 bg-indigo-50 text-indigo-600 rounded-2xl hover:bg-indigo-100 transition shadow-sm"><Icons.Users /></button>
+                       <button onClick={() => { setSelectedMember(member); setIsViewing(true); }} className="p-3 bg-indigo-50 text-indigo-600 rounded-2xl hover:bg-indigo-100 transition shadow-sm" title="Ver Perfil"><Icons.Users /></button>
                        {canEdit && (
-                         <button onClick={() => { setSelectedMember(member); setIsEditing(true); }} className="p-3 bg-emerald-50 text-emerald-600 rounded-2xl hover:bg-emerald-100 transition shadow-sm"><Icons.Pencil /></button>
+                         <>
+                           <button onClick={() => toggleBlockMember(member.id)} className={`p-3 rounded-2xl transition shadow-sm ${member.status === MemberStatus.SUSPENDED ? 'bg-amber-100 text-amber-700 hover:bg-amber-200' : 'bg-slate-100 text-slate-500 hover:bg-rose-50 hover:text-rose-600'}`} title={member.status === MemberStatus.SUSPENDED ? 'Activar Socio' : 'Bloquear Socio'}>
+                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d={member.status === MemberStatus.SUSPENDED ? "M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" : "M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"} /></svg>
+                           </button>
+                           <button onClick={() => { setSelectedMember(member); setIsEditing(true); }} className="p-3 bg-emerald-50 text-emerald-600 rounded-2xl hover:bg-emerald-100 transition shadow-sm" title="Editar"><Icons.Pencil /></button>
+                           <button onClick={() => handleDeleteMember(member.id)} className="p-3 bg-rose-50 text-rose-600 rounded-2xl hover:bg-rose-100 transition shadow-sm" title="Eliminar">
+                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                           </button>
+                         </>
                        )}
                     </div>
                   </td>
                 </tr>
               ))}
-              {filteredMembers.length === 0 && (
-                <tr>
-                  <td colSpan={4} className="px-10 py-20 text-center">
-                    <p className="text-slate-400 font-black text-lg">No se encontraron socios con los filtros aplicados</p>
-                    <button onClick={() => { setSearchTerm(''); setStatusFilter('ALL'); }} className="mt-4 text-emerald-600 font-black uppercase text-[10px] tracking-widest hover:underline">Limpiar filtros</button>
-                  </td>
-                </tr>
-              )}
             </tbody>
           </table>
         </div>
       </div>
 
-      {/* El resto de los modales (Edición, Familia, Vista) se mantienen iguales... */}
-      {/* (Omitido para brevedad en la respuesta XML pero presente en el archivo final) */}
-
-      {/* Modal de Edición */}
       {isEditing && selectedMember && (
         <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-xl flex items-center justify-center z-[100] p-6 overflow-y-auto">
           <div className="bg-white w-full max-w-4xl rounded-[4rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 relative my-auto">
@@ -304,17 +312,20 @@ const MemberManagement: React.FC<MemberManagementProps> = ({
                     <input required className="w-full px-8 py-5 border-2 border-slate-100 rounded-[2rem] focus:border-emerald-600 outline-none transition font-black text-slate-900 bg-slate-50/50 font-mono" value={selectedMember.rut} onChange={e => setSelectedMember({...selectedMember, rut: formatRut(e.target.value)})} placeholder="12.345.678-9"/>
                   </div>
                   <div>
-                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-2">Fecha de Ingreso</label>
-                    <input type="date" required className="w-full px-8 py-5 border-2 border-slate-100 rounded-[2rem] focus:border-emerald-600 outline-none transition font-black text-slate-900 bg-slate-50/50" value={selectedMember.joinDate} onChange={e => setSelectedMember({...selectedMember, joinDate: e.target.value})}/>
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-2">Fecha y Hora de Ingreso</label>
+                    <div className="grid grid-cols-2 gap-4">
+                      <input type="date" required className="w-full px-6 py-5 border-2 border-slate-100 rounded-[2rem] focus:border-emerald-600 outline-none transition font-black text-slate-900 bg-slate-50/50" value={selectedMember.joinDate} onChange={e => setSelectedMember({...selectedMember, joinDate: e.target.value})}/>
+                      <input type="time" required className="w-full px-6 py-5 border-2 border-slate-100 rounded-[2rem] focus:border-emerald-600 outline-none transition font-black text-slate-900 bg-slate-50/50" value={selectedMember.joinTime} onChange={e => setSelectedMember({...selectedMember, joinTime: e.target.value})}/>
+                    </div>
                   </div>
                   <div>
-                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-2">Estado</label>
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-2">Estado Administrativo</label>
                     <select className="w-full px-8 py-5 border-2 border-slate-100 rounded-[2rem] focus:border-emerald-600 outline-none transition font-black text-slate-900 bg-slate-50/50 uppercase text-xs" value={selectedMember.status} onChange={e => setSelectedMember({...selectedMember, status: e.target.value as MemberStatus})}>
                       {Object.values(MemberStatus).map(s => <option key={s} value={s}>{s}</option>)}
                     </select>
                   </div>
                   <div>
-                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-2">Teléfono</label>
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-2">Teléfono Movil</label>
                     <input className="w-full px-8 py-5 border-2 border-slate-100 rounded-[2rem] focus:border-emerald-600 outline-none transition font-black text-slate-900 bg-slate-50/50" value={selectedMember.phone} onChange={e => setSelectedMember({...selectedMember, phone: e.target.value})} placeholder="+569..."/>
                   </div>
                 </div>
@@ -374,11 +385,6 @@ const MemberManagement: React.FC<MemberManagementProps> = ({
                           <button type="button" onClick={() => removeFamilyMember(fm.id)} className="w-10 h-10 rounded-xl bg-white text-rose-500 hover:bg-rose-50 flex items-center justify-center text-xl shadow-sm border border-slate-100">&times;</button>
                        </div>
                     ))}
-                    {(selectedMember.familyMembers || []).length === 0 && (
-                      <div className="col-span-full py-12 text-center text-slate-400 font-bold italic bg-slate-50/50 rounded-[2rem] border-2 border-dashed border-slate-100">
-                        No hay familiares vinculados. Haga clic en "+ Vincular Integrante" para agregar.
-                      </div>
-                    )}
                  </div>
               </div>
 
@@ -453,7 +459,7 @@ const MemberManagement: React.FC<MemberManagementProps> = ({
                     <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2">Información de Perfil</h4>
                     <div className="grid grid-cols-2 gap-y-4 gap-x-6 text-sm">
                        <div><p className="text-slate-500 font-bold uppercase text-[9px] mb-1">RUT</p><p className="font-black text-slate-800">{selectedMember.rut}</p></div>
-                       <div><p className="text-slate-500 font-bold uppercase text-[9px] mb-1">Ingreso</p><p className="font-black text-slate-800">{selectedMember.joinDate}</p></div>
+                       <div><p className="text-slate-500 font-bold uppercase text-[9px] mb-1">Ingreso</p><p className="font-black text-slate-800">{selectedMember.joinDate} {selectedMember.joinTime} hrs</p></div>
                        <div><p className="text-slate-500 font-bold uppercase text-[9px] mb-1">Estado</p><span className="font-black text-emerald-600">{selectedMember.status}</span></div>
                        <div><p className="text-slate-500 font-bold uppercase text-[9px] mb-1">Teléfono</p><p className="font-black text-slate-800">{selectedMember.phone || 'N/A'}</p></div>
                        <div className="col-span-2"><p className="text-slate-500 font-bold uppercase text-[9px] mb-1">Email</p><p className="font-black text-slate-800">{selectedMember.email || 'No registrado'}</p></div>
@@ -479,9 +485,14 @@ const MemberManagement: React.FC<MemberManagementProps> = ({
             </div>
 
             <div className="p-8 border-t border-slate-100 bg-slate-50 flex justify-end space-x-4">
+               {canEdit && (
+                 <button onClick={() => toggleBlockMember(selectedMember.id!)} className={`px-8 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest transition shadow-xl ${selectedMember.status === MemberStatus.SUSPENDED ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' : 'bg-rose-100 text-rose-700 hover:bg-rose-200'}`}>
+                   {selectedMember.status === MemberStatus.SUSPENDED ? 'Activar Socio' : 'Bloquear Socio'}
+                 </button>
+               )}
                <button onClick={handlePrint} className="px-8 py-3 bg-slate-900 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-black transition shadow-xl">Imprimir Ficha</button>
                {canEdit && (
-                 <button onClick={() => { setIsViewing(false); setIsEditing(true); }} className="px-8 py-3 bg-emerald-100 text-emerald-800 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-emerald-200 transition">Editar Datos</button>
+                 <button onClick={() => { setIsViewing(false); setIsEditing(true); }} className="px-8 py-3 bg-emerald-700 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-emerald-800 transition">Editar Datos</button>
                )}
             </div>
           </div>

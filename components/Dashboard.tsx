@@ -14,6 +14,15 @@ interface DashboardProps {
 
 const Dashboard: React.FC<DashboardProps> = ({ members, transactions, assemblies, currentUser, config }) => {
   const [aiSummary, setAiSummary] = useState<string>('Analizando registros contables...');
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  // Update clock every second
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   const isTesoOrAdmin = currentUser.role === BoardRole.TREASURER || 
                         currentUser.role === 'SUPPORT' || 
@@ -62,8 +71,14 @@ const Dashboard: React.FC<DashboardProps> = ({ members, transactions, assemblies
           <h2 className="text-4xl font-black tracking-tighter text-slate-900">Hola, <span className="text-emerald-700">{currentUser.name.split(' ')[0]}</span></h2>
           <p className="text-slate-500 font-bold uppercase tracking-widest text-[10px] mt-2">Panel central de gestión institucional</p>
         </div>
-        <div className="flex h-14 items-center rounded-2xl bg-white px-8 font-black text-slate-700 shadow-sm border border-slate-100 text-sm uppercase tracking-widest">
-          {new Date().toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'long' })}
+        <div className="flex flex-col md:flex-row gap-3">
+          <div className="flex h-14 items-center rounded-2xl bg-white px-8 font-black text-slate-700 shadow-sm border border-slate-100 text-sm uppercase tracking-widest">
+            {currentTime.toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'long' })}
+          </div>
+          <div className="flex h-14 items-center rounded-2xl bg-slate-900 px-8 font-black text-white shadow-xl shadow-slate-200 text-sm tracking-widest tabular-nums">
+            <span className="text-emerald-400 mr-2">●</span>
+            {currentTime.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+          </div>
         </div>
       </div>
 
