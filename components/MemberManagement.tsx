@@ -127,7 +127,6 @@ const MemberManagement: React.FC<MemberManagementProps> = ({
       name: '',
       rut: '',
       joinDate: now.toISOString().split('T')[0],
-      joinTime: now.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', hour12: false }),
       status: MemberStatus.ACTIVE,
       email: '',
       address: '',
@@ -173,6 +172,35 @@ const MemberManagement: React.FC<MemberManagementProps> = ({
     }
   };
 
+  const handleExportCSV = () => {
+    if (filteredMembers.length === 0) {
+      alert("No hay socios para exportar con los filtros actuales.");
+      return;
+    }
+    const headers = ["ID", "RUT", "Nombre", "Fecha Ingreso", "Estado", "Email", "Telefono", "Direccion", "Comuna", "Region"];
+    const rows = filteredMembers.map(m => [
+      m.id,
+      m.rut,
+      `"${m.name.replace(/"/g, '""')}"`,
+      m.joinDate,
+      m.status,
+      `"${(m.email || "").replace(/"/g, '""')}"`,
+      `"${(m.phone || "").replace(/"/g, '""')}"`,
+      `"${(m.address || "").replace(/"/g, '""')}"`,
+      `"${(m.comuna || "").replace(/"/g, '""')}"`,
+      `"${(m.region || "").replace(/"/g, '""')}"`
+    ]);
+    const csvContent = [headers.join(","), ...rows.map(row => row.join(","))].join("\n");
+    const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `nomina_socios_te_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const currentRegion = CHILE_REGIONS.find(r => r.name === selectedMember?.region);
   const communes = currentRegion ? currentRegion.communes : [];
 
@@ -183,11 +211,22 @@ const MemberManagement: React.FC<MemberManagementProps> = ({
           <h2 className="text-3xl font-black text-slate-900 tracking-tight">Censo de Socios</h2>
           <p className="text-slate-500 font-bold uppercase tracking-widest text-[10px] mt-1">Gestión administrativa {config.tradeName}</p>
         </div>
-        {canEdit && (
-          <button onClick={openNew} className="bg-emerald-700 hover:bg-emerald-800 text-white px-8 py-4 rounded-3xl font-black transition-all shadow-xl shadow-emerald-900/20 active:scale-95 flex items-center justify-center uppercase text-xs tracking-widest">
-            <span className="mr-3 text-xl font-light">+</span> Nuevo Registro
+        <div className="flex flex-wrap items-center gap-3">
+          <button 
+            onClick={handleExportCSV} 
+            className="bg-white border-2 border-slate-200 text-slate-700 px-6 py-4 rounded-3xl font-black text-xs uppercase tracking-widest hover:bg-slate-50 transition shadow-sm flex items-center group"
+          >
+            <svg className="w-4 h-4 mr-2 text-slate-400 group-hover:text-emerald-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+            Exportar CSV
           </button>
-        )}
+          {canEdit && (
+            <button onClick={openNew} className="bg-emerald-700 hover:bg-emerald-800 text-white px-8 py-4 rounded-3xl font-black transition-all shadow-xl shadow-emerald-900/20 active:scale-95 flex items-center justify-center uppercase text-xs tracking-widest">
+              <span className="mr-3 text-xl font-light">+</span> Nuevo Registro
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="bg-white rounded-[3rem] shadow-sm border border-slate-200 overflow-hidden">
@@ -249,7 +288,6 @@ const MemberManagement: React.FC<MemberManagementProps> = ({
                   </td>
                   <td className="px-10 py-6">
                     <p className="text-sm font-black text-slate-600">{member.joinDate}</p>
-                    <p className="text-[10px] font-bold text-slate-400">{member.joinTime || '--:--'} hrs</p>
                   </td>
                   <td className="px-10 py-6">
                     <span className={`text-[9px] font-black uppercase px-4 py-2 rounded-xl border-2 ${
@@ -328,11 +366,8 @@ const MemberManagement: React.FC<MemberManagementProps> = ({
                     <input required className="w-full px-8 py-5 border-2 border-slate-100 rounded-[2rem] focus:border-emerald-600 outline-none transition font-black text-slate-900 bg-slate-50/50 font-mono" value={selectedMember.rut} onChange={e => setSelectedMember({...selectedMember, rut: formatRut(e.target.value)})} placeholder="12.345.678-9"/>
                   </div>
                   <div>
-                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-2">Fecha y Hora de Ingreso</label>
-                    <div className="grid grid-cols-2 gap-4">
-                      <input type="date" required className="w-full px-6 py-5 border-2 border-slate-100 rounded-[2rem] focus:border-emerald-600 outline-none transition font-black text-slate-900 bg-slate-50/50" value={selectedMember.joinDate} onChange={e => setSelectedMember({...selectedMember, joinDate: e.target.value})}/>
-                      <input type="time" required className="w-full px-6 py-5 border-2 border-slate-100 rounded-[2rem] focus:border-emerald-600 outline-none transition font-black text-slate-900 bg-slate-50/50" value={selectedMember.joinTime} onChange={e => setSelectedMember({...selectedMember, joinTime: e.target.value})}/>
-                    </div>
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-2">Fecha de Ingreso</label>
+                    <input type="date" required className="w-full px-8 py-5 border-2 border-slate-100 rounded-[2rem] focus:border-emerald-600 outline-none transition font-black text-slate-900 bg-slate-50/50" value={selectedMember.joinDate} onChange={e => setSelectedMember({...selectedMember, joinDate: e.target.value})}/>
                   </div>
                   <div>
                     <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-2">Estado Administrativo</label>
@@ -475,7 +510,7 @@ const MemberManagement: React.FC<MemberManagementProps> = ({
                     <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2">Información de Perfil</h4>
                     <div className="grid grid-cols-2 gap-y-4 gap-x-6 text-sm">
                        <div><p className="text-slate-500 font-bold uppercase text-[9px] mb-1">RUT</p><p className="font-black text-slate-800">{selectedMember.rut}</p></div>
-                       <div><p className="text-slate-500 font-bold uppercase text-[9px] mb-1">Ingreso</p><p className="font-black text-slate-800">{selectedMember.joinDate} {selectedMember.joinTime} hrs</p></div>
+                       <div><p className="text-slate-500 font-bold uppercase text-[9px] mb-1">Ingreso</p><p className="font-black text-slate-800">{selectedMember.joinDate}</p></div>
                        <div><p className="text-slate-500 font-bold uppercase text-[9px] mb-1">Estado</p><span className="font-black text-emerald-600">{selectedMember.status}</span></div>
                        <div><p className="text-slate-500 font-bold uppercase text-[9px] mb-1">Teléfono</p><p className="font-black text-slate-800">{selectedMember.phone || 'N/A'}</p></div>
                        <div className="col-span-2"><p className="text-slate-500 font-bold uppercase text-[9px] mb-1">Email</p><p className="font-black text-slate-800">{selectedMember.email || 'No registrado'}</p></div>

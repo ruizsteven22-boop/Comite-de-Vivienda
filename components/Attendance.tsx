@@ -39,7 +39,6 @@ const Attendance: React.FC<AttendanceProps> = ({ members, assemblies, setAssembl
     e.preventDefault();
     if (!selectedAssembly || !canEdit) return;
     
-    // Limpiar RUT para búsqueda
     const cleanInput = rutInput.replace(/[^0-9kK]/g, '').toLowerCase();
     const member = members.find(m => m.rut.replace(/[^0-9kK]/g, '').toLowerCase() === cleanInput);
     
@@ -192,7 +191,7 @@ const Attendance: React.FC<AttendanceProps> = ({ members, assemblies, setAssembl
             <div className="relative w-full md:w-80">
               <input 
                 type="text" 
-                placeholder="Buscar por nombre o RUT..." 
+                placeholder="Filtrar integrantes..." 
                 className="w-full pl-12 pr-6 py-4 bg-white border-2 border-slate-100 rounded-2xl text-xs font-bold outline-none focus:border-emerald-600 shadow-inner transition-all"
                 value={listSearch}
                 onChange={e => setListSearch(e.target.value)}
@@ -203,71 +202,91 @@ const Attendance: React.FC<AttendanceProps> = ({ members, assemblies, setAssembl
             </div>
           </div>
           
-          <div className="flex-1 overflow-y-auto p-10 bg-slate-50/30">
-            {selectedAssembly?.status === AssemblyStatus.FINISHED ? (
-              // VISTA FINALIZADA: COMPARATIVA COMPLETA
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="flex-1 overflow-x-auto">
+            <table className="w-full text-left">
+              <thead className="bg-slate-50 text-slate-400 text-[9px] uppercase tracking-[0.2em] font-black sticky top-0 z-10">
+                <tr>
+                  <th className="px-10 py-5">Socio Identificado</th>
+                  <th className="px-10 py-5">RUT / Identificador</th>
+                  <th className="px-10 py-5 text-right">Estatus</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
                 {filteredMembers.map(member => {
-                  const isPresent = selectedAssembly.attendees.includes(member.rut);
+                  const isPresent = selectedAssembly?.attendees.includes(member.rut);
+                  
+                  // En modo "En Curso", podemos resaltar a los que acaban de llegar
+                  // o simplemente mostrar a todos con su estado.
+                  
                   return (
-                    <div key={member.id} className={`flex items-center space-x-4 p-5 rounded-[1.5rem] border-2 transition-all ${
-                      isPresent ? 'bg-white border-emerald-50 shadow-sm' : 'bg-slate-100/50 border-slate-200 opacity-60'
-                    }`}>
-                      <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black text-white shadow-lg ${isPresent ? 'bg-emerald-600' : 'bg-slate-300'}`}>
-                        {member.name.charAt(0)}
-                      </div>
-                      <div className="flex-1 overflow-hidden">
-                        <p className={`font-black text-sm truncate ${isPresent ? 'text-slate-900' : 'text-slate-500'}`}>{member.name}</p>
-                        <p className="text-[10px] font-bold text-slate-400 font-mono tracking-tighter">{member.rut}</p>
-                      </div>
-                      <span className={`text-[8px] font-black uppercase px-2 py-1 rounded-md border ${
-                        isPresent ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-slate-200 text-slate-500 border-slate-300'
-                      }`}>
-                        {isPresent ? 'Presente' : 'Ausente'}
-                      </span>
-                    </div>
+                    <tr key={member.id} className={`hover:bg-slate-50 transition-colors group ${!isPresent && selectedAssembly?.status === AssemblyStatus.FINISHED ? 'opacity-40 grayscale-[0.5]' : ''}`}>
+                      <td className="px-10 py-5">
+                        <div className="flex items-center space-x-4">
+                          <img 
+                            src={member.photoUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(member.name)}&background=f1f5f9&color=94a3b8&bold=true&size=128`} 
+                            className={`w-12 h-12 rounded-2xl object-cover shadow-sm border-2 ${isPresent ? 'border-emerald-200' : 'border-slate-100'}`} 
+                          />
+                          <div>
+                            <p className={`font-black text-sm leading-tight ${isPresent ? 'text-slate-900' : 'text-slate-500'}`}>{member.name}</p>
+                            <span className="text-[8px] font-black text-slate-300 uppercase tracking-widest">Socio Activo</span>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-10 py-5">
+                        <p className="font-mono text-[10px] font-bold text-slate-400 tracking-tighter">{member.rut}</p>
+                      </td>
+                      <td className="px-10 py-5 text-right">
+                        <div className="flex flex-col items-end">
+                          <span className={`text-[8px] font-black uppercase px-3 py-1.5 rounded-xl border-2 transition-all ${
+                            isPresent 
+                              ? 'bg-emerald-50 text-emerald-700 border-emerald-100 shadow-sm shadow-emerald-100/50' 
+                              : 'bg-slate-50 text-slate-400 border-slate-100'
+                          }`}>
+                            {isPresent ? 'Presente en Sala' : 'Pendiente / Ausente'}
+                          </span>
+                          {isPresent && selectedAssembly?.status === AssemblyStatus.IN_PROGRESS && (
+                            <div className="flex items-center mt-2 space-x-1.5">
+                              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
+                              <span className="text-[7px] font-black text-emerald-400 uppercase tracking-widest">Sincronizado</span>
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
                   );
                 })}
-              </div>
-            ) : (
-              // VISTA EN CURSO: SOLO PRESENTES (ORDEN CRONOLÓGICO INVERSO)
-              <div className="space-y-4">
-                {selectedAssembly?.attendees.length ? (
-                  [...selectedAssembly.attendees].reverse().map(rut => {
-                    const member = members.find(m => m.rut === rut);
-                    if (!member) return null;
-                    return (
-                      <div key={member.id} className="flex items-center space-x-6 p-6 bg-white border-2 border-emerald-50 rounded-[2rem] shadow-sm animate-in slide-in-from-left-6 duration-500">
-                        <img src={member.photoUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(member.name)}&background=047857&color=fff&size=128`} className="w-16 h-16 rounded-2xl object-cover shadow-md" />
-                        <div className="flex-1">
-                          <p className="font-black text-slate-900 text-lg">{member.name}</p>
-                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] font-mono">{member.rut}</p>
-                        </div>
-                        <div className="flex flex-col items-center">
-                           <div className="w-4 h-4 rounded-full bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.5)] animate-pulse mb-1"></div>
-                           <span className="text-[8px] font-black text-emerald-600 uppercase">En Sala</span>
-                        </div>
+                {filteredMembers.length === 0 && (
+                  <tr>
+                    <td colSpan={3} className="px-10 py-20 text-center">
+                      <div className="w-16 h-16 rounded-full bg-slate-50 flex items-center justify-center mx-auto mb-4 text-slate-200">
+                        <Icons.Users />
                       </div>
-                    );
-                  })
-                ) : (
-                  <div className="h-full flex flex-col items-center justify-center py-20 text-center">
-                    <div className="w-24 h-24 rounded-full bg-white flex items-center justify-center text-slate-200 shadow-sm border border-slate-50 mb-8">
-                       <Icons.Users />
-                    </div>
-                    <p className="text-slate-900 font-black text-xl">Sin registros de entrada</p>
-                    <p className="text-slate-400 font-medium text-xs mt-3 max-w-xs mx-auto italic">
-                      Los socios aparecerán aquí a medida que se registre su asistencia en tiempo real.
-                    </p>
-                  </div>
+                      <p className="text-slate-400 font-bold italic text-xs">No se encontraron socios con este filtro.</p>
+                    </td>
+                  </tr>
                 )}
-              </div>
-            )}
+              </tbody>
+            </table>
           </div>
           
-          <div className="p-8 bg-slate-50 border-t border-slate-100 flex justify-between items-center">
-             <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Validación de Identidad Biométrica/RUT • Tierra Esperanza 2024</p>
-             <button onClick={() => printAttendanceReport(selectedAssembly!, members, board, config)} className="text-[10px] font-black text-emerald-700 hover:underline uppercase tracking-widest" disabled={!selectedAssembly}>Exportar Nómina</button>
+          <div className="p-8 bg-slate-50/50 border-t border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-4">
+             <div className="flex items-center space-x-3">
+                <div className="flex -space-x-3">
+                  {members.slice(0, 3).map(m => (
+                    <img key={m.id} src={m.photoUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(m.name)}&size=32`} className="w-8 h-8 rounded-full border-2 border-white object-cover" />
+                  ))}
+                  {members.length > 3 && <div className="w-8 h-8 rounded-full bg-slate-200 border-2 border-white flex items-center justify-center text-[10px] font-black text-slate-500">+{members.length - 3}</div>}
+                </div>
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Validación de Quórum en Línea</p>
+             </div>
+             {selectedAssembly && (
+               <button 
+                 onClick={() => printAttendanceReport(selectedAssembly, members, board, config)} 
+                 className="px-6 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-slate-50 transition shadow-sm active:scale-95"
+               >
+                 Exportar Nómina de Firmas
+               </button>
+             )}
           </div>
         </div>
       </div>

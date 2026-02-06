@@ -1,3 +1,13 @@
+/*
+Theme Name: Tierra Esperanza - Gestión de Comité
+Theme URI: https://tierraesperanza.cl
+Author: Comité de Vivienda Tierra Esperanza
+Description: Sistema integral de gestión administrativa para comités de vivienda, con módulos de socios, tesorería y asambleas.
+Version: 1.2.0
+License: MIT
+Text Domain: tierra-esperanza
+*/
+
 :root {
     --primary: #047857;
     --primary-dark: #064e3b;

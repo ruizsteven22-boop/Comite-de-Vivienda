@@ -40,7 +40,6 @@ const INITIAL_BOARD: BoardPosition[] = [
 
 type ViewId = 'dashboard' | 'members' | 'treasury' | 'board' | 'attendance' | 'assemblies' | 'support' | 'settings';
 
-// Centralized permission configuration
 const PERMISSIONS: Record<ViewId, (SystemRole | 'ANY')[]> = {
   dashboard: ['ANY'],
   members: ['ANY'],
@@ -145,6 +144,32 @@ const App: React.FC = () => {
     return allowedRoles.includes('ANY') || allowedRoles.includes(currentUser.role);
   };
 
+  const exportBackupData = () => {
+    const backupData = {
+      version: '1.2.0',
+      timestamp: new Date().toISOString(),
+      data: {
+        users,
+        config,
+        members,
+        transactions,
+        board,
+        boardPeriod,
+        assemblies
+      }
+    };
+    
+    const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `respaldo_tierra_esperanza_${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   if (!isInitialized) return (
     <div className="min-h-screen bg-slate-900 flex items-center justify-center">
       <div className="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
@@ -152,8 +177,6 @@ const App: React.FC = () => {
   );
 
   if (!currentUser) return <Login users={users} onLogin={handleLogin} />;
-
-  const isSupport = currentUser.role === 'SUPPORT' || currentUser.role === 'ADMINISTRATOR';
 
   const menuItems = [
     { id: 'dashboard' as const, icon: <Icons.Dashboard />, label: 'Inicio' },
@@ -260,7 +283,7 @@ const App: React.FC = () => {
                 {view === 'assemblies' && <AssemblyManagement assemblies={assemblies} setAssemblies={setAssemblies} members={members} board={board} currentUser={currentUser} config={config} />}
                 {view === 'attendance' && <Attendance members={members} assemblies={assemblies} setAssemblies={setAssemblies} board={board} currentUser={currentUser} config={config} />}
                 {view === 'support' && <SupportManagement users={users} setUsers={setUsers} />}
-                {view === 'settings' && <SettingsManagement config={config} setConfig={setConfig} />}
+                {view === 'settings' && <SettingsManagement config={config} setConfig={setConfig} onExportBackup={exportBackupData} />}
               </>
             )}
           </div>

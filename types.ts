@@ -57,7 +57,6 @@ export interface Member {
   rut: string;
   name: string;
   joinDate: string;
-  joinTime: string;
   status: MemberStatus;
   photoUrl?: string;
   email: string;

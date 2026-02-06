@@ -6,9 +6,10 @@ import { formatRut } from '../services/utils';
 interface SettingsManagementProps {
   config: CommitteeConfig;
   setConfig: React.Dispatch<React.SetStateAction<CommitteeConfig>>;
+  onExportBackup: () => void;
 }
 
-const SettingsManagement: React.FC<SettingsManagementProps> = ({ config, setConfig }) => {
+const SettingsManagement: React.FC<SettingsManagementProps> = ({ config, setConfig, onExportBackup }) => {
   const [formData, setFormData] = useState<CommitteeConfig>(config);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
 
@@ -30,9 +31,20 @@ const SettingsManagement: React.FC<SettingsManagementProps> = ({ config, setConf
 
   return (
     <div className="space-y-10 animate-in fade-in duration-500">
-      <header>
-        <h2 className="text-4xl font-black text-slate-900 tracking-tighter">Parámetros del <span className="text-indigo-600">Comité</span></h2>
-        <p className="text-slate-500 font-bold uppercase tracking-widest text-[10px] mt-2">Información Institucional y Legal</p>
+      <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div>
+          <h2 className="text-4xl font-black text-slate-900 tracking-tighter">Parámetros del <span className="text-indigo-600">Comité</span></h2>
+          <p className="text-slate-500 font-bold uppercase tracking-widest text-[10px] mt-2">Información Institucional y Legal</p>
+        </div>
+        <button 
+          onClick={onExportBackup}
+          className="bg-white border-2 border-slate-200 text-slate-700 px-8 py-4 rounded-3xl font-black text-xs uppercase tracking-widest hover:bg-slate-50 transition shadow-sm flex items-center group"
+        >
+          <svg className="w-5 h-5 mr-3 text-emerald-600 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+          </svg>
+          Descargar Respaldo General
+        </button>
       </header>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
