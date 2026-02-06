@@ -115,6 +115,11 @@ const MemberManagement: React.FC<MemberManagementProps> = ({
     }
   };
 
+  const handleRemovePhoto = () => {
+    setSelectedMember(prev => ({ ...prev, photoUrl: '' }));
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
   const openNew = () => {
     if (!canEdit) return;
     const now = new Date();
@@ -292,14 +297,25 @@ const MemberManagement: React.FC<MemberManagementProps> = ({
 
             <form onSubmit={handleSave} className="p-12 space-y-12 max-h-[70vh] overflow-y-auto">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
-                <div className="flex flex-col items-center">
+                <div className="flex flex-col items-center space-y-6">
                    <div className="relative group w-full max-w-[220px]">
                       <img src={selectedMember.photoUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedMember.name || 'S')}&background=f1f5f9&color=94a3b8&size=512`} className="w-full aspect-square rounded-[3rem] object-cover border-8 border-slate-50 shadow-2xl" />
-                      <button type="button" onClick={() => fileInputRef.current?.click()} className="absolute inset-0 bg-black/60 rounded-[3rem] opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center transition-all duration-300 backdrop-blur-sm">
-                        <span className="text-white text-[9px] font-black uppercase tracking-widest text-center px-4">Cambiar Foto de Perfil</span>
-                      </button>
+                      <div className="absolute inset-0 bg-black/40 rounded-[3rem] opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all duration-300 backdrop-blur-[2px]">
+                         <button type="button" onClick={() => fileInputRef.current?.click()} className="bg-white text-slate-900 p-3 rounded-xl shadow-lg hover:scale-110 transition active:scale-95">
+                            <Icons.Pencil />
+                         </button>
+                      </div>
                       <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handlePhotoUpload} />
                    </div>
+                   {selectedMember.photoUrl && (
+                     <button 
+                       type="button" 
+                       onClick={handleRemovePhoto}
+                       className="text-[10px] font-black text-rose-500 uppercase tracking-widest hover:text-rose-700 transition"
+                     >
+                       Eliminar Foto
+                     </button>
+                   )}
                 </div>
 
                 <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-8">
