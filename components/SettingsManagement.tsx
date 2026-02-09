@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { CommitteeConfig } from '../types';
+import { CommitteeConfig, Language } from '../types';
 import { formatRut } from '../services/utils';
 
 interface SettingsManagementProps {
@@ -25,7 +25,7 @@ const SettingsManagement: React.FC<SettingsManagementProps> = ({ config, setConf
     }, 800);
   };
 
-  const handleChange = (field: keyof CommitteeConfig, value: string) => {
+  const handleChange = (field: keyof CommitteeConfig, value: any) => {
     const processedValue = field === 'rut' ? formatRut(value) : value;
     setFormData(prev => ({ ...prev, [field]: processedValue }));
   };
@@ -109,6 +109,27 @@ const SettingsManagement: React.FC<SettingsManagementProps> = ({ config, setConf
                     onChange={e => handleChange('phone', e.target.value)}
                     placeholder="+56 9 1234 5678"
                   />
+                </div>
+              </div>
+
+              {/* SECCIÓN DE IDIOMA */}
+              <div className="pt-8 border-t border-slate-100">
+                <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6 ml-2">Preferencia de Sistema</h3>
+                <div className="flex gap-4">
+                  <button 
+                    type="button"
+                    onClick={() => handleChange('language', Language.ES)}
+                    className={`flex-1 flex items-center justify-center gap-3 p-5 rounded-3xl border-2 transition-all font-black text-xs uppercase tracking-widest ${formData.language === Language.ES ? 'bg-emerald-50 border-emerald-600 text-emerald-800 shadow-md' : 'bg-white border-slate-100 text-slate-400 hover:border-slate-200'}`}
+                  >
+                    <span className="text-2xl">🇪🇸</span> Español
+                  </button>
+                  <button 
+                    type="button"
+                    onClick={() => handleChange('language', Language.EN)}
+                    className={`flex-1 flex items-center justify-center gap-3 p-5 rounded-3xl border-2 transition-all font-black text-xs uppercase tracking-widest ${formData.language === Language.EN ? 'bg-emerald-50 border-emerald-600 text-emerald-800 shadow-md' : 'bg-white border-slate-100 text-slate-400 hover:border-slate-200'}`}
+                  >
+                    <span className="text-2xl">🇺🇸</span> English
+                  </button>
                 </div>
               </div>
 

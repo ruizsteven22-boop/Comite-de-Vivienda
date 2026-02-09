@@ -1,7 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
-import { Member, Transaction, BoardPosition, Assembly, User, BoardRole, CommitteeConfig, SystemRole } from './types';
+import { Member, Transaction, BoardPosition, Assembly, User, BoardRole, CommitteeConfig, SystemRole, Language } from './types';
 import { Icons } from './constants';
+import { getTranslation } from './services/i18nService';
 import Dashboard from './components/Dashboard';
 import MemberManagement from './components/MemberManagement';
 import Treasury from './components/Treasury';
@@ -27,7 +28,8 @@ const INITIAL_CONFIG: CommitteeConfig = {
   email: 'contacto@tierraesperanza.cl',
   phone: '+56 9 1234 5678',
   municipalRes: 'Res. Exenta N° 456/2023',
-  legalRes: 'Pers. Jurídica N° 7890-S'
+  legalRes: 'Pers. Jurídica N° 7890-S',
+  language: Language.ES
 };
 
 const EMPTY_PERSON = { name: '', rut: '', phone: '' };
@@ -102,6 +104,9 @@ const App: React.FC = () => {
   });
 
   const [viewingMemberId, setViewingMemberId] = useState<string | null>(null);
+
+  // Obtener traducciones basadas en la configuración
+  const t = getTranslation(config.language);
 
   useEffect(() => {
     const savedUser = localStorage.getItem('te_session');
@@ -190,14 +195,14 @@ const App: React.FC = () => {
   if (!currentUser) return <Login users={users} onLogin={handleLogin} />;
 
   const menuItems = [
-    { id: 'dashboard' as const, icon: <Icons.Dashboard />, label: 'Inicio' },
-    { id: 'members' as const, icon: <Icons.Users />, label: 'Socios' },
-    { id: 'treasury' as const, icon: <Icons.Wallet />, label: 'Tesorería' },
-    { id: 'board' as const, icon: <Icons.Shield />, label: 'Directiva' },
-    { id: 'assemblies' as const, icon: <Icons.Calendar />, label: 'Asambleas' },
-    { id: 'attendance' as const, icon: <Icons.Clipboard />, label: 'Asistencia' },
-    { id: 'settings' as const, icon: <Icons.Briefcase />, label: 'Configuración' },
-    { id: 'support' as const, icon: <Icons.Settings />, label: 'Usuarios' },
+    { id: 'dashboard' as const, icon: <Icons.Dashboard />, label: t.nav.dashboard },
+    { id: 'members' as const, icon: <Icons.Users />, label: t.nav.members },
+    { id: 'treasury' as const, icon: <Icons.Wallet />, label: t.nav.treasury },
+    { id: 'board' as const, icon: <Icons.Shield />, label: t.nav.board },
+    { id: 'assemblies' as const, icon: <Icons.Calendar />, label: t.nav.assemblies },
+    { id: 'attendance' as const, icon: <Icons.Clipboard />, label: t.nav.attendance },
+    { id: 'settings' as const, icon: <Icons.Briefcase />, label: t.nav.settings },
+    { id: 'support' as const, icon: <Icons.Settings />, label: t.nav.support },
   ];
 
   const tradeParts = config.tradeName.split(' ');
@@ -267,7 +272,7 @@ const App: React.FC = () => {
               onClick={handleLogout}
               className="flex w-full items-center justify-center rounded-xl bg-rose-500/10 py-3 text-xs font-black uppercase tracking-widest text-rose-400 transition-all hover:bg-rose-500 hover:text-white"
             >
-              <span className="mr-2"><Icons.Logout /></span> Salir
+              <span className="mr-2"><Icons.Logout /></span> {t.nav.logout}
             </button>
           </div>
         </div>

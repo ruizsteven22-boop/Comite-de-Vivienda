@@ -1,4 +1,9 @@
 
+export enum Language {
+  ES = 'es',
+  EN = 'en'
+}
+
 export enum MemberStatus {
   ACTIVE = 'Activo',
   INACTIVE = 'Inactivo',
@@ -43,6 +48,7 @@ export interface CommitteeConfig {
   phone: string;
   municipalRes: string;
   legalRes: string;
+  language?: Language;
 }
 
 export interface FamilyMember {

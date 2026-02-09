@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Member, Transaction, Assembly, TransactionType, User, BoardRole, CommitteeConfig } from '../types';
 import { getFinancialSummary } from '../services/geminiService';
+import { getTranslation } from '../services/i18nService';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
 interface DashboardProps {
@@ -15,6 +16,8 @@ interface DashboardProps {
 const Dashboard: React.FC<DashboardProps> = ({ members, transactions, assemblies, currentUser, config }) => {
   const [aiSummary, setAiSummary] = useState<string>('Analizando registros contables...');
   const [currentTime, setCurrentTime] = useState(new Date());
+
+  const t = getTranslation(config.language);
 
   // Update clock every second
   useEffect(() => {
@@ -68,26 +71,26 @@ const Dashboard: React.FC<DashboardProps> = ({ members, transactions, assemblies
     <div className="space-y-10">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="page-transition">
-          <h2 className="text-4xl font-black tracking-tighter text-slate-900">Hola, <span className="text-emerald-700">{currentUser.name.split(' ')[0]}</span></h2>
-          <p className="text-slate-500 font-bold uppercase tracking-widest text-[10px] mt-2">Panel central de gestión institucional</p>
+          <h2 className="text-4xl font-black tracking-tighter text-slate-900">{t.dashboard.welcome}, <span className="text-emerald-700">{currentUser.name.split(' ')[0]}</span></h2>
+          <p className="text-slate-500 font-bold uppercase tracking-widest text-[10px] mt-2">{t.dashboard.subtitle}</p>
         </div>
         <div className="flex flex-col md:flex-row gap-3">
           <div className="flex h-14 items-center rounded-2xl bg-white px-8 font-black text-slate-700 shadow-sm border border-slate-100 text-sm uppercase tracking-widest">
-            {currentTime.toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'long' })}
+            {currentTime.toLocaleDateString(config.language === 'es' ? 'es-CL' : 'en-US', { weekday: 'long', day: 'numeric', month: 'long' })}
           </div>
           <div className="flex h-14 items-center rounded-2xl bg-slate-900 px-8 font-black text-white shadow-xl shadow-slate-200 text-sm tracking-widest tabular-nums">
             <span className="text-emerald-400 mr-2">●</span>
-            {currentTime.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+            {currentTime.toLocaleTimeString(config.language === 'es' ? 'es-CL' : 'en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
           </div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {[
-          { label: 'Censo Social', val: members.length, sub: 'Socios Activos', color: 'from-emerald-600 to-emerald-800', icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7' },
-          { label: 'Caja Neta', val: isTesoOrAdmin ? `$${balance.toLocaleString('es-CL')}` : 'Acceso Restringido', sub: 'Saldo Disponible', color: 'from-indigo-600 to-indigo-800', icon: 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2' },
-          { label: 'Histórico Ingresos', val: isTesoOrAdmin ? `$${totalIncome.toLocaleString('es-CL')}` : '***', sub: 'Recaudación Total', color: 'from-cyan-600 to-cyan-800', icon: 'M7 12l3-3 3 3 4-4' },
-          { label: 'Sesiones', val: assemblies.length, sub: 'Asambleas Totales', color: 'from-rose-600 to-rose-800', icon: 'M8 7V3m8 4V3m-9 8h10' },
+          { label: t.dashboard.kpiMembers, val: members.length, sub: 'Socios Activos', color: 'from-emerald-600 to-emerald-800', icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7' },
+          { label: t.dashboard.kpiCash, val: isTesoOrAdmin ? `$${balance.toLocaleString('es-CL')}` : 'Acceso Restringido', sub: 'Saldo Disponible', color: 'from-indigo-600 to-indigo-800', icon: 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2' },
+          { label: t.dashboard.kpiIncome, val: isTesoOrAdmin ? `$${totalIncome.toLocaleString('es-CL')}` : '***', sub: 'Recaudación Total', color: 'from-cyan-600 to-cyan-800', icon: 'M7 12l3-3 3 3 4-4' },
+          { label: t.dashboard.kpiSessions, val: assemblies.length, sub: 'Asambleas Totales', color: 'from-rose-600 to-rose-800', icon: 'M8 7V3m8 4V3m-9 8h10' },
         ].map((kpi, i) => (
           <div key={i} className="group relative overflow-hidden rounded-[2.5rem] bg-white p-8 shadow-sm border border-slate-100 transition-all hover:shadow-xl hover:-translate-y-1">
             <div className={`absolute -right-6 -top-6 h-28 w-28 rounded-full bg-gradient-to-br ${kpi.color} opacity-[0.05] transition-transform group-hover:scale-150`}></div>
@@ -148,7 +151,7 @@ const Dashboard: React.FC<DashboardProps> = ({ members, transactions, assemblies
             <div className="absolute -right-4 -top-4 opacity-10 group-hover:rotate-12 transition-transform duration-700">
               <svg className="h-32 w-32" fill="currentColor" viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
             </div>
-            <p className="text-[10px] font-black uppercase tracking-[0.4em] text-emerald-400 mb-8 border-b border-white/10 pb-4">Resumen Inteligente</p>
+            <p className="text-[10px] font-black uppercase tracking-[0.4em] text-emerald-400 mb-8 border-b border-white/10 pb-4">{t.dashboard.aiSummary}</p>
             <div className="text-sm leading-relaxed text-slate-300 font-medium min-h-[140px] italic">
               "{aiSummary}"
             </div>
@@ -159,7 +162,7 @@ const Dashboard: React.FC<DashboardProps> = ({ members, transactions, assemblies
           </div>
 
           <div className="rounded-[3rem] bg-white p-10 shadow-sm border border-slate-100">
-            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-8">Citación Pendiente</p>
+            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-8">{t.dashboard.nextAssembly}</p>
             {nextAssembly ? (
               <div className="flex items-center space-x-6">
                 <div className="flex h-20 w-20 flex-col items-center justify-center rounded-[1.5rem] bg-emerald-50 text-emerald-700 border-2 border-emerald-100 shadow-inner">

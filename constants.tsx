@@ -2,17 +2,17 @@
 import React from 'react';
 
 export const COLORS = {
-  primary: '#064e3b', // Verde Bosque Profundo
-  secondary: '#0a192f', // Azul Marino Medianoche
-  accent: '#10b981', // Esmeralda Vibrante para elementos interactivos
-  success: '#059669',
-  warning: '#f59e0b',
-  danger: '#e11d48',
-  background: '#f8fafc', // Gris Suave para el fondo
+  primary: '#065f46', // Esmeralda Profundo (más vibrante que el anterior)
+  secondary: '#1e1b4b', // Índigo Medianoche (aporta un toque moderno y profundo)
+  accent: '#10b981', // Esmeralda 500 (vibrante y digital)
+  success: '#10b981',
+  warning: '#fbbf24', // Ámbar vibrante
+  danger: '#f43f5e', // Rosa-Rojo moderno (Rose 500)
+  background: '#f8fafc', // Slate 50 para un fondo limpio
   text: {
-    main: '#0f172a', // Slate Profundo para lectura principal
-    secondary: '#475569', // Gris Medio para subtítulos
-    muted: '#94a3b8' // Gris Claro para elementos secundarios
+    main: '#0f172a', // Slate 900 (Contraste máximo)
+    secondary: '#334155', // Slate 700 (Mejorado para legibilidad)
+    muted: '#64748b' // Slate 500 (Asegura contraste AA en fondos claros)
   }
 };
 

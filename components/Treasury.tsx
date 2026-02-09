@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Transaction, TransactionType, Member, PaymentMethod, User, BoardRole } from '../types';
 import { generateReceiptText } from '../services/geminiService';
 import { Icons } from '../constants';
@@ -15,6 +15,7 @@ interface TreasuryProps {
 const Treasury: React.FC<TreasuryProps> = ({ transactions, setTransactions, members, onViewMember, currentUser }) => {
   const [showForm, setShowForm] = useState(false);
   const [filterMethod, setFilterMethod] = useState<'ALL' | PaymentMethod>('ALL');
+  const [showOnlyDebtors, setShowOnlyDebtors] = useState(false);
   const [newTx, setNewTx] = useState<Partial<Transaction>>({
     date: new Date().toISOString().split('T')[0],
     amount: 0,
@@ -28,11 +29,33 @@ const Treasury: React.FC<TreasuryProps> = ({ transactions, setTransactions, memb
                   currentUser.role === 'ADMINISTRATOR' || 
                   currentUser.role === BoardRole.TREASURER;
 
+  // Cálculo de balances por socio para identificar deudas
+  const memberBalances = useMemo(() => {
+    const balances: Record<string, number> = {};
+    transactions.forEach(tx => {
+      if (tx.memberId) {
+        if (!balances[tx.memberId]) balances[tx.memberId] = 0;
+        if (tx.type === TransactionType.INCOME) {
+          balances[tx.memberId] += tx.amount;
+        } else {
+          balances[tx.memberId] -= tx.amount;
+        }
+      }
+    });
+    return balances;
+  }, [transactions]);
+
+  const debtorMemberIds = useMemo(() => {
+    return Object.keys(memberBalances).filter(memberId => memberBalances[memberId] < 0);
+  }, [memberBalances]);
+
   const sortedTransactions = [...transactions].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-  const filteredTransactions = filterMethod === 'ALL' 
-    ? sortedTransactions 
-    : sortedTransactions.filter(t => t.paymentMethod === filterMethod);
+  const filteredTransactions = sortedTransactions.filter(t => {
+    const matchesMethod = filterMethod === 'ALL' || t.paymentMethod === filterMethod;
+    const matchesDebtor = !showOnlyDebtors || (t.memberId && debtorMemberIds.includes(t.memberId));
+    return matchesMethod && matchesDebtor;
+  });
 
   const handleAdd = (e: React.FormEvent) => {
     e.preventDefault();
@@ -67,13 +90,24 @@ const Treasury: React.FC<TreasuryProps> = ({ transactions, setTransactions, memb
       alert("No hay transacciones para exportar.");
       return;
     }
-    const headers = ["ID", "Fecha", "Monto", "Tipo", "Metodo", "Referencia", "Descripcion", "Socio"];
+    const headers = ["ID", "Fecha", "Monto", "Tipo", "Metodo", "Referencia", "Descripcion", "Socio", "Estado Balance"];
     const rows = filteredTransactions.map(tx => {
       const member = members.find(m => m.id === tx.memberId);
-      return [tx.id, tx.date, tx.amount, tx.type, tx.paymentMethod, tx.referenceNumber || "", `"${tx.description.replace(/"/g, '""')}"`, `"${(member ? member.name : "N/A").replace(/"/g, '""')}"`];
+      const balance = tx.memberId ? memberBalances[tx.memberId] : 0;
+      return [
+        tx.id, 
+        tx.date, 
+        tx.amount, 
+        tx.type, 
+        tx.paymentMethod, 
+        tx.referenceNumber || "", 
+        `"${tx.description.replace(/"/g, '""')}"`, 
+        `"${(member ? member.name : "N/A").replace(/"/g, '""')}"`,
+        balance < 0 ? "DEUDA" : "AL DIA"
+      ];
     });
     const csvContent = [headers.join(","), ...rows.map(row => row.join(","))].join("\n");
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.setAttribute("href", url);
@@ -103,11 +137,11 @@ const Treasury: React.FC<TreasuryProps> = ({ transactions, setTransactions, memb
           <p className="text-slate-500 font-bold uppercase tracking-widest text-[10px] mt-2">Control Financiero y Recaudación</p>
         </div>
         <div className="flex flex-wrap gap-3">
-          <button onClick={handleExportCSV} className="bg-white border border-slate-200 text-slate-700 px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-50 transition shadow-sm">Exportar CSV</button>
+          <button onClick={handleExportCSV} className="bg-white border-2 border-slate-200 text-slate-700 px-6 py-4 rounded-3xl font-black text-xs uppercase tracking-widest hover:border-emerald-600 transition shadow-sm">Exportar CSV</button>
           {canEdit && (
             <button 
               onClick={() => setShowForm(true)}
-              className="bg-emerald-700 text-white px-8 py-3 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-emerald-700/20 hover:bg-emerald-800 transition active:scale-95"
+              className="bg-emerald-700 text-white px-8 py-4 rounded-3xl font-black text-xs uppercase tracking-widest shadow-xl shadow-emerald-700/20 hover:bg-emerald-800 transition active:scale-95"
             >
               Nueva Transacción
             </button>
@@ -116,18 +150,32 @@ const Treasury: React.FC<TreasuryProps> = ({ transactions, setTransactions, memb
       </div>
 
       <div className="bg-white rounded-[2.5rem] shadow-sm border border-slate-100 overflow-hidden">
-        <div className="p-8 border-b border-slate-50 bg-slate-50/50 flex justify-between items-center">
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Historial de Movimientos (Recientes primero)</p>
-          <select 
-            className="bg-white border-2 border-slate-200 rounded-xl px-4 py-2 text-[10px] font-black uppercase tracking-widest text-slate-600 outline-none focus:border-emerald-600"
-            value={filterMethod}
-            onChange={(e) => setFilterMethod(e.target.value as any)}
-          >
-            <option value="ALL">Todos los métodos</option>
-            <option value={PaymentMethod.CASH}>Efectivo</option>
-            <option value={PaymentMethod.TRANSFER}>Transferencia</option>
-          </select>
+        <div className="p-8 border-b border-slate-50 bg-slate-50/50 flex flex-col md:flex-row justify-between items-center gap-6">
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Historial de Movimientos</p>
+          
+          <div className="flex flex-wrap items-center gap-4">
+            <label className="flex items-center space-x-3 cursor-pointer group bg-white px-4 py-2 rounded-xl border border-slate-200 hover:border-rose-300 transition-all">
+              <input 
+                type="checkbox" 
+                className="w-5 h-5 rounded-lg border-2 border-slate-300 text-rose-600 focus:ring-rose-500 transition-all cursor-pointer"
+                checked={showOnlyDebtors}
+                onChange={(e) => setShowOnlyDebtors(e.target.checked)}
+              />
+              <span className={`text-[10px] font-black uppercase tracking-widest ${showOnlyDebtors ? 'text-rose-600' : 'text-slate-500'}`}>Ver Sólo Deudores</span>
+            </label>
+
+            <select 
+              className="bg-white border-2 border-slate-200 rounded-xl px-4 py-2 text-[10px] font-black uppercase tracking-widest text-slate-600 outline-none focus:border-emerald-600 transition-all"
+              value={filterMethod}
+              onChange={(e) => setFilterMethod(e.target.value as any)}
+            >
+              <option value="ALL">Todos los métodos</option>
+              <option value={PaymentMethod.CASH}>Efectivo</option>
+              <option value={PaymentMethod.TRANSFER}>Transferencia</option>
+            </select>
+          </div>
         </div>
+        
         <div className="overflow-x-auto">
           <table className="w-full text-left">
             <thead className="bg-slate-50/30 text-slate-400 text-[9px] uppercase tracking-[0.2em] font-black border-b border-slate-100">
@@ -142,19 +190,31 @@ const Treasury: React.FC<TreasuryProps> = ({ transactions, setTransactions, memb
             <tbody className="divide-y divide-slate-50">
               {filteredTransactions.map(tx => {
                 const member = members.find(m => m.id === tx.memberId);
+                const isMemberDebtor = tx.memberId && debtorMemberIds.includes(tx.memberId);
+                const currentBalance = tx.memberId ? memberBalances[tx.memberId] : 0;
+
                 return (
-                  <tr key={tx.id} className="hover:bg-slate-50/30 transition-colors group">
+                  <tr key={tx.id} className={`hover:bg-slate-50/30 transition-colors group ${isMemberDebtor && showOnlyDebtors ? 'bg-rose-50/30' : ''}`}>
                     <td className="px-10 py-5">
                       <p className="text-[10px] font-black text-slate-400">#{tx.id}</p>
                       <p className="text-xs font-bold text-slate-600 mt-1">{tx.date}</p>
                     </td>
                     <td className="px-10 py-5">
-                      <p className="font-black text-slate-900 text-sm leading-tight">{tx.description}</p>
-                      {member ? (
-                        <button onClick={() => onViewMember(member.id)} className="text-[10px] text-emerald-700 font-bold hover:underline mt-1">{member.name}</button>
-                      ) : (
-                        <p className="text-[10px] text-slate-400 font-bold mt-1">Gasto General</p>
-                      )}
+                      <div className="flex items-center space-x-3">
+                        <div>
+                          <p className="font-black text-slate-900 text-sm leading-tight">{tx.description}</p>
+                          {member ? (
+                            <div className="flex items-center mt-1 space-x-2">
+                              <button onClick={() => onViewMember(member.id)} className="text-[10px] text-emerald-700 font-bold hover:underline">{member.name}</button>
+                              {currentBalance < 0 && (
+                                <span className="bg-rose-100 text-rose-700 text-[8px] font-black px-2 py-0.5 rounded-md uppercase tracking-tighter">Deuda: ${Math.abs(currentBalance).toLocaleString('es-CL')}</span>
+                              )}
+                            </div>
+                          ) : (
+                            <p className="text-[10px] text-slate-400 font-bold mt-1">Gasto General</p>
+                          )}
+                        </div>
+                      </div>
                     </td>
                     <td className="px-10 py-5">
                       <span className={`text-[9px] font-black uppercase px-3 py-1.5 rounded-xl border-2 ${
@@ -181,7 +241,7 @@ const Treasury: React.FC<TreasuryProps> = ({ transactions, setTransactions, memb
                         )}
                         {canEdit && (
                           <button onClick={() => handleDeleteTx(tx.id)} className="p-3 text-rose-300 hover:text-rose-600 rounded-2xl transition">
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                           </button>
                         )}
                       </div>
@@ -190,7 +250,15 @@ const Treasury: React.FC<TreasuryProps> = ({ transactions, setTransactions, memb
                 );
               })}
               {filteredTransactions.length === 0 && (
-                <tr><td colSpan={5} className="px-10 py-20 text-center text-slate-400 font-bold italic">No hay registros financieros.</td></tr>
+                <tr>
+                  <td colSpan={5} className="px-10 py-24 text-center">
+                    <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-200">
+                      <Icons.Wallet />
+                    </div>
+                    <p className="text-slate-400 font-black text-sm uppercase tracking-widest">No se encontraron registros</p>
+                    <p className="text-[10px] text-slate-400 font-bold mt-2 italic">Ajuste los filtros o inicie una nueva transacción.</p>
+                  </td>
+                </tr>
               )}
             </tbody>
           </table>
@@ -199,7 +267,7 @@ const Treasury: React.FC<TreasuryProps> = ({ transactions, setTransactions, memb
 
       {showForm && canEdit && (
         <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-xl flex items-center justify-center z-[100] p-6 overflow-y-auto">
-          <div className="bg-white w-full max-w-xl rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95">
+          <div className="bg-white w-full max-w-xl rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95 my-auto">
             <div className="bg-slate-900 p-10 text-white flex justify-between items-center">
               <div>
                 <h3 className="text-3xl font-black tracking-tighter">Nuevo Registro</h3>
@@ -210,7 +278,7 @@ const Treasury: React.FC<TreasuryProps> = ({ transactions, setTransactions, memb
             <form onSubmit={handleAdd} className="p-10 space-y-6">
               <div className="flex bg-slate-100 p-1.5 rounded-[1.5rem] shadow-inner">
                 <button type="button" onClick={() => setNewTx({...newTx, type: TransactionType.INCOME})} className={`flex-1 py-4 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all ${newTx.type === TransactionType.INCOME ? 'bg-white text-emerald-700 shadow-md' : 'text-slate-400'}`}>Ingreso de Fondos</button>
-                <button type="button" onClick={() => setNewTx({...newTx, type: TransactionType.EXPENSE})} className={`flex-1 py-4 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all ${newTx.type === TransactionType.EXPENSE ? 'bg-white text-rose-600 shadow-md' : 'text-slate-400'}`}>Egreso / Pago</button>
+                <button type="button" onClick={() => setNewTx({...newTx, type: TransactionType.EXPENSE})} className={`flex-1 py-4 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all ${newTx.type === TransactionType.EXPENSE ? 'bg-white text-rose-600 shadow-md' : 'text-slate-400'}`}>Egreso / Gasto</button>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -236,7 +304,11 @@ const Treasury: React.FC<TreasuryProps> = ({ transactions, setTransactions, memb
                 <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-2">Socio Vinculado (Opcional)</label>
                 <select className="w-full px-6 py-4 border-2 border-slate-100 rounded-2xl focus:border-emerald-600 outline-none font-black text-[11px] bg-slate-50/50" value={newTx.memberId || ''} onChange={e => setNewTx({...newTx, memberId: e.target.value})}>
                   <option value="">-- Pago General --</option>
-                  {members.map(m => <option key={m.id} value={m.id}>{m.name} ({m.rut})</option>)}
+                  {members.map(m => (
+                    <option key={m.id} value={m.id}>
+                      {m.name} ({m.rut}) {memberBalances[m.id] < 0 ? '⚠️ MOROSO' : ''}
+                    </option>
+                  ))}
                 </select>
               </div>
 
