@@ -2,16 +2,16 @@
 import React from 'react';
 
 export const COLORS = {
-  primary: '#047857',
-  secondary: '#0891b2',
-  accent: '#6d28d9',
-  success: '#15803d',
-  warning: '#b45309',
-  danger: '#b91c1c',
+  primary: '#064e3b', // Deep Emerald
+  secondary: '#1e1b4b', // Deep Indigo/Navy
+  accent: '#10b981', // Emerald 500
+  success: '#059669',
+  warning: '#d97706',
+  danger: '#e11d48',
   background: '#f8fafc',
   text: {
     main: '#0f172a',
-    secondary: '#475569',
+    secondary: '#334155',
     muted: '#64748b'
   }
 };

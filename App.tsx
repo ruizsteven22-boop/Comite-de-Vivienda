@@ -133,6 +133,17 @@ const App: React.FC = () => {
     setIsSidebarOpen(false);
   };
 
+  const handleResetSystem = () => {
+    const confirm1 = confirm("⚠️ ¿ESTÁ SEGURO DE RESTABLECER TODO A CERO?\n\nEsta acción borrará permanentemente todos los socios, transacciones, asambleas y configuraciones personalizadas.");
+    if (confirm1) {
+      const confirm2 = confirm("🚨 ¡ÚLTIMA ADVERTENCIA!\n\nTodos los datos locales se perderán definitivamente. ¿Desea proceder?");
+      if (confirm2) {
+        localStorage.clear();
+        window.location.reload();
+      }
+    }
+  };
+
   const handleViewMember = (id: string) => {
     setViewingMemberId(id);
     setView('members');
@@ -231,7 +242,7 @@ const App: React.FC = () => {
                 <button
                   key={item.id}
                   onClick={() => { setView(item.id); setIsSidebarOpen(false); }}
-                  className={`group flex w-full items-center rounded-2xl px-6 py-4 text-sm font-bold transition-all ${view === item.id ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/40' : 'text-slate-400 hover:bg-white/5 hover:text-white'}`}
+                  className={`group flex w-full items-center rounded-2xl px-6 py-4 text-sm font-bold transition-all ${view === item.id ? 'bg-gradient-to-r from-emerald-600 to-emerald-800 text-white shadow-lg shadow-emerald-950/40' : 'text-slate-400 hover:bg-white/5 hover:text-white'}`}
                 >
                   <span className={`mr-4 transition-colors ${view === item.id ? 'text-white' : 'text-slate-500 group-hover:text-emerald-400'}`}>
                     {item.icon}
@@ -244,7 +255,7 @@ const App: React.FC = () => {
 
           <div className="p-6 bg-slate-950/50 mt-auto border-t border-white/5">
             <div className="flex items-center space-x-3 mb-6">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-600 font-black text-white shadow-md">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-700 font-black text-white shadow-md">
                 {currentUser.name.charAt(0)}
               </div>
               <div className="overflow-hidden">
@@ -263,7 +274,7 @@ const App: React.FC = () => {
       </aside>
 
       <div className="flex flex-1 flex-col overflow-hidden">
-        <header className="flex h-16 items-center justify-between border-b border-slate-200 bg-white px-6 md:hidden">
+        <header className="flex h-16 items-center justify-between border-b border-slate-200 bg-white px-6 md:hidden shadow-sm">
           <div className="font-black italic text-slate-900 tracking-tight">{config.tradeName}</div>
           <button onClick={() => setIsSidebarOpen(true)} className="rounded-lg bg-slate-100 p-2 text-slate-600">
             <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 6h16M12 12h8M4 18h16" /></svg>
@@ -283,7 +294,7 @@ const App: React.FC = () => {
                 {view === 'assemblies' && <AssemblyManagement assemblies={assemblies} setAssemblies={setAssemblies} members={members} board={board} currentUser={currentUser} config={config} />}
                 {view === 'attendance' && <Attendance members={members} assemblies={assemblies} setAssemblies={setAssemblies} board={board} currentUser={currentUser} config={config} />}
                 {view === 'support' && <SupportManagement users={users} setUsers={setUsers} />}
-                {view === 'settings' && <SettingsManagement config={config} setConfig={setConfig} onExportBackup={exportBackupData} />}
+                {view === 'settings' && <SettingsManagement config={config} setConfig={setConfig} onExportBackup={exportBackupData} onResetSystem={handleResetSystem} />}
               </>
             )}
           </div>
