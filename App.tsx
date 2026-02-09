@@ -53,64 +53,44 @@ const PERMISSIONS: Record<ViewId, (SystemRole | 'ANY')[]> = {
   settings: ['SUPPORT', 'ADMINISTRATOR']
 };
 
+// Helper robusto para parsear JSON evitando el error de tokens HTML
+const safeJsonParse = (key: string, fallback: any) => {
+  try {
+    const data = localStorage.getItem(key);
+    if (!data) return fallback;
+    // Si los datos empiezan con <, es una respuesta HTML de error guardada por error
+    if (data.trim().startsWith('<')) {
+      console.warn(`Detectado HTML en localStorage para la clave ${key}. Limpiando...`);
+      localStorage.removeItem(key);
+      return fallback;
+    }
+    return JSON.parse(data);
+  } catch (e) {
+    console.error(`Error parseando ${key}:`, e);
+    return fallback;
+  }
+};
+
 const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [view, setView] = useState<ViewId>('dashboard');
   const [isInitialized, setIsInitialized] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   
-  const [users, setUsers] = useState<User[]>(() => {
-    try {
-      const saved = localStorage.getItem('te_users');
-      return saved ? JSON.parse(saved) : INITIAL_USERS;
-    } catch { return INITIAL_USERS; }
-  });
-
-  const [config, setConfig] = useState<CommitteeConfig>(() => {
-    try {
-      const saved = localStorage.getItem('te_config');
-      return saved ? JSON.parse(saved) : INITIAL_CONFIG;
-    } catch { return INITIAL_CONFIG; }
-  });
-
-  const [members, setMembers] = useState<Member[]>(() => {
-    try {
-      const saved = localStorage.getItem('te_members');
-      return saved ? JSON.parse(saved) : [];
-    } catch { return []; }
-  });
-
-  const [transactions, setTransactions] = useState<Transaction[]>(() => {
-    try {
-      const saved = localStorage.getItem('te_transactions');
-      return saved ? JSON.parse(saved) : [];
-    } catch { return []; }
-  });
-
-  const [board, setBoard] = useState<BoardPosition[]>(() => {
-    try {
-      const saved = localStorage.getItem('te_board');
-      return saved ? JSON.parse(saved) : INITIAL_BOARD;
-    } catch { return INITIAL_BOARD; }
-  });
-
+  const [users, setUsers] = useState<User[]>(() => safeJsonParse('te_users', INITIAL_USERS));
+  const [config, setConfig] = useState<CommitteeConfig>(() => safeJsonParse('te_config', INITIAL_CONFIG));
+  const [members, setMembers] = useState<Member[]>(() => safeJsonParse('te_members', []));
+  const [transactions, setTransactions] = useState<Transaction[]>(() => safeJsonParse('te_transactions', []));
+  const [board, setBoard] = useState<BoardPosition[]>(() => safeJsonParse('te_board', INITIAL_BOARD));
   const [boardPeriod, setBoardPeriod] = useState<string>(() => localStorage.getItem('te_board_period') || '2025 - 2027');
-
-  const [assemblies, setAssemblies] = useState<Assembly[]>(() => {
-    try {
-      const saved = localStorage.getItem('te_assemblies');
-      return saved ? JSON.parse(saved) : [];
-    } catch { return []; }
-  });
+  const [assemblies, setAssemblies] = useState<Assembly[]>(() => safeJsonParse('te_assemblies', []));
 
   const [viewingMemberId, setViewingMemberId] = useState<string | null>(null);
-
-  // Obtener traducciones basadas en la configuración
   const t = getTranslation(config.language);
 
   useEffect(() => {
     const savedUser = localStorage.getItem('te_session');
-    if (savedUser) {
+    if (savedUser && !savedUser.trim().startsWith('<')) {
       try { setCurrentUser(JSON.parse(savedUser)); } 
       catch { localStorage.removeItem('te_session'); }
     }
@@ -139,13 +119,9 @@ const App: React.FC = () => {
   };
 
   const handleResetSystem = () => {
-    const confirm1 = confirm("⚠️ ¿ESTÁ SEGURO DE RESTABLECER TODO A CERO?\n\nEsta acción borrará permanentemente todos los socios, transacciones, asambleas y configuraciones personalizadas.");
-    if (confirm1) {
-      const confirm2 = confirm("🚨 ¡ÚLTIMA ADVERTENCIA!\n\nTodos los datos locales se perderán definitivamente. ¿Desea proceder?");
-      if (confirm2) {
-        localStorage.clear();
-        window.location.reload();
-      }
+    if (confirm("⚠️ ¿RESTABLECER TODO A CERO?")) {
+      localStorage.clear();
+      window.location.reload();
     }
   };
 
@@ -162,27 +138,16 @@ const App: React.FC = () => {
 
   const exportBackupData = () => {
     const backupData = {
-      version: '1.2.0',
+      version: '1.2.1',
       timestamp: new Date().toISOString(),
-      data: {
-        users,
-        config,
-        members,
-        transactions,
-        board,
-        boardPeriod,
-        assemblies
-      }
+      data: { users, config, members, transactions, board, boardPeriod, assemblies }
     };
-    
     const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
     link.download = `respaldo_tierra_esperanza_${new Date().toISOString().split('T')[0]}.json`;
-    document.body.appendChild(link);
     link.click();
-    document.body.removeChild(link);
     URL.revokeObjectURL(url);
   };
 
@@ -207,26 +172,6 @@ const App: React.FC = () => {
 
   const tradeParts = config.tradeName.split(' ');
 
-  const RestrictedAccess = () => (
-    <div className="flex flex-col items-center justify-center py-32 text-center animate-in fade-in zoom-in-95 duration-500">
-      <div className="w-24 h-24 bg-rose-50 rounded-[2rem] flex items-center justify-center text-rose-500 mb-8 shadow-inner border-2 border-rose-100">
-        <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-        </svg>
-      </div>
-      <h3 className="text-3xl font-black text-slate-900 tracking-tight">Acceso Restringido</h3>
-      <p className="text-slate-500 font-bold max-w-md mx-auto mt-4 leading-relaxed">
-        Su rol actual de <span className="text-emerald-700 font-black">"{currentUser.role}"</span> no cuenta con los privilegios necesarios para visualizar este módulo.
-      </p>
-      <button 
-        onClick={() => setView('dashboard')}
-        className="mt-10 px-8 py-4 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-black transition shadow-xl"
-      >
-        Volver al Inicio
-      </button>
-    </div>
-  );
-
   return (
     <div className="flex h-screen overflow-hidden bg-[#F8FAFC]">
       <aside className={`sidebar-glass fixed inset-y-0 left-0 z-50 w-72 transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
@@ -236,42 +181,21 @@ const App: React.FC = () => {
               <span className="text-emerald-500 mr-2">🌳</span>
               {tradeParts[0]} <span className="text-emerald-400 ml-1">{tradeParts.slice(1).join(' ')}</span>
             </h1>
-            <p className="mt-1 text-[10px] font-bold uppercase tracking-[0.3em] text-slate-500">Sistema de Gestión</p>
           </div>
-
           <nav className="flex-1 space-y-1 px-4 overflow-y-auto">
-            {menuItems.map(item => {
-              if (!hasPermission(item.id)) return null;
-              
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => { setView(item.id); setIsSidebarOpen(false); }}
-                  className={`group flex w-full items-center rounded-2xl px-6 py-4 text-sm font-bold transition-all ${view === item.id ? 'bg-gradient-to-r from-emerald-600 to-emerald-800 text-white shadow-lg shadow-emerald-950/40' : 'text-slate-400 hover:bg-white/5 hover:text-white'}`}
-                >
-                  <span className={`mr-4 transition-colors ${view === item.id ? 'text-white' : 'text-slate-500 group-hover:text-emerald-400'}`}>
-                    {item.icon}
-                  </span>
-                  {item.label}
-                </button>
-              );
-            })}
+            {menuItems.map(item => hasPermission(item.id) && (
+              <button
+                key={item.id}
+                onClick={() => { setView(item.id); setIsSidebarOpen(false); }}
+                className={`group flex w-full items-center rounded-2xl px-6 py-4 text-sm font-bold transition-all ${view === item.id ? 'bg-gradient-to-r from-emerald-600 to-emerald-800 text-white shadow-lg' : 'text-slate-400 hover:bg-white/5 hover:text-white'}`}
+              >
+                <span className="mr-4">{item.icon}</span>
+                {item.label}
+              </button>
+            ))}
           </nav>
-
-          <div className="p-6 bg-slate-950/50 mt-auto border-t border-white/5">
-            <div className="flex items-center space-x-3 mb-6">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-700 font-black text-white shadow-md">
-                {currentUser.name.charAt(0)}
-              </div>
-              <div className="overflow-hidden">
-                <p className="truncate text-sm font-black text-white">{currentUser.name}</p>
-                <p className="text-[9px] font-black uppercase tracking-widest text-emerald-500">{currentUser.role}</p>
-              </div>
-            </div>
-            <button
-              onClick={handleLogout}
-              className="flex w-full items-center justify-center rounded-xl bg-rose-500/10 py-3 text-xs font-black uppercase tracking-widest text-rose-400 transition-all hover:bg-rose-500 hover:text-white"
-            >
+          <div className="p-6 bg-slate-950/50 border-t border-white/5">
+            <button onClick={handleLogout} className="flex w-full items-center justify-center rounded-xl bg-rose-500/10 py-3 text-xs font-black uppercase tracking-widest text-rose-400 hover:bg-rose-500 hover:text-white transition-all">
               <span className="mr-2"><Icons.Logout /></span> {t.nav.logout}
             </button>
           </div>
@@ -279,7 +203,7 @@ const App: React.FC = () => {
       </aside>
 
       <div className="flex flex-1 flex-col overflow-hidden">
-        <header className="flex h-16 items-center justify-between border-b border-slate-200 bg-white px-6 md:hidden shadow-sm">
+        <header className="flex h-16 items-center justify-between border-b border-slate-200 bg-white px-6 md:hidden">
           <div className="font-black italic text-slate-900 tracking-tight">{config.tradeName}</div>
           <button onClick={() => setIsSidebarOpen(true)} className="rounded-lg bg-slate-100 p-2 text-slate-600">
             <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 6h16M12 12h8M4 18h16" /></svg>
@@ -288,27 +212,18 @@ const App: React.FC = () => {
 
         <main className="flex-1 overflow-y-auto p-6 md:p-12 lg:p-16">
           <div className="mx-auto max-w-7xl page-transition">
-            {!hasPermission(view) ? (
-              <RestrictedAccess />
-            ) : (
-              <>
-                {view === 'dashboard' && <Dashboard members={members} transactions={transactions} assemblies={assemblies} currentUser={currentUser} config={config} />}
-                {view === 'members' && <MemberManagement members={members} setMembers={setMembers} assemblies={assemblies} transactions={transactions} board={board} viewingMemberId={viewingMemberId} onClearViewingMember={() => setViewingMemberId(null)} currentUser={currentUser} config={config} />}
-                {view === 'treasury' && <Treasury transactions={transactions} setTransactions={setTransactions} members={members} onViewMember={handleViewMember} currentUser={currentUser} />}
-                {view === 'board' && <BoardManagement board={board} setBoard={setBoard} boardPeriod={boardPeriod} setBoardPeriod={setBoardPeriod} members={members} currentUser={currentUser} config={config} />}
-                {view === 'assemblies' && <AssemblyManagement assemblies={assemblies} setAssemblies={setAssemblies} members={members} board={board} currentUser={currentUser} config={config} />}
-                {view === 'attendance' && <Attendance members={members} assemblies={assemblies} setAssemblies={setAssemblies} board={board} currentUser={currentUser} config={config} />}
-                {view === 'support' && <SupportManagement users={users} setUsers={setUsers} />}
-                {view === 'settings' && <SettingsManagement config={config} setConfig={setConfig} onExportBackup={exportBackupData} onResetSystem={handleResetSystem} />}
-              </>
-            )}
+            {view === 'dashboard' && <Dashboard members={members} transactions={transactions} assemblies={assemblies} currentUser={currentUser} config={config} />}
+            {view === 'members' && <MemberManagement members={members} setMembers={setMembers} assemblies={assemblies} transactions={transactions} board={board} viewingMemberId={viewingMemberId} onClearViewingMember={() => setViewingMemberId(null)} currentUser={currentUser} config={config} />}
+            {view === 'treasury' && <Treasury transactions={transactions} setTransactions={setTransactions} members={members} onViewMember={handleViewMember} currentUser={currentUser} />}
+            {view === 'board' && <BoardManagement board={board} setBoard={setBoard} boardPeriod={boardPeriod} setBoardPeriod={setBoardPeriod} members={members} currentUser={currentUser} config={config} />}
+            {view === 'assemblies' && <AssemblyManagement assemblies={assemblies} setAssemblies={setAssemblies} members={members} board={board} currentUser={currentUser} config={config} />}
+            {view === 'attendance' && <Attendance members={members} assemblies={assemblies} setAssemblies={setAssemblies} board={board} currentUser={currentUser} config={config} />}
+            {view === 'support' && <SupportManagement users={users} setUsers={setUsers} />}
+            {view === 'settings' && <SettingsManagement config={config} setConfig={setConfig} onExportBackup={exportBackupData} onResetSystem={handleResetSystem} />}
           </div>
         </main>
       </div>
-
-      {isSidebarOpen && (
-        <div onClick={() => setIsSidebarOpen(false)} className="fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-sm md:hidden"></div>
-      )}
+      {isSidebarOpen && <div onClick={() => setIsSidebarOpen(false)} className="fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-sm md:hidden"></div>}
     </div>
   );
 };
