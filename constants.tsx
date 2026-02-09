@@ -2,17 +2,17 @@
 import React from 'react';
 
 export const COLORS = {
-  primary: '#064e3b', // Deep Emerald
-  secondary: '#1e1b4b', // Deep Indigo/Navy
-  accent: '#10b981', // Emerald 500
+  primary: '#064e3b', // Verde Bosque Profundo
+  secondary: '#0a192f', // Azul Marino Medianoche
+  accent: '#10b981', // Esmeralda Vibrante para elementos interactivos
   success: '#059669',
-  warning: '#d97706',
+  warning: '#f59e0b',
   danger: '#e11d48',
-  background: '#f8fafc',
+  background: '#f8fafc', // Gris Suave para el fondo
   text: {
-    main: '#0f172a',
-    secondary: '#334155',
-    muted: '#64748b'
+    main: '#0f172a', // Slate Profundo para lectura principal
+    secondary: '#475569', // Gris Medio para subtítulos
+    muted: '#94a3b8' // Gris Claro para elementos secundarios
   }
 };
 
