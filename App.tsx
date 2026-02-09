@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Member, Transaction, BoardPosition, Assembly, User, BoardRole, CommitteeConfig, SystemRole, Language } from './types';
 import { Icons } from './constants';
 import { getTranslation } from './services/i18nService';
+import { isValidJson } from './services/apiService';
 import Dashboard from './components/Dashboard';
 import MemberManagement from './components/MemberManagement';
 import Treasury from './components/Treasury';
@@ -53,26 +54,17 @@ const PERMISSIONS: Record<ViewId, (SystemRole | 'ANY')[]> = {
   settings: ['SUPPORT', 'ADMINISTRATOR']
 };
 
-/**
- * safeJsonParse robusto contra errores de WordPress.
- * Evita el error "Unexpected token <" al leer datos corruptos del servidor o storage.
- */
 const safeJsonParse = (key: string, fallback: any) => {
   try {
     const data = localStorage.getItem(key);
     if (!data) return fallback;
-    
-    const trimmed = data.trim();
-    // Si los datos guardados parecen HTML (comienzan con <), son una respuesta de error del servidor
-    if (trimmed.startsWith('<') || trimmed.startsWith('<!DOCTYPE')) {
-      console.warn(`[Tierra Esperanza] Datos corruptos (HTML) detectados en ${key}. Restaurando valores iniciales.`);
-      localStorage.removeItem(key);
+    if (!isValidJson(data)) {
+      console.warn(`[Tierra Esperanza] Clave '${key}' ignorada: Contenido no es JSON válido (posible error HTML).`);
       return fallback;
     }
-    
-    return JSON.parse(trimmed);
+    return JSON.parse(data);
   } catch (e) {
-    console.error(`[Tierra Esperanza] Error fatal al parsear ${key}:`, e);
+    console.error(`Error parseando ${key}:`, e);
     return fallback;
   }
 };
@@ -95,27 +87,19 @@ const App: React.FC = () => {
   const t = getTranslation(config.language);
 
   useEffect(() => {
-    const savedUser = localStorage.getItem('te_session');
-    if (savedUser) {
-      const parsed = safeJsonParse('te_session', null);
-      if (parsed) setCurrentUser(parsed);
-      else localStorage.removeItem('te_session');
-    }
+    const savedUser = safeJsonParse('te_session', null);
+    if (savedUser) setCurrentUser(savedUser);
     setIsInitialized(true);
   }, []);
 
   useEffect(() => { if (isInitialized) {
-    try {
-      localStorage.setItem('te_users', JSON.stringify(users));
-      localStorage.setItem('te_config', JSON.stringify(config));
-      localStorage.setItem('te_members', JSON.stringify(members));
-      localStorage.setItem('te_transactions', JSON.stringify(transactions));
-      localStorage.setItem('te_board', JSON.stringify(board));
-      localStorage.setItem('te_board_period', boardPeriod);
-      localStorage.setItem('te_assemblies', JSON.stringify(assemblies));
-    } catch (e) {
-      console.error("Error al persistir datos:", e);
-    }
+    localStorage.setItem('te_users', JSON.stringify(users));
+    localStorage.setItem('te_config', JSON.stringify(config));
+    localStorage.setItem('te_members', JSON.stringify(members));
+    localStorage.setItem('te_transactions', JSON.stringify(transactions));
+    localStorage.setItem('te_board', JSON.stringify(board));
+    localStorage.setItem('te_board_period', boardPeriod);
+    localStorage.setItem('te_assemblies', JSON.stringify(assemblies));
   }}, [users, config, members, transactions, board, boardPeriod, assemblies, isInitialized]);
 
   const handleLogin = (user: User) => {
@@ -127,18 +111,6 @@ const App: React.FC = () => {
     setCurrentUser(null);
     localStorage.removeItem('te_session');
     setIsSidebarOpen(false);
-  };
-
-  const handleResetSystem = () => {
-    if (confirm("⚠️ ¿RESTABLECER TODO A CERO?")) {
-      localStorage.clear();
-      window.location.reload();
-    }
-  };
-
-  const handleViewMember = (id: string) => {
-    setViewingMemberId(id);
-    setView('members');
   };
 
   const hasPermission = (viewId: ViewId): boolean => {
@@ -177,6 +149,10 @@ const App: React.FC = () => {
               <span className="text-emerald-500 mr-2">🌳</span>
               {tradeParts[0]} <span className="text-emerald-400 ml-1">{tradeParts.slice(1).join(' ')}</span>
             </h1>
+            <div className="mt-4 flex items-center space-x-2 px-1">
+              <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></div>
+              <span className="text-[9px] font-black text-emerald-400/60 uppercase tracking-widest">Sistema En Línea</span>
+            </div>
           </div>
           <nav className="flex-1 space-y-1 px-4 overflow-y-auto">
             {menuItems.map(item => hasPermission(item.id) && (
@@ -191,7 +167,7 @@ const App: React.FC = () => {
             ))}
           </nav>
           <div className="p-6 bg-slate-950/50 border-t border-white/5">
-            <button onClick={handleLogout} className="flex w-full items-center justify-center rounded-xl bg-rose-500/10 py-3 text-xs font-black uppercase tracking-widest text-rose-400 hover:bg-rose-500 hover:text-white transition-all">
+            <button onClick={handleLogout} className="flex w-full items-center justify-center rounded-xl bg-rose-500/10 py-3 text-xs font-black uppercase tracking-widest text-rose-400 hover:bg-rose-50 hover:text-white transition-all">
               <span className="mr-2"><Icons.Logout /></span> {t.nav.logout}
             </button>
           </div>
@@ -210,12 +186,12 @@ const App: React.FC = () => {
           <div className="mx-auto max-w-7xl page-transition">
             {view === 'dashboard' && <Dashboard members={members} transactions={transactions} assemblies={assemblies} currentUser={currentUser} config={config} />}
             {view === 'members' && <MemberManagement members={members} setMembers={setMembers} assemblies={assemblies} transactions={transactions} board={board} viewingMemberId={viewingMemberId} onClearViewingMember={() => setViewingMemberId(null)} currentUser={currentUser} config={config} />}
-            {view === 'treasury' && <Treasury transactions={transactions} setTransactions={setTransactions} members={members} onViewMember={handleViewMember} currentUser={currentUser} />}
+            {view === 'treasury' && <Treasury transactions={transactions} setTransactions={setTransactions} members={members} onViewMember={(id) => { setViewingMemberId(id); setView('members'); }} currentUser={currentUser} />}
             {view === 'board' && <BoardManagement board={board} setBoard={setBoard} boardPeriod={boardPeriod} setBoardPeriod={setBoardPeriod} members={members} currentUser={currentUser} config={config} />}
             {view === 'assemblies' && <AssemblyManagement assemblies={assemblies} setAssemblies={setAssemblies} members={members} board={board} currentUser={currentUser} config={config} />}
             {view === 'attendance' && <Attendance members={members} assemblies={assemblies} setAssemblies={setAssemblies} board={board} currentUser={currentUser} config={config} />}
             {view === 'support' && <SupportManagement users={users} setUsers={setUsers} />}
-            {view === 'settings' && <SettingsManagement config={config} setConfig={setConfig} onExportBackup={() => {}} onResetSystem={handleResetSystem} />}
+            {view === 'settings' && <SettingsManagement config={config} setConfig={setConfig} onExportBackup={() => {}} onResetSystem={() => {}} />}
           </div>
         </main>
       </div>
