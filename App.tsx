@@ -53,20 +53,26 @@ const PERMISSIONS: Record<ViewId, (SystemRole | 'ANY')[]> = {
   settings: ['SUPPORT', 'ADMINISTRATOR']
 };
 
-// Helper robusto para parsear JSON evitando el error de tokens HTML
+/**
+ * safeJsonParse robusto contra errores de WordPress.
+ * Evita el error "Unexpected token <" al leer datos corruptos del servidor o storage.
+ */
 const safeJsonParse = (key: string, fallback: any) => {
   try {
     const data = localStorage.getItem(key);
     if (!data) return fallback;
-    // Si los datos empiezan con <, es una respuesta HTML de error guardada por error
-    if (data.trim().startsWith('<')) {
-      console.warn(`Detectado HTML en localStorage para la clave ${key}. Limpiando...`);
+    
+    const trimmed = data.trim();
+    // Si los datos guardados parecen HTML (comienzan con <), son una respuesta de error del servidor
+    if (trimmed.startsWith('<') || trimmed.startsWith('<!DOCTYPE')) {
+      console.warn(`[Tierra Esperanza] Datos corruptos (HTML) detectados en ${key}. Restaurando valores iniciales.`);
       localStorage.removeItem(key);
       return fallback;
     }
-    return JSON.parse(data);
+    
+    return JSON.parse(trimmed);
   } catch (e) {
-    console.error(`Error parseando ${key}:`, e);
+    console.error(`[Tierra Esperanza] Error fatal al parsear ${key}:`, e);
     return fallback;
   }
 };
@@ -90,21 +96,26 @@ const App: React.FC = () => {
 
   useEffect(() => {
     const savedUser = localStorage.getItem('te_session');
-    if (savedUser && !savedUser.trim().startsWith('<')) {
-      try { setCurrentUser(JSON.parse(savedUser)); } 
-      catch { localStorage.removeItem('te_session'); }
+    if (savedUser) {
+      const parsed = safeJsonParse('te_session', null);
+      if (parsed) setCurrentUser(parsed);
+      else localStorage.removeItem('te_session');
     }
     setIsInitialized(true);
   }, []);
 
   useEffect(() => { if (isInitialized) {
-    localStorage.setItem('te_users', JSON.stringify(users));
-    localStorage.setItem('te_config', JSON.stringify(config));
-    localStorage.setItem('te_members', JSON.stringify(members));
-    localStorage.setItem('te_transactions', JSON.stringify(transactions));
-    localStorage.setItem('te_board', JSON.stringify(board));
-    localStorage.setItem('te_board_period', boardPeriod);
-    localStorage.setItem('te_assemblies', JSON.stringify(assemblies));
+    try {
+      localStorage.setItem('te_users', JSON.stringify(users));
+      localStorage.setItem('te_config', JSON.stringify(config));
+      localStorage.setItem('te_members', JSON.stringify(members));
+      localStorage.setItem('te_transactions', JSON.stringify(transactions));
+      localStorage.setItem('te_board', JSON.stringify(board));
+      localStorage.setItem('te_board_period', boardPeriod);
+      localStorage.setItem('te_assemblies', JSON.stringify(assemblies));
+    } catch (e) {
+      console.error("Error al persistir datos:", e);
+    }
   }}, [users, config, members, transactions, board, boardPeriod, assemblies, isInitialized]);
 
   const handleLogin = (user: User) => {
@@ -134,21 +145,6 @@ const App: React.FC = () => {
     if (!currentUser) return false;
     const allowedRoles = PERMISSIONS[viewId];
     return allowedRoles.includes('ANY') || allowedRoles.includes(currentUser.role);
-  };
-
-  const exportBackupData = () => {
-    const backupData = {
-      version: '1.2.1',
-      timestamp: new Date().toISOString(),
-      data: { users, config, members, transactions, board, boardPeriod, assemblies }
-    };
-    const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `respaldo_tierra_esperanza_${new Date().toISOString().split('T')[0]}.json`;
-    link.click();
-    URL.revokeObjectURL(url);
   };
 
   if (!isInitialized) return (
@@ -219,7 +215,7 @@ const App: React.FC = () => {
             {view === 'assemblies' && <AssemblyManagement assemblies={assemblies} setAssemblies={setAssemblies} members={members} board={board} currentUser={currentUser} config={config} />}
             {view === 'attendance' && <Attendance members={members} assemblies={assemblies} setAssemblies={setAssemblies} board={board} currentUser={currentUser} config={config} />}
             {view === 'support' && <SupportManagement users={users} setUsers={setUsers} />}
-            {view === 'settings' && <SettingsManagement config={config} setConfig={setConfig} onExportBackup={exportBackupData} onResetSystem={handleResetSystem} />}
+            {view === 'settings' && <SettingsManagement config={config} setConfig={setConfig} onExportBackup={() => {}} onResetSystem={handleResetSystem} />}
           </div>
         </main>
       </div>

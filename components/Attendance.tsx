@@ -69,7 +69,7 @@ const Attendance: React.FC<AttendanceProps> = ({ members, assemblies, setAssembl
   const totalMembers = members.length;
   const presentCount = selectedAssembly?.attendees.length || 0;
   const quorumValue = totalMembers > 0 ? Math.round((presentCount / totalMembers) * 100) : 0;
-  const isQuorumValid = quorumValue >= 50;
+  const isQuorumReached = quorumValue >= 50;
 
   const filteredMembers = members.filter(m => 
     m.name.toLowerCase().includes(listSearch.toLowerCase()) || 
@@ -96,12 +96,12 @@ const Attendance: React.FC<AttendanceProps> = ({ members, assemblies, setAssembl
            <div className="px-4 border-l border-slate-100 col-span-2 md:col-span-1 pt-4 md:pt-0">
               <div className="flex justify-between items-center mb-1">
                 <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Quórum {quorumValue}%</p>
-                <span className={`text-[8px] font-black px-2 py-0.5 rounded-md ${isQuorumValid ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-600'}`}>
-                  {isQuorumValid ? 'VÁLIDO' : 'INSUFICIENTE'}
+                <span className={`text-[8px] font-black px-2 py-0.5 rounded-md ${isQuorumReached ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-600'}`}>
+                  {isQuorumReached ? 'VÁLIDO' : 'INSUFICIENTE'}
                 </span>
               </div>
               <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
-                 <div className={`h-full transition-all duration-1000 ${isQuorumValid ? 'bg-emerald-500' : 'bg-amber-500'}`} style={{ width: `${Math.min(quorumValue, 100)}%` }}></div>
+                 <div className={`h-full transition-all duration-1000 ${isQuorumReached ? 'bg-emerald-500' : 'bg-amber-500'}`} style={{ width: `${Math.min(quorumValue, 100)}%` }}></div>
               </div>
            </div>
         </div>
@@ -215,39 +215,36 @@ const Attendance: React.FC<AttendanceProps> = ({ members, assemblies, setAssembl
                 {filteredMembers.map(member => {
                   const isPresent = selectedAssembly?.attendees.includes(member.rut);
                   
-                  // En modo "En Curso", podemos resaltar a los que acaban de llegar
-                  // o simplemente mostrar a todos con su estado.
-                  
                   return (
-                    <tr key={member.id} className={`hover:bg-slate-50 transition-colors group ${!isPresent && selectedAssembly?.status === AssemblyStatus.FINISHED ? 'opacity-40 grayscale-[0.5]' : ''}`}>
-                      <td className="px-10 py-5">
-                        <div className="flex items-center space-x-4">
+                    <tr key={member.id} className={`hover:bg-slate-50 transition-all group duration-300 ${!isPresent && selectedAssembly?.status === AssemblyStatus.FINISHED ? 'opacity-30 grayscale-[0.8]' : ''}`}>
+                      <td className="px-10 py-6">
+                        <div className="flex items-center space-x-5">
                           <img 
                             src={member.photoUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(member.name)}&background=f1f5f9&color=94a3b8&bold=true&size=128`} 
-                            className={`w-12 h-12 rounded-2xl object-cover shadow-sm border-2 ${isPresent ? 'border-emerald-200' : 'border-slate-100'}`} 
+                            className={`w-14 h-14 rounded-2xl object-cover shadow-lg border-2 transition-transform duration-300 group-hover:scale-110 ${isPresent ? 'border-emerald-400' : 'border-white'}`} 
                           />
                           <div>
-                            <p className={`font-black text-sm leading-tight ${isPresent ? 'text-slate-900' : 'text-slate-500'}`}>{member.name}</p>
-                            <span className="text-[8px] font-black text-slate-300 uppercase tracking-widest">Socio Activo</span>
+                            <p className={`font-black text-base leading-tight transition-colors ${isPresent ? 'text-slate-900' : 'text-slate-400 group-hover:text-slate-600'}`}>{member.name}</p>
+                            <span className={`text-[9px] font-black uppercase tracking-widest mt-1 inline-block ${isPresent ? 'text-emerald-600' : 'text-slate-300'}`}>Socio Activo</span>
                           </div>
                         </div>
                       </td>
-                      <td className="px-10 py-5">
-                        <p className="font-mono text-[10px] font-bold text-slate-400 tracking-tighter">{member.rut}</p>
+                      <td className="px-10 py-6">
+                        <p className={`font-mono text-xs font-bold tracking-tighter transition-colors ${isPresent ? 'text-slate-600' : 'text-slate-300'}`}>{member.rut}</p>
                       </td>
-                      <td className="px-10 py-5 text-right">
+                      <td className="px-10 py-6 text-right">
                         <div className="flex flex-col items-end">
-                          <span className={`text-[8px] font-black uppercase px-3 py-1.5 rounded-xl border-2 transition-all ${
+                          <span className={`text-[9px] font-black uppercase px-5 py-2.5 rounded-xl border-2 transition-all duration-500 shadow-sm ${
                             isPresent 
-                              ? 'bg-emerald-50 text-emerald-700 border-emerald-100 shadow-sm shadow-emerald-100/50' 
-                              : 'bg-slate-50 text-slate-400 border-slate-100'
+                              ? 'bg-emerald-600 text-white border-emerald-600 shadow-emerald-200' 
+                              : 'bg-white text-slate-300 border-slate-100 group-hover:border-slate-200 group-hover:text-slate-400'
                           }`}>
-                            {isPresent ? 'Presente en Sala' : 'Pendiente / Ausente'}
+                            {isPresent ? 'Presente' : 'Pendiente'}
                           </span>
                           {isPresent && selectedAssembly?.status === AssemblyStatus.IN_PROGRESS && (
-                            <div className="flex items-center mt-2 space-x-1.5">
-                              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
-                              <span className="text-[7px] font-black text-emerald-400 uppercase tracking-widest">Sincronizado</span>
+                            <div className="flex items-center mt-3 space-x-2">
+                              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></div>
+                              <span className="text-[8px] font-black text-emerald-500 uppercase tracking-widest">Validado</span>
                             </div>
                           )}
                         </div>
@@ -257,11 +254,12 @@ const Attendance: React.FC<AttendanceProps> = ({ members, assemblies, setAssembl
                 })}
                 {filteredMembers.length === 0 && (
                   <tr>
-                    <td colSpan={3} className="px-10 py-20 text-center">
-                      <div className="w-16 h-16 rounded-full bg-slate-50 flex items-center justify-center mx-auto mb-4 text-slate-200">
+                    <td colSpan={3} className="px-10 py-24 text-center">
+                      <div className="w-20 h-20 rounded-[2rem] bg-slate-50 flex items-center justify-center mx-auto mb-6 text-slate-200 border-2 border-dashed border-slate-100">
                         <Icons.Users />
                       </div>
-                      <p className="text-slate-400 font-bold italic text-xs">No se encontraron socios con este filtro.</p>
+                      <p className="text-slate-400 font-black text-sm uppercase tracking-widest">Sin resultados</p>
+                      <p className="text-[10px] text-slate-400 font-bold mt-2 italic opacity-60">No se encontraron socios con los criterios de búsqueda.</p>
                     </td>
                   </tr>
                 )}
@@ -269,22 +267,32 @@ const Attendance: React.FC<AttendanceProps> = ({ members, assemblies, setAssembl
             </table>
           </div>
           
-          <div className="p-8 bg-slate-50/50 border-t border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-4">
-             <div className="flex items-center space-x-3">
-                <div className="flex -space-x-3">
-                  {members.slice(0, 3).map(m => (
-                    <img key={m.id} src={m.photoUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(m.name)}&size=32`} className="w-8 h-8 rounded-full border-2 border-white object-cover" />
+          <div className="p-8 bg-slate-50/50 border-t border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-6">
+             <div className="flex items-center space-x-4">
+                <div className="flex -space-x-4">
+                  {members.filter(m => selectedAssembly?.attendees.includes(m.rut)).slice(0, 5).map(m => (
+                    <img key={m.id} src={m.photoUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(m.name)}&size=64`} className="w-10 h-10 rounded-full border-4 border-white object-cover shadow-sm ring-1 ring-slate-100" />
                   ))}
-                  {members.length > 3 && <div className="w-8 h-8 rounded-full bg-slate-200 border-2 border-white flex items-center justify-center text-[10px] font-black text-slate-500">+{members.length - 3}</div>}
+                  {presentCount > 5 && (
+                    <div className="w-10 h-10 rounded-full bg-slate-900 border-4 border-white flex items-center justify-center text-[10px] font-black text-white shadow-lg ring-1 ring-slate-100">
+                      +{presentCount - 5}
+                    </div>
+                  )}
                 </div>
-                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Validación de Quórum en Línea</p>
+                <div>
+                   <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Confirmación de Aforo</p>
+                   <p className="text-[10px] font-bold text-slate-400 italic">Basado en socios registrados hoy</p>
+                </div>
              </div>
              {selectedAssembly && (
                <button 
                  onClick={() => printAttendanceReport(selectedAssembly, members, board, config)} 
-                 className="px-6 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-slate-50 transition shadow-sm active:scale-95"
+                 className="px-8 py-4 bg-white border-2 border-slate-200 text-slate-700 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:border-emerald-600 hover:text-emerald-700 transition shadow-sm active:scale-95 flex items-center group"
                >
-                 Exportar Nómina de Firmas
+                 <svg className="w-4 h-4 mr-2 text-slate-400 group-hover:text-emerald-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                 </svg>
+                 Exportar Planilla de Firmas
                </button>
              )}
           </div>

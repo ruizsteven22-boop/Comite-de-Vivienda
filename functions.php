@@ -1,11 +1,13 @@
 <?php
 /**
- * 🌳 Tierra Esperanza - Gestión de Comité
- * Archivo de funciones y utilidades para el backend (PHP)
- * 
- * Este archivo contiene la lógica de negocio para el procesamiento de datos
- * del Comité de Vivienda Tierra Esperanza en entornos de servidor.
+ * 🌳 Tierra Esperanza - WordPress Theme Functions
+ * NOTA: No agregue espacios ni líneas antes de '<?php'
  */
+
+// Desactivar avisos de PHP en la salida para evitar corromper JSON en modo debug
+if (defined('REST_REQUEST') && REST_REQUEST) {
+    @ini_set('display_errors', 0);
+}
 
 // 1. VALIDACIÓN DE RUT CHILENO (Módulo 11)
 function validarRut($rut) {
@@ -24,65 +26,29 @@ function validarRut($rut) {
     }
     
     $dvr = 11 - ($suma % 11);
-    
     if($dvr == 11) $dvr = 0;
     if($dvr == 10) $dvr = 'K';
     
     return (strtoupper($dv) == strtoupper($dvr));
 }
 
-// 2. CÁLCULO DE INTERESES POR MOROSIDAD
-// Útil para el módulo de Tesorería al calcular deudas de cuotas sociales
-function calcularInteresMorosidad($monto, $fechaVencimiento) {
-    $fecha_actual = new DateTime();
-    $vencimiento = new DateTime($fechaVencimiento);
-    
-    if ($fecha_actual <= $vencimiento) return 0;
-    
-    $intervalo = $vencimiento->diff($fecha_actual);
-    $mesesAtraso = ($intervalo->y * 12) + $intervalo->m;
-    
-    // Tasa ejemplo: 1.5% mensual simple (ajustable según estatutos del comité)
-    $tasaMensual = 0.015;
-    $interes = $monto * $tasaMensual * ($mesesAtraso + ($intervalo->d > 0 ? 1 : 0));
-    
-    return round($interes);
-}
-
-// 3. CÁLCULO DE ANTIGÜEDAD (Puntaje de Vivienda)
-function obtenerAntiguedadSocio($fechaIngreso) {
-    $ingreso = new DateTime($fechaIngreso);
-    $actual = new DateTime();
-    $diferencia = $ingreso->diff($actual);
-    
-    return [
-        'años' => $diferencia->y,
-        'meses' => $diferencia->m,
-        'total_meses' => ($diferencia->y * 12) + $diferencia->m
-    ];
-}
-
-// 4. FORMATEO DE MONEDA NACIONAL (CLP)
+// 2. FORMATEO DE MONEDA NACIONAL (CLP)
 function formatearPesoChileno($monto) {
     return '$' . number_format($monto, 0, ',', '.');
 }
 
-// 5. SANITIZACIÓN DE DATOS PARA INFORMES
-function limpiarTextoActa($texto) {
-    $texto = trim($texto);
-    $texto = stripslashes($texto);
-    $texto = htmlspecialchars($texto);
-    return $texto;
-}
+// 3. SOPORTE DE TEMA BÁSICO
+add_action('after_setup_theme', function() {
+    add_theme_support('title-tag');
+    add_theme_support('post-thumbnails');
+});
 
-// 6. GENERADOR DE COLOR PARA AVATARES (Basado en nombre)
-function generarColorAvatar($nombre) {
-    $hash = md5($nombre);
-    return '#' . substr($hash, 0, 6);
-}
-
-/**
- * Nota: Si se utiliza este archivo como API, asegúrese de implementar 
- * las cabeceras CORS necesarias para comunicarse con el frontend de Tierra Esperanza.
- */
+// 4. EVITAR REDIRECCIONES CANÓNICAS QUE ROMPAN EL SPA
+// Esto evita que WP intente "adivinar" la URL y redirija peticiones de React
+add_filter('redirect_canonical', function($redirect_url) {
+    if (is_404()) {
+        return false;
+    }
+    return $redirect_url;
+});
 ?>
