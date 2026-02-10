@@ -58,13 +58,9 @@ const safeJsonParse = (key: string, fallback: any) => {
   try {
     const data = localStorage.getItem(key);
     if (!data) return fallback;
-    if (!isValidJson(data)) {
-      console.warn(`[Tierra Esperanza] Clave '${key}' ignorada: Contenido no es JSON válido (posible error HTML).`);
-      return fallback;
-    }
+    if (!isValidJson(data)) return fallback;
     return JSON.parse(data);
   } catch (e) {
-    console.error(`Error parseando ${key}:`, e);
     return fallback;
   }
 };
@@ -105,12 +101,14 @@ const App: React.FC = () => {
   const handleLogin = (user: User) => {
     setCurrentUser(user);
     localStorage.setItem('te_session', JSON.stringify(user));
+    setView('dashboard');
   };
 
   const handleLogout = () => {
     setCurrentUser(null);
     localStorage.removeItem('te_session');
     setIsSidebarOpen(false);
+    setView('dashboard');
   };
 
   const hasPermission = (viewId: ViewId): boolean => {
@@ -119,9 +117,43 @@ const App: React.FC = () => {
     return allowedRoles.includes('ANY') || allowedRoles.includes(currentUser.role);
   };
 
+  const AccessDenied = () => (
+    <div className="flex flex-col items-center justify-center min-h-[60vh] text-center p-12 bg-white rounded-[3.5rem] border-2 border-dashed border-slate-100 shadow-sm animate-in fade-in zoom-in duration-500">
+      <div className="w-24 h-24 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center mb-8 shadow-inner border border-rose-100">
+        <Icons.Shield />
+      </div>
+      <h3 className="text-3xl font-black text-slate-900 tracking-tighter mb-4">Acceso Restringido</h3>
+      <p className="text-slate-500 max-w-md font-medium leading-relaxed">
+        Lo sentimos, tu rol actual (<span className="text-rose-600 font-black uppercase tracking-widest text-[10px]">{currentUser?.role}</span>) no tiene los permisos necesarios para gestionar esta sección.
+      </p>
+      <button 
+        onClick={() => setView('dashboard')}
+        className="mt-10 px-8 py-4 bg-teal-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-teal-700 transition-all shadow-xl active:scale-95"
+      >
+        Volver al Inicio
+      </button>
+    </div>
+  );
+
+  const renderCurrentView = () => {
+    if (!hasPermission(view)) return <AccessDenied />;
+
+    switch (view) {
+      case 'dashboard': return <Dashboard members={members} transactions={transactions} assemblies={assemblies} currentUser={currentUser!} config={config} />;
+      case 'members': return <MemberManagement members={members} setMembers={setMembers} assemblies={assemblies} transactions={transactions} board={board} viewingMemberId={viewingMemberId} onClearViewingMember={() => setViewingMemberId(null)} currentUser={currentUser!} config={config} />;
+      case 'treasury': return <Treasury transactions={transactions} setTransactions={setTransactions} members={members} onViewMember={(id) => { setViewingMemberId(id); setView('members'); }} currentUser={currentUser!} />;
+      case 'board': return <BoardManagement board={board} setBoard={setBoard} boardPeriod={boardPeriod} setBoardPeriod={setBoardPeriod} members={members} currentUser={currentUser!} config={config} />;
+      case 'assemblies': return <AssemblyManagement assemblies={assemblies} setAssemblies={setAssemblies} members={members} board={board} currentUser={currentUser!} config={config} />;
+      case 'attendance': return <Attendance members={members} assemblies={assemblies} setAssemblies={setAssemblies} board={board} currentUser={currentUser!} config={config} />;
+      case 'support': return <SupportManagement users={users} setUsers={setUsers} />;
+      case 'settings': return <SettingsManagement config={config} setConfig={setConfig} onExportBackup={() => {}} onResetSystem={() => {}} />;
+      default: return <Dashboard members={members} transactions={transactions} assemblies={assemblies} currentUser={currentUser!} config={config} />;
+    }
+  };
+
   if (!isInitialized) return (
     <div className="min-h-screen bg-slate-900 flex items-center justify-center">
-      <div className="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+      <div className="w-12 h-12 border-4 border-teal-500 border-t-transparent rounded-full animate-spin"></div>
     </div>
   );
 
@@ -141,61 +173,59 @@ const App: React.FC = () => {
   const tradeParts = config.tradeName.split(' ');
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#F8FAFC]">
-      <aside className={`sidebar-glass fixed inset-y-0 left-0 z-50 w-72 transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+    <div className="flex h-screen overflow-hidden mesh-bg">
+      <aside className={`sidebar-glass fixed inset-y-0 left-0 z-50 w-72 transform transition-transform duration-500 ease-in-out md:relative md:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="flex h-full flex-col">
-          <div className="p-8">
+          <div className="p-10">
             <h1 className="flex items-center text-2xl font-black italic tracking-tighter text-white">
-              <span className="text-emerald-500 mr-2">🌳</span>
-              {tradeParts[0]} <span className="text-emerald-400 ml-1">{tradeParts.slice(1).join(' ')}</span>
+              <span className="text-teal-400 mr-2 drop-shadow-[0_0_10px_rgba(20,184,166,0.5)]">🌳</span>
+              {tradeParts[0]} <span className="text-indigo-400 ml-1 font-black">{tradeParts.slice(1).join(' ')}</span>
             </h1>
-            <div className="mt-4 flex items-center space-x-2 px-1">
-              <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></div>
-              <span className="text-[9px] font-black text-emerald-400/60 uppercase tracking-widest">Sistema En Línea</span>
+            <div className="mt-8 p-5 rounded-3xl bg-white/5 border border-white/10 flex items-center space-x-4">
+               <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-teal-400/20 to-indigo-400/20 flex items-center justify-center text-teal-400 border border-white/5">
+                  <Icons.Dashboard />
+               </div>
+               <div className="overflow-hidden">
+                  <p className="text-[10px] font-black text-teal-400 uppercase tracking-widest leading-none">Mi Perfil</p>
+                  <p className="text-white text-xs font-bold mt-1.5 truncate uppercase opacity-80">{currentUser.role.replace('_', ' ')}</p>
+               </div>
             </div>
           </div>
-          <nav className="flex-1 space-y-1 px-4 overflow-y-auto">
+          <nav className="flex-1 space-y-2 px-6 overflow-y-auto mt-2">
             {menuItems.map(item => hasPermission(item.id) && (
               <button
                 key={item.id}
                 onClick={() => { setView(item.id); setIsSidebarOpen(false); }}
-                className={`group flex w-full items-center rounded-2xl px-6 py-4 text-sm font-bold transition-all ${view === item.id ? 'bg-gradient-to-r from-emerald-600 to-emerald-800 text-white shadow-lg' : 'text-slate-400 hover:bg-white/5 hover:text-white'}`}
+                className={`group flex w-full items-center rounded-[1.5rem] px-6 py-4.5 text-xs font-black uppercase tracking-widest transition-all duration-300 ${view === item.id ? 'bg-gradient-to-r from-teal-500 to-indigo-600 text-white shadow-[0_10px_20px_-5px_rgba(20,184,166,0.3)]' : 'text-slate-400 hover:bg-white/5 hover:text-white'}`}
               >
-                <span className="mr-4">{item.icon}</span>
+                <span className={`mr-4 transition-transform group-hover:scale-110 ${view === item.id ? 'text-white' : 'text-slate-500 group-hover:text-teal-400'}`}>{item.icon}</span>
                 {item.label}
               </button>
             ))}
           </nav>
-          <div className="p-6 bg-slate-950/50 border-t border-white/5">
-            <button onClick={handleLogout} className="flex w-full items-center justify-center rounded-xl bg-rose-500/10 py-3 text-xs font-black uppercase tracking-widest text-rose-400 hover:bg-rose-50 hover:text-white transition-all">
-              <span className="mr-2"><Icons.Logout /></span> {t.nav.logout}
+          <div className="p-8 bg-slate-950/30 border-t border-white/5">
+            <button onClick={handleLogout} className="flex w-full items-center justify-center rounded-2xl bg-rose-500/10 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-rose-400 hover:bg-rose-500 hover:text-white transition-all">
+              <span className="mr-3"><Icons.Logout /></span> Cerrar Sesión
             </button>
           </div>
         </div>
       </aside>
 
       <div className="flex flex-1 flex-col overflow-hidden">
-        <header className="flex h-16 items-center justify-between border-b border-slate-200 bg-white px-6 md:hidden">
-          <div className="font-black italic text-slate-900 tracking-tight">{config.tradeName}</div>
-          <button onClick={() => setIsSidebarOpen(true)} className="rounded-lg bg-slate-100 p-2 text-slate-600">
+        <header className="flex h-20 items-center justify-between border-b border-slate-100 bg-white/50 backdrop-blur-md px-10 md:hidden">
+          <div className="font-black italic text-slate-900 tracking-tight text-xl">{config.tradeName}</div>
+          <button onClick={() => setIsSidebarOpen(true)} className="rounded-2xl bg-white p-3 text-slate-600 shadow-sm border border-slate-100">
             <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 6h16M12 12h8M4 18h16" /></svg>
           </button>
         </header>
 
-        <main className="flex-1 overflow-y-auto p-6 md:p-12 lg:p-16">
+        <main className="flex-1 overflow-y-auto p-8 md:p-14 lg:p-20">
           <div className="mx-auto max-w-7xl page-transition">
-            {view === 'dashboard' && <Dashboard members={members} transactions={transactions} assemblies={assemblies} currentUser={currentUser} config={config} />}
-            {view === 'members' && <MemberManagement members={members} setMembers={setMembers} assemblies={assemblies} transactions={transactions} board={board} viewingMemberId={viewingMemberId} onClearViewingMember={() => setViewingMemberId(null)} currentUser={currentUser} config={config} />}
-            {view === 'treasury' && <Treasury transactions={transactions} setTransactions={setTransactions} members={members} onViewMember={(id) => { setViewingMemberId(id); setView('members'); }} currentUser={currentUser} />}
-            {view === 'board' && <BoardManagement board={board} setBoard={setBoard} boardPeriod={boardPeriod} setBoardPeriod={setBoardPeriod} members={members} currentUser={currentUser} config={config} />}
-            {view === 'assemblies' && <AssemblyManagement assemblies={assemblies} setAssemblies={setAssemblies} members={members} board={board} currentUser={currentUser} config={config} />}
-            {view === 'attendance' && <Attendance members={members} assemblies={assemblies} setAssemblies={setAssemblies} board={board} currentUser={currentUser} config={config} />}
-            {view === 'support' && <SupportManagement users={users} setUsers={setUsers} />}
-            {view === 'settings' && <SettingsManagement config={config} setConfig={setConfig} onExportBackup={() => {}} onResetSystem={() => {}} />}
+            {renderCurrentView()}
           </div>
         </main>
       </div>
-      {isSidebarOpen && <div onClick={() => setIsSidebarOpen(false)} className="fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-sm md:hidden"></div>}
+      {isSidebarOpen && <div onClick={() => setIsSidebarOpen(false)} className="fixed inset-0 z-40 bg-slate-900/60 backdrop-blur-sm md:hidden"></div>}
     </div>
   );
 };

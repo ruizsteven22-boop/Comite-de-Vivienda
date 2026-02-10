@@ -1,50 +1,55 @@
+
 /*
 Theme Name: Tierra Esperanza - Gestión de Comité
-Theme URI: https://tierraesperanza.cl
-Author: Comité de Vivienda Tierra Esperanza
-Description: Sistema integral de gestión administrativa para comités de vivienda. Incluye gestión de socios, tesorería y actas.
-Version: 1.3.1
-License: MIT
-Text Domain: tierra-esperanza
-Tags: management, committee, housing, dashboard
+Version: 1.4.0
 */
 
 :root {
-    --primary: #064e3b;
-    --primary-light: #10b981;
+    --primary: #14b8a6;
+    --primary-light: #2dd4bf;
+    --secondary: #6366f1;
+    --accent: #a855f7;
     --sidebar-bg: #0f172a;
 }
 
 body { 
     font-family: 'Inter', sans-serif; 
-    background-color: #f8fafc;
+    background-color: #fcfcfd;
     color: #0f172a;
     overflow-x: hidden;
 }
 
 .sidebar-glass {
-    background: linear-gradient(180deg, #0f172a 0%, #1e1b4b 100%);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border-right: 1px solid rgba(255, 255, 255, 0.05);
+    background: linear-gradient(165deg, #0f172a 0%, #1e1b4b 100%);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .card-shadow {
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.04), 0 8px 10px -6px rgba(0, 0, 0, 0.02);
+    box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.04), 0 4px 6px -2px rgba(0, 0, 0, 0.01);
 }
 
 .shadow-premium {
-    box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.1), 0 18px 36px -18px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 25px 50px -12px rgba(99, 102, 241, 0.12);
+}
+
+.mesh-bg {
+    background-color: #fcfcfd;
+    background-image: 
+        radial-gradient(at 0% 0%, hsla(173, 80%, 90%, 1) 0, transparent 50%), 
+        radial-gradient(at 50% 0%, hsla(239, 84%, 90%, 1) 0, transparent 50%), 
+        radial-gradient(at 100% 0%, hsla(271, 91%, 90%, 1) 0, transparent 50%);
 }
 
 /* Animaciones suaves */
 .page-transition {
-    animation: fadeInSlide 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    animation: fadeInSlide 0.8s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @keyframes fadeInSlide {
-    from { opacity: 0; transform: translateY(15px); }
-    to { opacity: 1; transform: translateY(0); }
+    from { opacity: 0; transform: translateY(20px) scale(0.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 /* Scrollbar moderno */
@@ -53,19 +58,23 @@ body {
 }
 
 ::-webkit-scrollbar-track { 
-    background: #f1f5f9; 
+    background: transparent; 
 }
 
 ::-webkit-scrollbar-thumb { 
-    background: #cbd5e1; 
+    background: #e2e8f0; 
     border-radius: 10px; 
 }
 
 ::-webkit-scrollbar-thumb:hover { 
-    background: #064e3b; 
+    background: var(--primary); 
 }
 
-/* Efectos de Hover para inputs */
 input:focus, select:focus, textarea:focus {
-    box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
+    box-shadow: 0 0 0 5px rgba(20, 184, 166, 0.15);
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--primary) 0%, #0d9488 100%);
+    box-shadow: 0 10px 20px -5px rgba(20, 184, 166, 0.4);
 }
