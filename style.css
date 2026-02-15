@@ -1,60 +1,63 @@
 
 /*
 Theme Name: Tierra Esperanza - Gestión de Comité
-Version: 1.4.0
+Version: 1.5.0
 */
 
 :root {
-    --primary: #14b8a6;
-    --primary-light: #2dd4bf;
-    --secondary: #6366f1;
-    --accent: #a855f7;
+    --primary: #8b5cf6;
+    --primary-light: #a78bfa;
+    --secondary: #10b981;
+    --accent: #3b82f6;
+    --danger: #f43f5e;
     --sidebar-bg: #0f172a;
 }
 
 body { 
     font-family: 'Inter', sans-serif; 
-    background-color: #fcfcfd;
+    background-color: #f8fafc;
     color: #0f172a;
     overflow-x: hidden;
 }
 
 .sidebar-glass {
     background: linear-gradient(165deg, #0f172a 0%, #1e1b4b 100%);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border-right: 1px solid rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(40px);
+    -webkit-backdrop-filter: blur(40px);
+    border-right: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .card-shadow {
-    box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.04), 0 4px 6px -2px rgba(0, 0, 0, 0.01);
+    box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.05), 0 4px 12px -4px rgba(0, 0, 0, 0.02);
 }
 
 .shadow-premium {
-    box-shadow: 0 25px 50px -12px rgba(99, 102, 241, 0.12);
+    box-shadow: 0 25px 60px -15px rgba(139, 92, 246, 0.15);
 }
 
+/* Fondo Holográfico Moderno */
 .mesh-bg {
-    background-color: #fcfcfd;
+    background-color: #f8fafc;
     background-image: 
-        radial-gradient(at 0% 0%, hsla(173, 80%, 90%, 1) 0, transparent 50%), 
-        radial-gradient(at 50% 0%, hsla(239, 84%, 90%, 1) 0, transparent 50%), 
-        radial-gradient(at 100% 0%, hsla(271, 91%, 90%, 1) 0, transparent 50%);
+        radial-gradient(at 0% 0%, hsla(263, 90%, 92%, 1) 0, transparent 50%), 
+        radial-gradient(at 50% 100%, hsla(190, 90%, 94%, 1) 0, transparent 50%), 
+        radial-gradient(at 100% 0%, hsla(320, 90%, 94%, 1) 0, transparent 50%);
+    background-attachment: fixed;
 }
 
-/* Animaciones suaves */
+/* Animaciones de entrada mejoradas */
 .page-transition {
-    animation: fadeInSlide 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+    animation: fadeInScale 0.6s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-@keyframes fadeInSlide {
-    from { opacity: 0; transform: translateY(20px) scale(0.98); }
-    to { opacity: 1; transform: translateY(0) scale(1); }
+@keyframes fadeInScale {
+    from { opacity: 0; transform: scale(0.97) translateY(10px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
 }
 
-/* Scrollbar moderno */
+/* Scrollbar moderno estilizado */
 ::-webkit-scrollbar { 
-    width: 6px; 
+    width: 8px; 
 }
 
 ::-webkit-scrollbar-track { 
@@ -62,19 +65,37 @@ body {
 }
 
 ::-webkit-scrollbar-thumb { 
-    background: #e2e8f0; 
-    border-radius: 10px; 
+    background: #cbd5e1; 
+    border-radius: 20px; 
+    border: 2px solid #f8fafc;
 }
 
 ::-webkit-scrollbar-thumb:hover { 
     background: var(--primary); 
 }
 
+/* Efectos de Focus Modernos */
 input:focus, select:focus, textarea:focus {
-    box-shadow: 0 0 0 5px rgba(20, 184, 166, 0.15);
+    box-shadow: 0 0 0 6px rgba(139, 92, 246, 0.12);
+    border-color: var(--primary) !important;
 }
 
+/* Botón Primario con Gradiente Moderno */
 .btn-primary {
-    background: linear-gradient(135deg, var(--primary) 0%, #0d9488 100%);
-    box-shadow: 0 10px 20px -5px rgba(20, 184, 166, 0.4);
+    background: linear-gradient(135deg, var(--primary) 0%, #7c3aed 100%);
+    box-shadow: 0 12px 24px -8px rgba(124, 58, 237, 0.4);
+    transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+    box-shadow: 0 15px 30px -5px rgba(124, 58, 237, 0.5);
+    transform: translateY(-2px);
+}
+
+/* Efecto Glassmorphism para Contenedores */
+.glass-container {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.5);
 }

@@ -54,25 +54,16 @@ const PERMISSIONS: Record<ViewId, (SystemRole | 'ANY')[]> = {
   settings: ['SUPPORT', 'ADMINISTRATOR']
 };
 
-/**
- * Función de parseo ultra-segura. 
- * Si detecta que los datos guardados son HTML (error común por redirecciones),
- * limpia la clave y devuelve el fallback para evitar el error "Unexpected token <".
- */
 const safeJsonParse = (key: string, fallback: any) => {
   try {
     const data = localStorage.getItem(key);
     if (!data) return fallback;
-    
     if (!isValidJson(data)) {
-      console.error(`[Tierra Esperanza] Error crítico: La clave '${key}' contiene HTML o datos inválidos. Limpiando almacenamiento.`);
-      localStorage.removeItem(key); // Limpieza automática del error
+      localStorage.removeItem(key);
       return fallback;
     }
-    
     return JSON.parse(data);
   } catch (e) {
-    console.error(`Error parseando ${key}:`, e);
     return fallback;
   }
 };
@@ -101,21 +92,72 @@ const App: React.FC = () => {
   }, []);
 
   useEffect(() => { if (isInitialized) {
-    // Al guardar, también verificamos que no estemos guardando basura
-    const stateToSave = [
-      { k: 'te_users', v: users },
-      { k: 'te_config', v: config },
-      { k: 'te_members', v: members },
-      { k: 'te_transactions', v: transactions },
-      { k: 'te_board', v: board },
-      { k: 'te_assemblies', v: assemblies }
-    ];
-
-    stateToSave.forEach(({k, v}) => {
-      localStorage.setItem(k, JSON.stringify(v));
-    });
+    localStorage.setItem('te_users', JSON.stringify(users));
+    localStorage.setItem('te_config', JSON.stringify(config));
+    localStorage.setItem('te_members', JSON.stringify(members));
+    localStorage.setItem('te_transactions', JSON.stringify(transactions));
+    localStorage.setItem('te_board', JSON.stringify(board));
+    localStorage.setItem('te_assemblies', JSON.stringify(assemblies));
     localStorage.setItem('te_board_period', boardPeriod);
   }}, [users, config, members, transactions, board, boardPeriod, assemblies, isInitialized]);
+
+  const handleExportBackup = () => {
+    const backupData = {
+      version: "1.5.0",
+      timestamp: new Date().toISOString(),
+      users,
+      config,
+      members,
+      transactions,
+      board,
+      boardPeriod,
+      assemblies
+    };
+
+    const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `tierra_esperanza_backup_${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleImportBackup = (jsonData: any) => {
+    try {
+      if (!jsonData.members || !jsonData.transactions) {
+        throw new Error("Formato de respaldo inválido");
+      }
+      if (jsonData.users) setUsers(jsonData.users);
+      if (jsonData.config) setConfig(jsonData.config);
+      if (jsonData.members) setMembers(jsonData.members);
+      if (jsonData.transactions) setTransactions(jsonData.transactions);
+      if (jsonData.board) setBoard(jsonData.board);
+      if (jsonData.boardPeriod) setBoardPeriod(jsonData.boardPeriod);
+      if (jsonData.assemblies) setAssemblies(jsonData.assemblies);
+      
+      alert("¡Respaldo restaurado con éxito!");
+      setView('dashboard');
+    } catch (e) {
+      alert("Error al restaurar: El archivo no tiene el formato correcto.");
+    }
+  };
+
+  const handleResetSystem = () => {
+    if (confirm("⚠️ ¡ADVERTENCIA CRÍTICA!\n\nEsta acción borrará TODOS los datos (socios, tesorería, asambleas) y restablecerá el sistema a los valores de fábrica.\n\n¿Desea continuar?")) {
+      setMembers([]);
+      setTransactions([]);
+      setAssemblies([]);
+      setBoard(INITIAL_BOARD);
+      setConfig(INITIAL_CONFIG);
+      setUsers(INITIAL_USERS);
+      setBoardPeriod('2025 - 2027');
+      alert("Sistema restablecido correctamente.");
+      setView('dashboard');
+    }
+  };
 
   const handleLogin = (user: User) => {
     setCurrentUser(user);
@@ -165,7 +207,7 @@ const App: React.FC = () => {
       case 'assemblies': return <AssemblyManagement assemblies={assemblies} setAssemblies={setAssemblies} members={members} board={board} currentUser={currentUser!} config={config} />;
       case 'attendance': return <Attendance members={members} assemblies={assemblies} setAssemblies={setAssemblies} board={board} currentUser={currentUser!} config={config} />;
       case 'support': return <SupportManagement users={users} setUsers={setUsers} />;
-      case 'settings': return <SettingsManagement config={config} setConfig={setConfig} onExportBackup={() => {}} onResetSystem={() => {}} />;
+      case 'settings': return <SettingsManagement config={config} setConfig={setConfig} onExportBackup={handleExportBackup} onImportBackup={handleImportBackup} onResetSystem={handleResetSystem} />;
       default: return <Dashboard members={members} transactions={transactions} assemblies={assemblies} currentUser={currentUser!} config={config} />;
     }
   };

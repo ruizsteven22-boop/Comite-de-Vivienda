@@ -2,13 +2,13 @@
 import React from 'react';
 
 export const COLORS = {
-  primary: '#14b8a6', // Teal vibrante (Menta)
-  secondary: '#6366f1', // Indigo eléctrico
-  accent: '#a855f7', // Violeta brillante
+  primary: '#8b5cf6', // Violeta Eléctrico (Juvenil e Innovador)
+  secondary: '#10b981', // Esmeralda Neón (Naturaleza y Esperanza)
+  accent: '#3b82f6', // Azul Royal (Confianza Digital)
   success: '#22c55e',
   warning: '#f59e0b',
-  danger: '#f43f5e', // Rosa-Rojo neón
-  background: '#fcfcfd', // Blanco hueso muy limpio
+  danger: '#f43f5e', // Fucsia/Rosa Neón
+  background: '#f8fafc', 
   text: {
     main: '#0f172a',
     secondary: '#475569',
