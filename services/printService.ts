@@ -73,59 +73,190 @@ export const printOfficialDocument = (doc: Document, board: BoardPosition[], con
         <title>${doc.type} N° ${doc.folioNumber} - ${doc.year}</title>
         <style>
           @import url('https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;600;700&family=Inter:wght@400;700;900&display=swap');
-          body { font-family: 'Crimson Pro', serif; padding: 80px; line-height: 1.6; color: #0f172a; font-size: 12pt; }
-          .header { border-bottom: 3px solid #1e293b; padding-bottom: 20px; margin-bottom: 40px; display: flex; justify-content: space-between; align-items: flex-end; }
-          .header-left h1 { margin: 0; font-family: 'Inter', sans-serif; font-weight: 900; font-size: 16pt; text-transform: uppercase; color: #1e293b; letter-spacing: -0.5px; }
-          .header-left p { margin: 5px 0 0 0; font-family: 'Inter', sans-serif; font-size: 8pt; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 1px; }
-          .doc-meta { text-align: right; font-family: 'Inter', sans-serif; font-size: 9pt; color: #64748b; font-weight: 700; }
-          .doc-type { margin-top: 40px; font-family: 'Inter', sans-serif; font-weight: 900; font-size: 20pt; text-align: center; text-transform: uppercase; color: #1e293b; text-decoration: underline; margin-bottom: 40px; }
-          .intro-table { width: 100%; margin-bottom: 40px; }
-          .intro-table td { padding: 5px 0; vertical-align: top; }
-          .intro-label { font-family: 'Inter', sans-serif; font-weight: 900; text-transform: uppercase; font-size: 10pt; width: 120px; }
-          .content { text-align: justify; white-space: pre-wrap; margin-bottom: 60px; min-height: 400px; }
-          .signatures { margin-top: 80px; display: grid; grid-template-columns: 1fr 1fr; gap: 80px; }
-          .sig-box { text-align: center; border-top: 2px solid #1e293b; padding-top: 15px; font-family: 'Inter', sans-serif; font-weight: 700; font-size: 10pt; text-transform: uppercase; }
-          .footer { position: fixed; bottom: 40px; left: 80px; right: 80px; border-top: 1px solid #e2e8f0; padding-top: 15px; font-family: 'Inter', sans-serif; font-size: 7pt; color: #94a3b8; text-align: center; font-weight: 700; text-transform: uppercase; }
+          
+          /* Configuración de Página para PDF */
+          @page {
+            size: letter;
+            margin: 2.5cm;
+          }
+
+          body { 
+            font-family: 'Crimson Pro', serif; 
+            line-height: 1.6; 
+            color: #000; 
+            font-size: 11.5pt;
+            margin: 0;
+            padding: 0;
+          }
+
+          .container {
+            width: 100%;
+          }
+
+          .header { 
+            border-bottom: 2px solid #000; 
+            padding-bottom: 15px; 
+            margin-bottom: 35px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: flex-end; 
+          }
+
+          .header-left h1 { 
+            margin: 0; 
+            font-family: 'Inter', sans-serif; 
+            font-weight: 900; 
+            font-size: 14pt; 
+            text-transform: uppercase; 
+            color: #000; 
+            letter-spacing: -0.5px; 
+          }
+
+          .header-left p { 
+            margin: 3px 0 0 0; 
+            font-family: 'Inter', sans-serif; 
+            font-size: 7.5pt; 
+            font-weight: 700; 
+            color: #444; 
+            text-transform: uppercase; 
+            letter-spacing: 0.5px; 
+          }
+
+          .doc-meta { 
+            text-align: right; 
+            font-family: 'Inter', sans-serif; 
+            font-size: 8.5pt; 
+            color: #000; 
+            font-weight: 700; 
+            line-height: 1.4;
+          }
+
+          .doc-type-title { 
+            margin-top: 30px; 
+            font-family: 'Inter', sans-serif; 
+            font-weight: 900; 
+            font-size: 18pt; 
+            text-align: center; 
+            text-transform: uppercase; 
+            color: #000; 
+            text-decoration: underline; 
+            margin-bottom: 35px; 
+          }
+
+          .intro-table { 
+            width: 100%; 
+            margin-bottom: 35px; 
+            border-spacing: 0;
+          }
+
+          .intro-table td { 
+            padding: 4px 0; 
+            vertical-align: top; 
+          }
+
+          .intro-label { 
+            font-family: 'Inter', sans-serif; 
+            font-weight: 900; 
+            text-transform: uppercase; 
+            font-size: 9pt; 
+            width: 100px; 
+          }
+
+          .content { 
+            text-align: justify; 
+            white-space: pre-wrap; 
+            margin-bottom: 50px; 
+            min-height: 350px;
+            font-size: 11.5pt;
+          }
+
+          .signatures { 
+            margin-top: 60px; 
+            display: flex;
+            justify-content: space-between;
+            gap: 50px; 
+          }
+
+          .sig-box { 
+            width: 45%;
+            text-align: center; 
+            border-top: 1.5px solid #000; 
+            padding-top: 12px; 
+            font-family: 'Inter', sans-serif; 
+            font-weight: 700; 
+            font-size: 9.5pt; 
+            text-transform: uppercase; 
+          }
+
+          .sig-role {
+            font-size: 7.5pt;
+            color: #555;
+            display: block;
+            margin-top: 4px;
+            font-weight: 600;
+          }
+
+          .footer { 
+            position: fixed; 
+            bottom: 0; 
+            left: 0; 
+            right: 0; 
+            border-top: 1px solid #ddd; 
+            padding-top: 12px; 
+            font-family: 'Inter', sans-serif; 
+            font-size: 6.5pt; 
+            color: #777; 
+            text-align: center; 
+            font-weight: 700; 
+            text-transform: uppercase; 
+          }
         </style>
       </head>
       <body>
-        <div class="header">
-          <div class="header-left">
-            <h1>${config.legalName}</h1>
-            <p>RUT: ${config.rut} • ${config.municipalRes}</p>
+        <div class="container">
+          <div class="header">
+            <div class="header-left">
+              <h1>${config.legalName}</h1>
+              <p>RUT: ${config.rut} • ${config.municipalRes}</p>
+            </div>
+            <div class="doc-meta">
+              FOLIO: ${doc.type.toUpperCase()} N° ${doc.folioNumber} - ${doc.year}<br/>
+              FECHA: ${doc.date}
+            </div>
           </div>
-          <div class="doc-meta">
-            FOLIO: ${doc.type.toUpperCase()} N° ${doc.folioNumber} - ${doc.year}<br/>
-            FECHA: ${doc.date}
+
+          <div class="doc-type-title">${doc.type}</div>
+
+          <table class="intro-table">
+            <tr><td class="intro-label">PARA:</td><td>${doc.addressee}</td></tr>
+            <tr><td class="intro-label">DE:</td><td>SECRETARÍA GENERAL - ${config.tradeName}</td></tr>
+            <tr><td class="intro-label">ASUNTO:</td><td><strong>${doc.subject}</strong></td></tr>
+          </table>
+
+          <div class="content">${doc.content}</div>
+
+          <div class="signatures">
+            <div class="sig-box">
+              ${secretary}<br/>
+              <span class="sig-role">SECRETARIO(A) GENERAL</span>
+            </div>
+            <div class="sig-box">
+              ${president}<br/>
+              <span class="sig-role">PRESIDENTE(A) DEL COMITÉ</span>
+            </div>
+          </div>
+
+          <div class="footer">
+            Este documento es un registro oficial del ${config.legalName}. <br/>
+            Generado digitalmente vía Plataforma Tierra Esperanza el ${new Date().toLocaleString('es-CL')}.
           </div>
         </div>
-
-        <div class="doc-type">${doc.type}</div>
-
-        <table class="intro-table">
-          <tr><td class="intro-label">DE:</td><td>SECRETARÍA GENERAL - ${config.tradeName}</td></tr>
-          <tr><td class="intro-label">PARA:</td><td>${doc.addressee}</td></tr>
-          <tr><td class="intro-label">ASUNTO:</td><td><strong>${doc.subject}</strong></td></tr>
-        </table>
-
-        <div class="content">${doc.content}</div>
-
-        <div class="signatures">
-          <div class="sig-box">
-            ${secretary}<br/>
-            <span style="font-size: 8pt; color: #64748b;">SECRETARIO(A) GENERAL</span>
-          </div>
-          <div class="sig-box">
-            ${president}<br/>
-            <span style="font-size: 8pt; color: #64748b;">PRESIDENTE(A) DEL COMITÉ</span>
-          </div>
-        </div>
-
-        <div class="footer">
-          Este documento es propiedad del ${config.legalName}. Prohibida su reproducción parcial sin autorización.
-          Generado vía Sistema Tierra Esperanza.
-        </div>
-        <script>window.onload = function() { window.print(); window.onafterprint = function() { window.close(); }; }</script>
+        <script>
+          window.onload = function() { 
+            window.print(); 
+            window.onafterprint = function() { window.close(); }; 
+          }
+        </script>
       </body>
     </html>
   `);
@@ -133,17 +264,8 @@ export const printOfficialDocument = (doc: Document, board: BoardPosition[], con
 };
 
 export const printMemberFile = (member: Member, transactions: Transaction[], assemblies: Assembly[], board: BoardPosition[], config: CommitteeConfig) => {
-  const memberPayments = transactions.filter(t => t.memberId === member.id);
   const president = board.find(b => b.role === BoardRole.PRESIDENT)?.primary.name || '____________________';
   const treasurer = board.find(b => b.role === BoardRole.TREASURER)?.primary.name || '____________________';
-
-  const familyRows = member.familyMembers.length > 0 
-    ? member.familyMembers.map(fm => `<tr><td>${fm.name}</td><td>${fm.rut}</td><td>${fm.relationship}</td></tr>`).join('')
-    : '<tr><td colspan="3" style="text-align:center; color:#999;">No registra cargas familiares</td></tr>';
-
-  const paymentRows = memberPayments.length > 0
-    ? memberPayments.map(t => `<tr><td>${t.date}</td><td>${t.description}</td><td>${t.paymentMethod}</td><td style="text-align:right; font-weight:bold;">$${t.amount.toLocaleString('es-CL')}</td></tr>`).join('')
-    : '<tr><td colspan="4" style="text-align:center; color:#999;">Sin movimientos financieros registrados</td></tr>';
 
   const printWindow = window.open('', '_blank');
   if (!printWindow) return;
@@ -157,27 +279,38 @@ export const printMemberFile = (member: Member, transactions: Transaction[], ass
           body { font-family: 'Inter', sans-serif; padding: 40px; color: #1e293b; line-height: 1.4; }
           .header { border-bottom: 3px solid #059669; padding-bottom: 20px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center; }
           .header h1 { margin: 0; color: #059669; font-size: 18pt; font-weight: 800; }
-          table { width: 100%; border-collapse: collapse; font-size: 8pt; margin-bottom: 15px; }
-          th { text-align: left; padding: 8px; border-bottom: 2px solid #e2e8f0; }
-          td { padding: 8px; border-bottom: 1px solid #f1f5f9; }
-          .signatures { margin-top: 50px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
-          .sig-box { text-align: center; border-top: 1px solid #334155; padding-top: 8px; font-size: 7pt; font-weight: bold; }
+          .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px; }
+          .info-item { border-bottom: 1px solid #f1f5f9; padding-bottom: 5px; }
+          .label { font-size: 8pt; font-weight: 800; color: #64748b; text-transform: uppercase; }
+          .value { font-size: 10pt; font-weight: 600; color: #0f172a; display: block; }
+          .signatures { margin-top: 80px; display: flex; justify-content: space-around; }
+          .sig-box { text-align: center; border-top: 1px solid #334155; padding-top: 8px; font-size: 8pt; font-weight: bold; width: 30%; }
         </style>
       </head>
       <body>
         <div class="header">
           <div>
             <h1>${config.legalName}</h1>
-            <p>RUT: ${config.rut} • Expediente Folio #${member.id}</p>
+            <p>EXPEDIENTE DE SOCIO FOLIO #${member.id}</p>
           </div>
           <div style="text-align: right">
-            <p>Emisión: ${new Date().toLocaleDateString('es-CL')}</p>
+            <p>Fecha de Emisión: ${new Date().toLocaleDateString('es-CL')}</p>
           </div>
         </div>
+
+        <div class="info-grid">
+          <div class="info-item"><span class="label">Nombre Completo</span><span class="value">${member.name}</span></div>
+          <div class="info-item"><span class="label">RUT</span><span class="value">${member.rut}</span></div>
+          <div class="info-item"><span class="label">Fecha Ingreso</span><span class="value">${member.joinDate}</span></div>
+          <div class="info-item"><span class="label">Estado</span><span class="value">${member.status}</span></div>
+          <div class="info-item"><span class="label">Dirección</span><span class="value">${member.address}, ${member.comuna}</span></div>
+          <div class="info-item"><span class="label">Teléfono</span><span class="value">${member.phone}</span></div>
+        </div>
+
         <div class="signatures">
-          <div class="sig-box">Firma Socio<br/><br/>${member.name}</div>
-          <div class="sig-box">Tesorería<br/><br/>${treasurer}</div>
-          <div class="sig-box">Presidencia<br/><br/>${president}</div>
+          <div class="sig-box">Firma del Socio<br/>${member.name}</div>
+          <div class="sig-box">Tesorería<br/>${treasurer}</div>
+          <div class="sig-box">Presidencia<br/>${president}</div>
         </div>
         <script>window.onload = function() { window.print(); window.onafterprint = function() { window.close(); }; }</script>
       </body>
