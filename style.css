@@ -35,14 +35,10 @@ body {
     box-shadow: 0 25px 60px -15px rgba(139, 92, 246, 0.15);
 }
 
-/* Fondo Holográfico Moderno */
+/* Fondo Gris Claro Minimalista */
 .mesh-bg {
     background-color: #f8fafc;
-    background-image: 
-        radial-gradient(at 0% 0%, hsla(263, 90%, 92%, 1) 0, transparent 50%), 
-        radial-gradient(at 50% 100%, hsla(190, 90%, 94%, 1) 0, transparent 50%), 
-        radial-gradient(at 100% 0%, hsla(320, 90%, 94%, 1) 0, transparent 50%);
-    background-attachment: fixed;
+    background-image: none; /* Eliminamos el mesh colorido anterior */
 }
 
 /* Animaciones de entrada mejoradas */

@@ -2,7 +2,7 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Member, MemberStatus, FamilyMember, Assembly, Transaction, BoardPosition, User, BoardRole, CommitteeConfig } from '../types';
 import { formatRut } from '../services/utils';
-import { Icons, COLORS } from '../constants';
+import { Icons } from '../constants';
 import { printMemberFile } from '../services/printService';
 import { CHILE_REGIONS } from '../services/chileData';
 
@@ -54,38 +54,27 @@ const MemberManagement: React.FC<MemberManagementProps> = ({
     }
   }, [viewingMemberId, members]);
 
-  /**
-   * Función para filtrar socios dinámicamente.
-   * Utiliza useMemo para optimizar el rendimiento.
-   */
   const filteredMembers = useMemo(() => {
-    // Normalizar término de búsqueda: quitar acentos y pasar a minúsculas
     const normalizedSearch = searchTerm
       .toLowerCase()
       .normalize("NFD")
       .replace(/[\u0300-\u036f]/g, "");
 
-    // Limpiar búsqueda para comparación de RUT (solo números y K)
     const cleanSearchRut = searchTerm.replace(/[^0-9kK]/g, "").toLowerCase();
 
     return members.filter(m => {
-      // 1. Filtro por Estado Administrativo
       const matchesStatus = statusFilter === 'ALL' || m.status === statusFilter;
       if (!matchesStatus) return false;
 
-      // 2. Si no hay término de búsqueda, mostrar todos los que pasaron el filtro de estado
       if (!searchTerm.trim()) return true;
 
-      // 3. Normalizar nombre del socio para búsqueda insensible a acentos
       const normalizedName = m.name
         .toLowerCase()
         .normalize("NFD")
         .replace(/[\u0300-\u036f]/g, "");
 
-      // 4. Limpiar RUT del socio para comparación flexible
       const cleanMemberRut = m.rut.replace(/[^0-9kK]/g, "").toLowerCase();
 
-      // Verificar coincidencias en Nombre o RUT
       const matchesName = normalizedName.includes(normalizedSearch);
       const matchesRut = cleanMemberRut.includes(cleanSearchRut);
 
@@ -112,7 +101,7 @@ const MemberManagement: React.FC<MemberManagementProps> = ({
 
   const handleDeleteMember = (id: string) => {
     if (!canEdit) return;
-    if (confirm("¿Está seguro de eliminar a este socio? Esta acción no se puede deshacer y borrará todo su historial.")) {
+    if (confirm("¿Está seguro de eliminar a este socio? Esta acción no se puede deshacer.")) {
       setMembers(prev => prev.filter(m => m.id !== id));
       if (selectedMember?.id === id) closeModal();
     }
@@ -199,7 +188,7 @@ const MemberManagement: React.FC<MemberManagementProps> = ({
 
   const handleExportCSV = () => {
     if (filteredMembers.length === 0) {
-      alert("No hay socios para exportar con los filtros actuales.");
+      alert("No hay socios para exportar.");
       return;
     }
     const headers = ["ID", "RUT", "Nombre", "Fecha Ingreso", "Estado", "Email", "Telefono", "Direccion", "Comuna", "Region"];
@@ -220,7 +209,7 @@ const MemberManagement: React.FC<MemberManagementProps> = ({
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.setAttribute("href", url);
-    link.setAttribute("download", `nomina_socios_te_${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute("download", `socios_te_${new Date().toISOString().split('T')[0]}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -230,81 +219,86 @@ const MemberManagement: React.FC<MemberManagementProps> = ({
   const communes = currentRegion ? currentRegion.communes : [];
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
+    <div className="space-y-10 animate-in fade-in duration-500 pb-12">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-          <h2 className="text-4xl font-black text-slate-900 tracking-tighter">Censo de <span className="text-teal-600">Socios</span></h2>
+          <h2 className="text-4xl font-black text-slate-900 tracking-tighter">Censo de <span className="text-violet-600">Socios</span></h2>
           <p className="text-slate-500 font-bold uppercase tracking-widest text-[10px] mt-2">Gestión administrativa {config.tradeName}</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <button 
             onClick={handleExportCSV} 
-            className="bg-white border-2 border-slate-100 text-slate-700 px-6 py-4 rounded-3xl font-black text-xs uppercase tracking-widest hover:border-teal-500 transition shadow-sm flex items-center group"
+            className="bg-white border-2 border-slate-100 text-slate-700 px-6 py-4 rounded-3xl font-black text-xs uppercase tracking-widest hover:border-violet-500 transition shadow-sm flex items-center group"
           >
-            <svg className="w-4 h-4 mr-2 text-slate-400 group-hover:text-teal-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4 mr-2 text-slate-400 group-hover:text-violet-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
             </svg>
             Exportar CSV
           </button>
           {canEdit && (
-            <button onClick={openNew} className="bg-gradient-to-r from-teal-500 to-indigo-600 hover:shadow-[0_15px_30px_-5px_rgba(20,184,166,0.3)] text-white px-8 py-4 rounded-3xl font-black transition-all active:scale-95 flex items-center justify-center uppercase text-xs tracking-widest">
+            <button onClick={openNew} className="bg-gradient-to-r from-violet-600 to-indigo-600 hover:shadow-[0_15px_30px_-5px_rgba(139,92,246,0.3)] text-white px-8 py-4 rounded-3xl font-black transition-all active:scale-95 flex items-center justify-center uppercase text-xs tracking-widest">
               <span className="mr-3 text-xl font-light">+</span> Nuevo Registro
             </button>
           )}
         </div>
       </div>
 
-      <div className="bg-white rounded-[3rem] shadow-sm border border-slate-100 overflow-hidden flex flex-col h-[700px]">
-        <div className="p-10 border-b border-slate-50 bg-slate-50/50 space-y-8">
-          <div className="relative group">
-            <input 
-              type="text" 
-              placeholder="Buscar por nombre o RUT..." 
-              className="w-full px-14 py-5 border-2 border-slate-100 rounded-[2rem] focus:border-teal-500 outline-none transition font-black text-slate-800 placeholder:text-slate-300 text-sm shadow-inner bg-white"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-            <div className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-teal-500 transition-colors">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+      <div className="bg-white rounded-[3rem] shadow-sm border border-slate-100 overflow-hidden flex flex-col h-[800px]">
+        {/* Cabecera de tabla unificada con Attendance.tsx */}
+        <div className="p-10 border-b border-slate-50 bg-slate-50/50 flex flex-col md:flex-row justify-between items-center gap-6">
+          <div className="flex-1">
+            <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Panel de Control Social</h3>
+            <p className="text-xl font-black text-slate-900 mt-1">Nómina de Integrantes Vigentes</p>
+            
+            <div className="flex flex-wrap items-center gap-3 mt-6">
+              <button 
+                onClick={() => setStatusFilter('ALL')}
+                className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all border-2 ${statusFilter === 'ALL' ? 'bg-violet-600 border-violet-600 text-white shadow-lg' : 'bg-white border-slate-100 text-slate-400 hover:border-violet-200'}`}
+              >
+                Todos
+              </button>
+              {Object.values(MemberStatus).map(s => (
+                <button 
+                  key={s}
+                  onClick={() => setStatusFilter(s)}
+                  className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all border-2 ${statusFilter === s ? 'bg-violet-600 border-violet-600 text-white shadow-lg' : 'bg-white border-slate-100 text-slate-400 hover:border-violet-200'}`}
+                >
+                  {s}
+                </button>
+              ))}
             </div>
           </div>
           
-          <div className="flex flex-wrap items-center gap-4">
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mr-2">Filtrar por estado:</span>
-            <button 
-              onClick={() => setStatusFilter('ALL')}
-              className={`px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all border-2 ${statusFilter === 'ALL' ? 'bg-teal-500 border-teal-500 text-white shadow-[0_10px_20px_-5px_rgba(20,184,166,0.3)]' : 'bg-white border-slate-100 text-slate-400 hover:border-teal-200 hover:text-teal-600'}`}
-            >
-              Todos
-            </button>
-            {Object.values(MemberStatus).map(s => (
-              <button 
-                key={s}
-                onClick={() => setStatusFilter(s)}
-                className={`px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all border-2 ${statusFilter === s ? 'bg-teal-500 border-teal-500 text-white shadow-[0_10px_20px_-5px_rgba(20,184,166,0.3)]' : 'bg-white border-slate-100 text-slate-400 hover:border-teal-200 hover:text-teal-600'}`}
-              >
-                {s}
-              </button>
-            ))}
+          <div className="relative w-full md:w-96">
+            <input 
+              type="text" 
+              placeholder="Buscar por nombre o RUT..." 
+              className="w-full pl-12 pr-6 py-4 bg-white border-2 border-slate-100 rounded-2xl text-xs font-bold outline-none focus:border-violet-600 shadow-inner transition-all"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+            </div>
           </div>
         </div>
 
         <div className="flex-1 overflow-x-auto">
           <table className="w-full text-left">
-            <thead className="bg-slate-50/80 backdrop-blur-sm text-slate-400 text-[9px] uppercase tracking-[0.2em] font-black sticky top-0 z-10 border-b border-slate-100">
+            <thead className="bg-slate-50 text-slate-400 text-[9px] uppercase tracking-[0.2em] font-black sticky top-0 z-10 border-b border-slate-100">
               <tr>
                 <th className="px-10 py-5">Identificación del Socio</th>
-                <th className="px-10 py-5">Ingreso</th>
-                <th className="px-10 py-5">Estado</th>
-                <th className="px-10 py-5 text-right">Gestión Administrativa</th>
+                <th className="px-10 py-5">Incorporación</th>
+                <th className="px-10 py-5">Estatus</th>
+                <th className="px-10 py-5 text-right">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {filteredMembers.map(member => (
-                <tr key={member.id} className="hover:bg-slate-50/50 transition-all duration-300 group">
+                <tr key={member.id} className="hover:bg-slate-50 transition-all group duration-300">
                   <td className="px-10 py-6">
                     <div className="flex items-center space-x-6">
-                      <img src={member.photoUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(member.name)}&background=14b8a6&color=fff&bold=true&size=128`} className="w-16 h-16 rounded-[1.5rem] object-cover shadow-lg border-2 border-white transition-transform group-hover:scale-105" />
+                      <img src={member.photoUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(member.name)}&background=8b5cf6&color=fff&bold=true&size=128`} className="w-14 h-14 rounded-2xl object-cover shadow-lg border-2 border-white transition-transform group-hover:scale-110" />
                       <div>
                         <p className="font-black text-slate-900 text-base leading-tight">{member.name}</p>
                         <p className="text-[10px] text-slate-400 font-mono font-black mt-1 uppercase tracking-widest">{member.rut}</p>
@@ -313,13 +307,13 @@ const MemberManagement: React.FC<MemberManagementProps> = ({
                   </td>
                   <td className="px-10 py-6">
                     <p className="text-xs font-black text-slate-500 uppercase tracking-widest">{member.joinDate}</p>
-                    <p className="text-[9px] text-slate-300 font-bold mt-1 uppercase">Incorporación</p>
+                    <p className="text-[9px] text-slate-300 font-bold mt-1 uppercase">Fecha de registro</p>
                   </td>
                   <td className="px-10 py-6">
-                    <span className={`text-[9px] font-black uppercase px-5 py-2.5 rounded-xl border-2 transition-all duration-500 shadow-sm inline-block ${
-                      member.status === MemberStatus.ACTIVE ? 'bg-teal-50 text-teal-700 border-teal-100 shadow-teal-50' : 
-                      member.status === MemberStatus.SUSPENDED ? 'bg-rose-50 text-rose-700 border-rose-100 shadow-rose-50' :
-                      member.status === MemberStatus.PENDING ? 'bg-amber-50 text-amber-700 border-amber-100 shadow-amber-50' :
+                    <span className={`text-[9px] font-black uppercase px-4 py-2 rounded-xl border-2 transition-all duration-500 shadow-sm inline-block ${
+                      member.status === MemberStatus.ACTIVE ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 
+                      member.status === MemberStatus.SUSPENDED ? 'bg-rose-50 text-rose-700 border-rose-100' :
+                      member.status === MemberStatus.PENDING ? 'bg-amber-50 text-amber-700 border-amber-100' :
                       'bg-slate-100 text-slate-500 border-slate-200'
                     }`}>
                       {member.status}
@@ -327,18 +321,18 @@ const MemberManagement: React.FC<MemberManagementProps> = ({
                   </td>
                   <td className="px-10 py-6 text-right">
                     <div className="flex justify-end space-x-2">
-                       <button onClick={() => { setSelectedMember(member); setIsViewing(true); }} className="p-4 bg-indigo-50 text-indigo-600 rounded-2xl hover:bg-indigo-600 hover:text-white transition-all duration-300 shadow-sm" title="Ver Perfil">
+                       <button onClick={() => { setSelectedMember(member); setIsViewing(true); }} className="p-3 bg-indigo-50 text-indigo-600 rounded-xl hover:bg-indigo-600 hover:text-white transition-all shadow-sm" title="Ver Perfil">
                           <Icons.Users />
                        </button>
                        {canEdit && (
                          <>
-                           <button onClick={() => toggleBlockMember(member.id)} className={`p-4 rounded-2xl transition-all duration-300 shadow-sm ${member.status === MemberStatus.SUSPENDED ? 'bg-amber-50 text-amber-600 hover:bg-amber-500 hover:text-white' : 'bg-slate-50 text-slate-400 hover:bg-rose-500 hover:text-white'}`} title={member.status === MemberStatus.SUSPENDED ? 'Activar Socio' : 'Bloquear Socio'}>
+                           <button onClick={() => toggleBlockMember(member.id)} className={`p-3 rounded-xl transition-all shadow-sm ${member.status === MemberStatus.SUSPENDED ? 'bg-amber-50 text-amber-600 hover:bg-amber-500 hover:text-white' : 'bg-slate-50 text-slate-400 hover:bg-rose-500 hover:text-white'}`} title={member.status === MemberStatus.SUSPENDED ? 'Activar' : 'Suspender'}>
                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d={member.status === MemberStatus.SUSPENDED ? "M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" : "M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"} /></svg>
                            </button>
-                           <button onClick={() => { setSelectedMember(member); setIsEditing(true); }} className="p-4 bg-teal-50 text-teal-600 rounded-2xl hover:bg-teal-600 hover:text-white transition-all duration-300 shadow-sm" title="Editar">
+                           <button onClick={() => { setSelectedMember(member); setIsEditing(true); }} className="p-3 bg-violet-50 text-violet-600 rounded-xl hover:bg-violet-600 hover:text-white transition-all shadow-sm" title="Editar">
                               <Icons.Pencil />
                            </button>
-                           <button onClick={() => handleDeleteMember(member.id)} className="p-4 bg-rose-50 text-rose-500 rounded-2xl hover:bg-rose-600 hover:text-white transition-all duration-300 shadow-sm" title="Eliminar">
+                           <button onClick={() => handleDeleteMember(member.id)} className="p-3 bg-rose-50 text-rose-500 rounded-xl hover:bg-rose-600 hover:text-white transition-all shadow-sm" title="Eliminar">
                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                            </button>
                          </>
@@ -350,11 +344,10 @@ const MemberManagement: React.FC<MemberManagementProps> = ({
               {filteredMembers.length === 0 && (
                 <tr>
                   <td colSpan={4} className="px-10 py-32 text-center">
-                    <div className="w-24 h-24 rounded-[2.5rem] bg-slate-50 flex items-center justify-center mx-auto mb-6 text-slate-200 border-2 border-dashed border-slate-100">
+                    <div className="w-20 h-20 rounded-[2rem] bg-slate-50 flex items-center justify-center mx-auto mb-6 text-slate-200 border-2 border-dashed border-slate-100">
                       <Icons.Users />
                     </div>
-                    <p className="text-slate-400 font-black text-sm uppercase tracking-widest">Sin registros encontrados</p>
-                    <p className="text-[10px] text-slate-300 font-bold mt-2 italic">Ajuste los filtros o inicie una búsqueda diferente.</p>
+                    <p className="text-slate-400 font-black text-sm uppercase tracking-widest">Sin resultados</p>
                   </td>
                 </tr>
               )}
@@ -370,7 +363,7 @@ const MemberManagement: React.FC<MemberManagementProps> = ({
               </div>
               <div className="h-10 w-px bg-slate-200 hidden sm:block"></div>
               <div className="text-[10px] font-bold text-slate-400 italic">
-                 Mostrando resultados según filtros aplicados
+                 Mostrando socios según criterios de búsqueda
               </div>
            </div>
         </div>
@@ -413,25 +406,25 @@ const MemberManagement: React.FC<MemberManagementProps> = ({
                 <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-8">
                   <div className="md:col-span-2">
                     <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-2">Nombre Completo</label>
-                    <input required className="w-full px-8 py-5 border-2 border-slate-100 rounded-[2rem] focus:border-teal-500 outline-none transition font-black text-slate-900 bg-slate-50/50" value={selectedMember.name} onChange={e => setSelectedMember({...selectedMember, name: e.target.value})} placeholder="Ingrese nombre completo"/>
+                    <input required className="w-full px-8 py-5 border-2 border-slate-100 rounded-[2rem] focus:border-violet-600 outline-none transition font-black text-slate-900 bg-slate-50/50" value={selectedMember.name} onChange={e => setSelectedMember({...selectedMember, name: e.target.value})} placeholder="Ingrese nombre completo"/>
                   </div>
                   <div>
                     <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-2">RUT / Identificador</label>
-                    <input required className="w-full px-8 py-5 border-2 border-slate-100 rounded-[2rem] focus:border-teal-500 outline-none transition font-black text-slate-900 bg-slate-50/50 font-mono" value={selectedMember.rut} onChange={e => setSelectedMember({...selectedMember, rut: formatRut(e.target.value)})} placeholder="12.345.678-9"/>
+                    <input required className="w-full px-8 py-5 border-2 border-slate-100 rounded-[2rem] focus:border-violet-600 outline-none transition font-black text-slate-900 bg-slate-50/50 font-mono" value={selectedMember.rut} onChange={e => setSelectedMember({...selectedMember, rut: formatRut(e.target.value)})} placeholder="12.345.678-9"/>
                   </div>
                   <div>
                     <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-2">Fecha de Ingreso</label>
-                    <input type="date" required className="w-full px-8 py-5 border-2 border-slate-100 rounded-[2rem] focus:border-teal-500 outline-none transition font-black text-slate-900 bg-slate-50/50" value={selectedMember.joinDate} onChange={e => setSelectedMember({...selectedMember, joinDate: e.target.value})}/>
+                    <input type="date" required className="w-full px-8 py-5 border-2 border-slate-100 rounded-[2rem] focus:border-violet-600 outline-none transition font-black text-slate-900 bg-slate-50/50" value={selectedMember.joinDate} onChange={e => setSelectedMember({...selectedMember, joinDate: e.target.value})}/>
                   </div>
                   <div>
                     <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-2">Estado Administrativo</label>
-                    <select className="w-full px-8 py-5 border-2 border-slate-100 rounded-[2rem] focus:border-teal-500 outline-none transition font-black text-slate-900 bg-slate-50/50 uppercase text-xs" value={selectedMember.status} onChange={e => setSelectedMember({...selectedMember, status: e.target.value as MemberStatus})}>
+                    <select className="w-full px-8 py-5 border-2 border-slate-100 rounded-[2rem] focus:border-violet-600 outline-none font-black text-slate-900 bg-slate-50/50 uppercase text-xs" value={selectedMember.status} onChange={e => setSelectedMember({...selectedMember, status: e.target.value as MemberStatus})}>
                       {Object.values(MemberStatus).map(s => <option key={s} value={s}>{s}</option>)}
                     </select>
                   </div>
                   <div>
                     <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-2">Teléfono Movil</label>
-                    <input className="w-full px-8 py-5 border-2 border-slate-100 rounded-[2rem] focus:border-teal-500 outline-none transition font-black text-slate-900 bg-slate-50/50" value={selectedMember.phone} onChange={e => setSelectedMember({...selectedMember, phone: e.target.value})} placeholder="+569..."/>
+                    <input className="w-full px-8 py-5 border-2 border-slate-100 rounded-[2rem] focus:border-violet-600 outline-none transition font-black text-slate-900 bg-slate-50/50" value={selectedMember.phone} onChange={e => setSelectedMember({...selectedMember, phone: e.target.value})} placeholder="+569..."/>
                   </div>
                 </div>
               </div>
@@ -441,17 +434,17 @@ const MemberManagement: React.FC<MemberManagementProps> = ({
                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <div className="md:col-span-2">
                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-2">Correo Electrónico</label>
-                       <input type="email" className="w-full px-8 py-5 border-2 border-slate-100 rounded-2rem focus:border-teal-500 outline-none transition font-black text-slate-900 bg-slate-50/50" value={selectedMember.email} onChange={e => setSelectedMember({...selectedMember, email: e.target.value})} placeholder="correo@ejemplo.com"/>
+                       <input type="email" className="w-full px-8 py-5 border-2 border-slate-100 rounded-[2rem] focus:border-violet-600 outline-none transition font-black text-slate-900 bg-slate-50/50" value={selectedMember.email} onChange={e => setSelectedMember({...selectedMember, email: e.target.value})} placeholder="correo@ejemplo.com"/>
                     </div>
                     <div className="md:col-span-2">
                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-2">Dirección Particular</label>
-                       <input className="w-full px-8 py-5 border-2 border-slate-100 rounded-[2rem] focus:border-teal-500 outline-none transition font-black text-slate-900 bg-slate-50/50" value={selectedMember.address} onChange={e => setSelectedMember({...selectedMember, address: e.target.value})} placeholder="Ej: Calle Los Alerces #123"/>
+                       <input className="w-full px-8 py-5 border-2 border-slate-100 rounded-[2rem] focus:border-violet-600 outline-none transition font-black text-slate-900 bg-slate-50/50" value={selectedMember.address} onChange={e => setSelectedMember({...selectedMember, address: e.target.value})} placeholder="Ej: Calle Los Alerces #123"/>
                     </div>
                     <div>
                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-2">Región</label>
                        <select 
                         required
-                        className="w-full px-8 py-5 border-2 border-slate-100 rounded-[2rem] focus:border-teal-500 outline-none transition font-black text-slate-900 bg-slate-50/50 text-xs uppercase" 
+                        className="w-full px-8 py-5 border-2 border-slate-100 rounded-[2rem] focus:border-violet-600 outline-none transition font-black text-slate-900 bg-slate-50/50 text-xs uppercase" 
                         value={selectedMember.region || ''} 
                         onChange={e => setSelectedMember({...selectedMember, region: e.target.value, comuna: ''})}
                        >
@@ -464,7 +457,7 @@ const MemberManagement: React.FC<MemberManagementProps> = ({
                        <select 
                         required
                         disabled={!selectedMember.region}
-                        className="w-full px-8 py-5 border-2 border-slate-100 rounded-[2rem] focus:border-teal-500 outline-none transition font-black text-slate-900 bg-slate-50/50 text-xs uppercase disabled:opacity-50" 
+                        className="w-full px-8 py-5 border-2 border-slate-100 rounded-[2rem] focus:border-violet-600 outline-none transition font-black text-slate-900 bg-slate-50/50 text-xs uppercase disabled:opacity-50" 
                         value={selectedMember.comuna || ''} 
                         onChange={e => setSelectedMember({...selectedMember, comuna: e.target.value})}
                        >
@@ -478,14 +471,14 @@ const MemberManagement: React.FC<MemberManagementProps> = ({
               <div className="pt-10 border-t border-slate-100">
                  <div className="flex justify-between items-center mb-8">
                     <h4 className="text-base font-black text-slate-900 uppercase tracking-widest">Núcleo Familiar Vinculado</h4>
-                    <button type="button" onClick={() => setShowFamilyForm(true)} className="px-6 py-3 bg-teal-50 text-teal-700 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-teal-100 transition-all">+ Vincular Integrante</button>
+                    <button type="button" onClick={() => setShowFamilyForm(true)} className="px-6 py-3 bg-violet-50 text-violet-700 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-violet-100 transition-all">+ Vincular Integrante</button>
                  </div>
                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {(selectedMember.familyMembers || []).map(fm => (
                        <div key={fm.id} className="bg-slate-50 p-6 rounded-3xl border border-slate-100 flex justify-between items-center">
                           <div>
                              <p className="text-sm font-black text-slate-800">{fm.name}</p>
-                             <p className="text-[9px] text-teal-600 font-black uppercase tracking-widest">{fm.relationship}</p>
+                             <p className="text-[9px] text-violet-600 font-black uppercase tracking-widest">{fm.relationship}</p>
                           </div>
                           <button type="button" onClick={() => removeFamilyMember(fm.id)} className="w-10 h-10 rounded-xl bg-white text-rose-500 hover:bg-rose-50 flex items-center justify-center text-xl shadow-sm border border-slate-100">&times;</button>
                        </div>
@@ -499,7 +492,7 @@ const MemberManagement: React.FC<MemberManagementProps> = ({
                 ) : <div></div>}
                 <div className="flex space-x-6">
                   <button type="button" onClick={closeModal} className="px-10 py-5 font-black text-slate-400 uppercase tracking-widest text-xs hover:text-slate-600">Descartar</button>
-                  <button type="submit" className="px-12 py-5 bg-gradient-to-r from-teal-500 to-indigo-600 text-white rounded-[2rem] font-black shadow-2xl shadow-teal-700/30 hover:shadow-teal-700/50 transition-all uppercase text-xs tracking-widest">Guardar Cambios</button>
+                  <button type="submit" className="px-12 py-5 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-[2rem] font-black shadow-2xl shadow-violet-700/30 hover:shadow-violet-700/50 transition-all uppercase text-xs tracking-widest">Guardar Cambios</button>
                 </div>
               </div>
             </form>
@@ -514,15 +507,15 @@ const MemberManagement: React.FC<MemberManagementProps> = ({
                   <div className="space-y-6">
                     <div>
                       <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-2">Nombre del Familiar</label>
-                      <input className="w-full px-8 py-5 border-2 border-slate-100 rounded-2xl outline-none focus:border-teal-500 font-bold bg-slate-50" value={newFamilyMember.name} onChange={e => setNewFamilyMember({...newFamilyMember, name: e.target.value})} placeholder="Nombre completo"/>
+                      <input className="w-full px-8 py-5 border-2 border-slate-100 rounded-2xl outline-none focus:border-violet-500 font-bold bg-slate-50" value={newFamilyMember.name} onChange={e => setNewFamilyMember({...newFamilyMember, name: e.target.value})} placeholder="Nombre completo"/>
                     </div>
                     <div>
                       <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-2">RUT del Familiar</label>
-                      <input className="w-full px-8 py-5 border-2 border-slate-100 rounded-2xl outline-none focus:border-teal-500 font-bold bg-slate-50 font-mono" value={newFamilyMember.rut} onChange={e => setNewFamilyMember({...newFamilyMember, rut: formatRut(e.target.value)})} placeholder="12.345.678-k"/>
+                      <input className="w-full px-8 py-5 border-2 border-slate-100 rounded-2xl outline-none focus:border-violet-500 font-bold bg-slate-50 font-mono" value={newFamilyMember.rut} onChange={e => setNewFamilyMember({...newFamilyMember, rut: formatRut(e.target.value)})} placeholder="12.345.678-k"/>
                     </div>
                     <div>
                       <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-2">Vínculo de Parentesco</label>
-                      <select className="w-full px-8 py-5 border-2 border-slate-100 rounded-2xl outline-none focus:border-teal-500 font-black bg-slate-50 uppercase text-xs" value={newFamilyMember.relationship} onChange={e => setNewFamilyMember({...newFamilyMember, relationship: e.target.value})}>
+                      <select className="w-full px-8 py-5 border-2 border-slate-100 rounded-2xl outline-none focus:border-violet-500 font-black bg-slate-50 uppercase text-xs" value={newFamilyMember.relationship} onChange={e => setNewFamilyMember({...newFamilyMember, relationship: e.target.value})}>
                         <option value="">Seleccionar...</option>
                         <option value="Hijo/a">Hijo/a</option>
                         <option value="Cónyuge">Cónyuge</option>
@@ -534,7 +527,7 @@ const MemberManagement: React.FC<MemberManagementProps> = ({
                     </div>
                   </div>
                   <div className="flex flex-col space-y-4 pt-6">
-                    <button type="button" onClick={handleAddFamilyMember} className="w-full py-5 bg-teal-600 text-white rounded-2xl font-black uppercase text-xs tracking-widest shadow-xl shadow-teal-700/20 hover:bg-teal-700 transition">Confirmar Vinculación</button>
+                    <button type="button" onClick={handleAddFamilyMember} className="w-full py-5 bg-violet-600 text-white rounded-2xl font-black uppercase text-xs tracking-widest shadow-xl shadow-violet-700/20 hover:bg-violet-700 transition">Confirmar Vinculación</button>
                     <button type="button" onClick={() => setShowFamilyForm(false)} className="w-full py-5 bg-slate-50 text-slate-400 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-slate-100 transition">Cancelar</button>
                   </div>
                 </div>
@@ -547,12 +540,12 @@ const MemberManagement: React.FC<MemberManagementProps> = ({
       {isViewing && selectedMember && (
         <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-xl flex items-center justify-center z-[100] p-6">
           <div className="bg-white w-full max-w-4xl rounded-[4rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 flex flex-col max-h-[90vh]">
-            <div className="bg-teal-600 p-10 text-white flex justify-between items-center">
+            <div className="bg-violet-600 p-10 text-white flex justify-between items-center">
                <div className="flex items-center space-x-6">
-                  <img src={selectedMember.photoUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedMember.name || 'S')}&background=fff&color=14b8a6&bold=true&size=128`} className="w-20 h-20 rounded-[2rem] object-cover shadow-lg border-2 border-white/20" />
+                  <img src={selectedMember.photoUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedMember.name || 'S')}&background=fff&color=8b5cf6&bold=true&size=128`} className="w-20 h-20 rounded-[2rem] object-cover shadow-lg border-2 border-white/20" />
                   <div>
                     <h3 className="text-3xl font-black tracking-tighter leading-none">{selectedMember.name}</h3>
-                    <p className="text-teal-100 text-[10px] font-black uppercase tracking-widest mt-2">Socio Folio #{selectedMember.id}</p>
+                    <p className="text-violet-100 text-[10px] font-black uppercase tracking-widest mt-2">Socio Folio #{selectedMember.id}</p>
                   </div>
                </div>
                <button onClick={closeModal} className="w-12 h-12 rounded-2xl bg-white/10 hover:bg-white/20 text-white flex items-center justify-center text-3xl font-light transition-all">&times;</button>
@@ -565,7 +558,7 @@ const MemberManagement: React.FC<MemberManagementProps> = ({
                     <div className="grid grid-cols-2 gap-y-6 gap-x-8 text-sm">
                        <div><p className="text-slate-400 font-bold uppercase text-[9px] mb-1 tracking-widest">RUT / ID</p><p className="font-black text-slate-800">{selectedMember.rut}</p></div>
                        <div><p className="text-slate-400 font-bold uppercase text-[9px] mb-1 tracking-widest">Ingreso</p><p className="font-black text-slate-800">{selectedMember.joinDate}</p></div>
-                       <div><p className="text-slate-400 font-bold uppercase text-[9px] mb-1 tracking-widest">Estatus</p><span className="font-black text-teal-600 uppercase tracking-widest text-xs">{selectedMember.status}</span></div>
+                       <div><p className="text-slate-400 font-bold uppercase text-[9px] mb-1 tracking-widest">Estatus</p><span className="font-black text-violet-600 uppercase tracking-widest text-xs">{selectedMember.status}</span></div>
                        <div><p className="text-slate-400 font-bold uppercase text-[9px] mb-1 tracking-widest">Teléfono</p><p className="font-black text-slate-800">{selectedMember.phone || 'N/A'}</p></div>
                        <div className="col-span-2"><p className="text-slate-400 font-bold uppercase text-[9px] mb-1 tracking-widest">Email Corporativo/Personal</p><p className="font-black text-slate-800">{selectedMember.email || 'No registrado'}</p></div>
                        <div className="col-span-2"><p className="text-slate-400 font-bold uppercase text-[9px] mb-1 tracking-widest">Domicilio Completo</p><p className="font-black text-slate-800 leading-tight">{selectedMember.address || 'Sin dirección'}{selectedMember.comuna ? `, ${selectedMember.comuna}` : ''}{selectedMember.region ? `, ${selectedMember.region}` : ''}</p></div>
@@ -578,7 +571,7 @@ const MemberManagement: React.FC<MemberManagementProps> = ({
                        {selectedMember.familyMembers?.map(fm => (
                          <div key={fm.id} className="p-5 bg-slate-50 rounded-2xl border border-slate-100">
                            <p className="font-black text-slate-800 text-sm leading-none mb-1.5">{fm.name}</p>
-                           <p className="text-[9px] text-teal-600 font-black uppercase tracking-widest">{fm.relationship} • {fm.rut}</p>
+                           <p className="text-[9px] text-violet-600 font-black uppercase tracking-widest">{fm.relationship} • {fm.rut}</p>
                          </div>
                        ))}
                        {(!selectedMember.familyMembers || selectedMember.familyMembers.length === 0) && (
@@ -593,13 +586,13 @@ const MemberManagement: React.FC<MemberManagementProps> = ({
 
             <div className="p-8 border-t border-slate-100 bg-slate-50/50 flex justify-end space-x-4">
                {canEdit && (
-                 <button onClick={() => toggleBlockMember(selectedMember.id!)} className={`px-8 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest transition shadow-xl ${selectedMember.status === MemberStatus.SUSPENDED ? 'bg-teal-100 text-teal-700 hover:bg-teal-600 hover:text-white' : 'bg-rose-100 text-rose-700 hover:bg-rose-600 hover:text-white'}`}>
+                 <button onClick={() => toggleBlockMember(selectedMember.id!)} className={`px-8 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest transition shadow-xl ${selectedMember.status === MemberStatus.SUSPENDED ? 'bg-violet-100 text-violet-700 hover:bg-violet-600 hover:text-white' : 'bg-rose-100 text-rose-700 hover:bg-rose-600 hover:text-white'}`}>
                    {selectedMember.status === MemberStatus.SUSPENDED ? 'Activar Socio' : 'Bloquear Socio'}
                  </button>
                )}
                <button onClick={handlePrint} className="px-8 py-3 bg-slate-900 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-black transition shadow-xl">Imprimir Ficha</button>
                {canEdit && (
-                 <button onClick={() => { setIsViewing(false); setIsEditing(true); }} className="px-8 py-3 bg-teal-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-teal-700 transition">Editar Datos</button>
+                 <button onClick={() => { setIsViewing(false); setIsEditing(true); }} className="px-8 py-3 bg-violet-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-violet-700 transition">Editar Datos</button>
                )}
             </div>
           </div>

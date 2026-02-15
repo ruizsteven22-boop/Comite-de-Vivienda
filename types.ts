@@ -40,6 +40,21 @@ export enum AssemblyStatus {
   FINISHED = 'Finalizada'
 }
 
+export enum DocumentType {
+  REPORT = 'Informe',
+  MEMO = 'Memorándum',
+  CERTIFICATE = 'Certificado',
+  LETTER = 'Carta',
+  OFFICE = 'Oficio'
+}
+
+export enum DocumentStatus {
+  DRAFT = 'Borrador',
+  SIGNED = 'Firmado',
+  SENT = 'Enviado',
+  ARCHIVED = 'Archivado'
+}
+
 export interface CommitteeConfig {
   legalName: string;
   tradeName: string;
@@ -82,6 +97,29 @@ export interface Transaction {
   referenceNumber?: string;
   description: string;
   memberId?: string;
+}
+
+export interface DocumentLog {
+  editorName: string;
+  timestamp: string;
+  action: string;
+  statusAtTime: DocumentStatus;
+}
+
+export interface Document {
+  id: string;
+  folioNumber: number;
+  year: number;
+  type: DocumentType;
+  title: string;
+  date: string;
+  addressee: string;
+  subject: string;
+  content: string;
+  status: DocumentStatus;
+  referenceNumber?: string;
+  lastUpdate: string;
+  history: DocumentLog[];
 }
 
 export interface Person {

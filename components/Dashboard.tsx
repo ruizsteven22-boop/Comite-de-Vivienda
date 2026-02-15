@@ -1,9 +1,9 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Member, Transaction, Assembly, TransactionType, User, BoardRole, CommitteeConfig } from '../types';
 import { getFinancialSummary } from '../services/geminiService';
 import { getTranslation } from '../services/i18nService';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, Legend } from 'recharts';
 
 interface DashboardProps {
   members: Member[];
@@ -32,6 +32,35 @@ const Dashboard: React.FC<DashboardProps> = ({ members, transactions, assemblies
                         currentUser.role === 'ADMINISTRATOR' ||
                         currentUser.role === BoardRole.PRESIDENT;
 
+  // Calculate monthly cash flow data for the last 6 months
+  const cashFlowData = useMemo(() => {
+    if (!isTesoOrAdmin) return [];
+
+    const now = new Date();
+    const months = [];
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      months.push({
+        label: d.toLocaleString('es-CL', { month: 'short' }).toUpperCase(),
+        month: d.getMonth(),
+        year: d.getFullYear(),
+        income: 0,
+        expense: 0
+      });
+    }
+
+    transactions.forEach(tx => {
+      const txDate = new Date(tx.date);
+      const monthIdx = months.findIndex(m => m.month === txDate.getMonth() && m.year === txDate.getFullYear());
+      if (monthIdx !== -1) {
+        if (tx.type === TransactionType.INCOME) months[monthIdx].income += tx.amount;
+        else months[monthIdx].expense += tx.amount;
+      }
+    });
+
+    return months;
+  }, [transactions, isTesoOrAdmin]);
+
   const totalIncome = transactions
     .filter(t => t.type === TransactionType.INCOME)
     .reduce((acc, curr) => acc + curr.amount, 0);
@@ -45,144 +74,233 @@ const Dashboard: React.FC<DashboardProps> = ({ members, transactions, assemblies
   useEffect(() => {
     const fetchSummary = async () => {
       if (!isTesoOrAdmin) {
-        setAiSummary(`Buen día ${currentUser.name}. El sistema está operativo y al día.`);
+        setAiSummary(`Buen día ${currentUser.name}. El sistema está operativo y el censo de socios se mantiene actualizado.`);
         return;
       }
       if (transactions.length > 0) {
         const summary = await getFinancialSummary(transactions);
         setAiSummary(summary || 'El reporte no se pudo generar. Revise el balance manual.');
       } else {
-        setAiSummary('Inicie operaciones financieras para ver el análisis de inteligencia artificial.');
+        setAiSummary('Inicie operaciones financieras para ver el análisis de inteligencia artificial sobre el flujo de caja.');
       }
     };
     fetchSummary();
   }, [transactions, currentUser, isTesoOrAdmin]);
-
-  const chartData = [
-    { name: 'Ingresos', value: totalIncome },
-    { name: 'Egresos', value: totalExpense },
-  ];
 
   const nextAssembly = assemblies
     .filter(a => a.status === 'Programada' || a.status === 'En Curso')
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0];
 
   return (
-    <div className="space-y-10">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div className="page-transition">
-          <h2 className="text-5xl font-black tracking-tighter text-slate-900 leading-tight">
-            {t.dashboard.welcome}, <br className="md:hidden" />
-            <span className="bg-clip-text text-transparent bg-gradient-to-r from-violet-600 to-blue-600">{currentUser.name.split(' ')[0]}</span>
+    <div className="space-y-12 pb-20">
+      {/* Header Section */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 animate-in fade-in slide-in-from-top-4 duration-700">
+        <div className="space-y-2">
+          <h2 className="text-6xl font-black tracking-tighter text-slate-900 leading-tight">
+            {t.dashboard.welcome}, <br className="hidden sm:block md:hidden" />
+            <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 via-violet-600 to-fuchsia-600">{currentUser.name.split(' ')[0]}</span>
           </h2>
-          <p className="text-slate-400 font-bold uppercase tracking-[0.3em] text-[10px] mt-4">{t.dashboard.subtitle}</p>
-        </div>
-        <div className="flex flex-col md:flex-row gap-3">
-          <div className="flex h-14 items-center rounded-[1.5rem] bg-white/70 backdrop-blur-md px-8 font-black text-slate-700 shadow-sm border border-white/50 text-sm uppercase tracking-widest">
-            {currentTime.toLocaleDateString(config.language === 'es' ? 'es-CL' : 'en-US', { weekday: 'long', day: 'numeric', month: 'long' })}
+          <div className="flex items-center space-x-3">
+             <span className="h-1.5 w-12 bg-indigo-600 rounded-full"></span>
+             <p className="text-slate-400 font-black uppercase tracking-[0.3em] text-[10px]">{t.dashboard.subtitle}</p>
           </div>
-          <div className="flex h-14 items-center rounded-[1.5rem] bg-slate-900 px-8 font-black text-white shadow-xl shadow-slate-200 text-sm tracking-widest tabular-nums">
-            <span className="text-violet-400 animate-pulse mr-3 text-lg">●</span>
-            {currentTime.toLocaleTimeString(config.language === 'es' ? 'es-CL' : 'en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+        </div>
+        
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex h-16 items-center rounded-3xl bg-white p-2 pr-8 shadow-sm border border-slate-100">
+            <div className="h-12 w-12 rounded-2xl bg-slate-50 flex items-center justify-center mr-4 text-slate-400">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-[9px] font-black text-slate-300 uppercase tracking-widest">Fecha Actual</span>
+              <span className="font-black text-slate-800 text-sm">{currentTime.toLocaleDateString('es-CL', { day: 'numeric', month: 'long' })}</span>
+            </div>
+          </div>
+          <div className="flex h-16 items-center rounded-3xl bg-slate-900 p-2 pr-8 shadow-2xl shadow-indigo-200">
+            <div className="h-12 w-12 rounded-2xl bg-white/10 flex items-center justify-center mr-4 text-indigo-300">
+              <svg className="w-6 h-6 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-[9px] font-black text-indigo-400 uppercase tracking-widest">Hora Sistema</span>
+              <span className="font-black text-white text-sm tabular-nums">{currentTime.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      {/* KPI Section */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
         {[
-          { label: t.dashboard.kpiMembers, val: members.length, sub: 'Socios Activos', color: 'from-violet-500 to-indigo-600', icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7' },
-          { label: t.dashboard.kpiCash, val: isTesoOrAdmin ? `$${balance.toLocaleString('es-CL')}` : 'Acceso Restringido', sub: 'Saldo Disponible', color: 'from-emerald-500 to-teal-600', icon: 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2' },
-          { label: t.dashboard.kpiIncome, val: isTesoOrAdmin ? `$${totalIncome.toLocaleString('es-CL')}` : '***', sub: 'Recaudación Total', color: 'from-blue-500 to-cyan-600', icon: 'M7 12l3-3 3 3 4-4' },
-          { label: t.dashboard.kpiSessions, val: assemblies.length, sub: 'Asambleas Totales', color: 'from-fuchsia-500 to-purple-600', icon: 'M8 7V3m8 4V3m-9 8h10' },
+          { label: 'Censo Social', val: members.length, sub: 'Socios Inscritos', color: 'bg-indigo-600', light: 'bg-indigo-50', icon: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z' },
+          { label: 'Saldo de Caja', val: isTesoOrAdmin ? `$${balance.toLocaleString('es-CL')}` : '---', sub: 'Fondos Disponibles', color: 'bg-emerald-600', light: 'bg-emerald-50', icon: 'M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z' },
+          { label: 'Ingresos', val: isTesoOrAdmin ? `$${totalIncome.toLocaleString('es-CL')}` : '---', sub: 'Histórico Total', color: 'bg-blue-600', light: 'bg-blue-50', icon: 'M7 11l5-5m0 0l5 5m-5-5v12' },
+          { label: 'Participación', val: assemblies.length, sub: 'Asambleas Citadas', color: 'bg-fuchsia-600', light: 'bg-fuchsia-50', icon: 'M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4' },
         ].map((kpi, i) => (
-          <div key={i} className="group relative overflow-hidden rounded-[2.5rem] bg-white/80 backdrop-blur-xl p-8 shadow-sm border border-white/50 transition-all hover:shadow-2xl hover:-translate-y-2">
-            <div className={`absolute -right-6 -top-6 h-28 w-28 rounded-full bg-gradient-to-br ${kpi.color} opacity-[0.08] transition-transform group-hover:scale-150`}></div>
-            <div className={`mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br ${kpi.color} text-white shadow-lg`}>
-              <svg className="h-7 w-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d={kpi.icon} /></svg>
+          <div key={i} className="group relative overflow-hidden rounded-[2.5rem] bg-white p-10 shadow-sm border border-slate-100 transition-all hover:shadow-2xl hover:-translate-y-2 duration-500">
+            <div className={`mb-8 flex h-16 w-16 items-center justify-center rounded-[1.5rem] ${kpi.light} transition-all group-hover:scale-110`}>
+              <svg className={`h-8 w-8 ${kpi.color.replace('bg-', 'text-')}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d={kpi.icon} /></svg>
             </div>
             <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">{kpi.label}</p>
-            <p className="text-3xl font-black text-slate-900 mt-1">{kpi.val}</p>
-            <p className="mt-1 text-[10px] font-bold text-slate-400 uppercase tracking-widest">{kpi.sub}</p>
+            <p className="text-4xl font-black text-slate-900 mt-2 tracking-tighter">{kpi.val}</p>
+            <p className="mt-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">{kpi.sub}</p>
+            <div className={`absolute bottom-0 left-0 h-1.5 w-0 ${kpi.color} transition-all duration-700 group-hover:w-full`}></div>
           </div>
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 rounded-[3rem] bg-white/80 backdrop-blur-xl p-10 shadow-sm border border-white/50 flex flex-col">
-          <div className="mb-10 flex items-center justify-between">
+      {/* Main Analysis Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+        {/* Cash Flow Chart */}
+        <div className="lg:col-span-8 rounded-[3.5rem] bg-white p-12 shadow-sm border border-slate-100 flex flex-col group">
+          <div className="mb-12 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
             <div>
-               <h3 className="text-2xl font-black text-slate-800 tracking-tight">Análisis de Flujos</h3>
-               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Comparativa de Tesorería Anual</p>
+               <h3 className="text-3xl font-black text-slate-900 tracking-tight">Flujo de Caja Mensual</h3>
+               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-2 flex items-center">
+                 <span className="w-8 h-px bg-slate-200 mr-3"></span> Analítica Financiera Últimos 6 Meses
+               </p>
             </div>
-            <div className="flex space-x-6">
-              <div className="flex items-center space-x-2">
-                <div className="h-3 w-3 rounded-full bg-emerald-500 shadow-sm shadow-emerald-200"></div>
-                <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">Recaudado</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <div className="h-3 w-3 rounded-full bg-fuchsia-500 shadow-sm shadow-fuchsia-200"></div>
-                <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">Gastado</span>
+            <div className="flex bg-slate-50 p-2 rounded-2xl border border-slate-100">
+              <div className="flex items-center space-x-6 px-4">
+                <div className="flex items-center space-x-2">
+                  <div className="h-3 w-3 rounded-full bg-emerald-500 shadow-lg shadow-emerald-200"></div>
+                  <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">Ingresos</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <div className="h-3 w-3 rounded-full bg-rose-500 shadow-lg shadow-rose-200"></div>
+                  <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">Egresos</span>
+                </div>
               </div>
             </div>
           </div>
-          <div className="h-96 w-full">
+          
+          <div className="h-[450px] w-full">
             {isTesoOrAdmin ? (
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData}>
+                <BarChart data={cashFlowData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 900, fill: '#94a3b8', textTransform: 'uppercase' }} />
-                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 900, fill: '#94a3b8' }} />
-                  <Tooltip 
-                    cursor={{ fill: '#f1f5f9' }}
-                    contentStyle={{ borderRadius: '1.5rem', border: 'none', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.15)', padding: '20px' }}
+                  <XAxis 
+                    dataKey="label" 
+                    axisLine={false} 
+                    tickLine={false} 
+                    tick={{ fontSize: 11, fontWeight: 900, fill: '#94a3b8' }} 
+                    dy={15}
                   />
-                  <Bar dataKey="value" radius={[15, 15, 15, 15]} barSize={80}>
-                    {chartData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={index === 0 ? '#10b981' : '#f43f5e'} />
-                    ))}
-                  </Bar>
+                  <YAxis 
+                    axisLine={false} 
+                    tickLine={false} 
+                    tick={{ fontSize: 11, fontWeight: 900, fill: '#94a3b8' }}
+                    tickFormatter={(val) => `$${val / 1000}k`}
+                  />
+                  <Tooltip 
+                    cursor={{ fill: '#f8fafc', radius: 20 }}
+                    contentStyle={{ borderRadius: '2rem', border: 'none', boxShadow: '0 40px 80px -15px rgba(0,0,0,0.15)', padding: '24px' }}
+                    itemStyle={{ fontWeight: 800, textTransform: 'uppercase', fontSize: '10px' }}
+                  />
+                  <Bar dataKey="income" fill="#10b981" radius={[10, 10, 10, 10]} barSize={40} />
+                  <Bar dataKey="expense" fill="#f43f5e" radius={[10, 10, 10, 10]} barSize={40} />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
-              <div className="flex h-full items-center justify-center text-slate-300 italic font-bold">Sin privilegios de visualización contable.</div>
+              <div className="flex h-full items-center justify-center text-slate-300 italic font-bold border-2 border-dashed border-slate-100 rounded-[3rem] bg-slate-50/50">
+                Acceso restringido a visualización de flujos contables.
+              </div>
             )}
+          </div>
+          
+          <div className="mt-10 pt-10 border-t border-slate-50 flex items-center justify-between text-slate-400">
+             <p className="text-[10px] font-bold uppercase tracking-widest italic">Datos actualizados en tiempo real según registros de tesorería</p>
+             <button className="text-[10px] font-black text-indigo-600 uppercase tracking-widest hover:underline">Ver Reporte Detallado →</button>
           </div>
         </div>
 
-        <div className="space-y-8">
-          <div className="rounded-[3rem] bg-gradient-to-br from-violet-900 to-indigo-950 p-10 text-white shadow-2xl relative overflow-hidden group">
-            <div className="absolute -right-4 -top-4 opacity-10 group-hover:rotate-12 transition-transform duration-700">
-              <svg className="h-32 w-32" fill="currentColor" viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+        {/* AI & Assembly Section */}
+        <div className="lg:col-span-4 space-y-10">
+          {/* AI SUMMARY BOX */}
+          <div className="rounded-[3.5rem] bg-slate-900 p-12 text-white shadow-2xl relative overflow-hidden group min-h-[320px] flex flex-col justify-between">
+            <div className="absolute -right-10 -top-10 opacity-10 group-hover:scale-125 transition-transform duration-1000">
+              <svg className="h-48 w-48 text-indigo-500" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
             </div>
-            <p className="text-[10px] font-black uppercase tracking-[0.4em] text-violet-300 mb-8 border-b border-white/10 pb-4">{t.dashboard.aiSummary}</p>
-            <div className="text-sm leading-relaxed text-slate-200 font-medium min-h-[140px] italic">
-              "{aiSummary}"
+            
+            <div>
+              <div className="flex items-center space-x-3 mb-8">
+                <div className="h-8 w-8 rounded-full bg-gradient-to-tr from-indigo-400 to-fuchsia-400 flex items-center justify-center animate-spin-slow">
+                  <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                </div>
+                <p className="text-[10px] font-black uppercase tracking-[0.4em] text-indigo-300">Resumen Estratégico AI</p>
+              </div>
+              <div className="text-sm leading-relaxed text-indigo-50/80 font-medium italic relative z-10">
+                "{aiSummary}"
+              </div>
             </div>
-            <div className="mt-8 pt-6 border-t border-white/5 flex items-center justify-between">
-               <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">IA Powered by Gemini</span>
-               <div className="h-1.5 w-1.5 rounded-full bg-violet-400 animate-pulse"></div>
+
+            <div className="mt-10 pt-8 border-t border-white/10 flex items-center justify-between">
+               <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Powered by Gemini Engine</span>
+               <div className="flex space-x-1">
+                 <div className="h-1 w-1 rounded-full bg-indigo-500 animate-pulse"></div>
+                 <div className="h-1 w-1 rounded-full bg-indigo-500 animate-pulse delay-75"></div>
+                 <div className="h-1 w-1 rounded-full bg-indigo-500 animate-pulse delay-150"></div>
+               </div>
             </div>
           </div>
 
-          <div className="rounded-[3rem] bg-white/80 backdrop-blur-xl p-10 shadow-sm border border-white/50">
-            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-8">{t.dashboard.nextAssembly}</p>
+          {/* NEXT ASSEMBLY HERO CARD */}
+          <div className="rounded-[3.5rem] bg-white p-12 shadow-sm border border-slate-100 relative overflow-hidden group">
+            <p className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400 mb-10 border-b border-slate-50 pb-4">Próxima Citación</p>
+            
             {nextAssembly ? (
-              <div className="flex items-center space-x-6">
-                <div className="flex h-20 w-20 flex-col items-center justify-center rounded-[1.5rem] bg-violet-50 text-violet-700 border-2 border-violet-100 shadow-inner">
-                  <span className="text-[10px] font-black uppercase">{nextAssembly.date.split('-')[1]}</span>
-                  <span className="text-3xl font-black leading-none">{nextAssembly.date.split('-')[2]}</span>
+              <div className="space-y-10">
+                <div className="flex items-start space-x-8">
+                  <div className="flex h-24 w-24 flex-col items-center justify-center rounded-[2rem] bg-indigo-600 text-white shadow-xl shadow-indigo-200">
+                    <span className="text-[10px] font-black uppercase opacity-60">{nextAssembly.date.split('-')[1]}</span>
+                    <span className="text-4xl font-black leading-none">{nextAssembly.date.split('-')[2]}</span>
+                  </div>
+                  <div className="flex-1">
+                    <span className={`inline-block text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-lg mb-4 ${
+                      nextAssembly.type === 'Ordinaria' ? 'bg-indigo-50 text-indigo-700' : 'bg-fuchsia-50 text-fuchsia-700'
+                    }`}>
+                      Asamblea {nextAssembly.type}
+                    </span>
+                    <h4 className="font-black text-slate-900 text-xl tracking-tight leading-tight group-hover:text-indigo-600 transition-colors">{nextAssembly.description}</h4>
+                  </div>
                 </div>
-                <div className="flex-1 overflow-hidden">
-                  <p className="font-black text-slate-900 text-lg truncate">{nextAssembly.description}</p>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-2">{nextAssembly.summonsTime} HRS • {nextAssembly.location || 'SEDE'}</p>
+
+                <div className="space-y-4 pt-8 border-t border-slate-50">
+                   <div className="flex items-center text-xs font-bold text-slate-500">
+                      <div className="h-8 w-8 rounded-xl bg-slate-50 flex items-center justify-center mr-4 text-slate-400">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                      </div>
+                      Hora: {nextAssembly.summonsTime} hrs.
+                   </div>
+                   <div className="flex items-center text-xs font-bold text-slate-500">
+                      <div className="h-8 w-8 rounded-xl bg-slate-50 flex items-center justify-center mr-4 text-slate-400">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /></svg>
+                      </div>
+                      Ubicación: {nextAssembly.location || 'Sede Social'}
+                   </div>
                 </div>
               </div>
             ) : (
-              <div className="py-6 text-center text-slate-300 italic font-bold text-xs">No hay asambleas agendadas.</div>
+              <div className="py-16 text-center border-4 border-dashed border-slate-50 rounded-[2.5rem] bg-slate-50/30">
+                <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center mx-auto mb-6 text-slate-200 shadow-sm">
+                   <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                </div>
+                <p className="text-slate-400 font-black text-[10px] uppercase tracking-widest">No hay sesiones pendientes</p>
+                <p className="text-[10px] text-slate-400 font-bold mt-2 italic opacity-60">Todas las asambleas están cerradas.</p>
+              </div>
             )}
           </div>
         </div>
       </div>
+      
+      <style>{`
+        .animate-spin-slow {
+          animation: spin 12s linear infinite;
+        }
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   );
 };

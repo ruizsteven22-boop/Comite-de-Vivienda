@@ -1,8 +1,7 @@
 
 import { GoogleGenAI } from "@google/genai";
-import { Member, Transaction, Assembly } from "../types";
+import { Member, Transaction, Assembly, Document, DocumentType } from "../types";
 
-// strictly use the named parameter and process.env.API_KEY
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 export const getFinancialSummary = async (transactions: Transaction[]) => {
@@ -25,7 +24,64 @@ export const getFinancialSummary = async (transactions: Transaction[]) => {
     return response.text;
   } catch (error) {
     console.error("Error calling Gemini:", error);
-    return "En este momento no se puede generar el análisis automático de finanzas. Por favor revise el balance manual en el módulo de Tesorería.";
+    return "En este momento no se puede generar el análisis automático de finanzas.";
+  }
+};
+
+export const draftSecretariatDocument = async (docType: DocumentType, subject: string, context: string) => {
+  const prompt = `Actúa como el Secretario de un Comité de Vivienda llamado "Tierra Esperanza". 
+  Redacta el contenido de un ${docType} oficial.
+  Asunto: ${subject}
+  Contexto y detalles: ${context}
+  
+  Instrucciones:
+  - Mantén un tono formal, institucional y claro.
+  - El contenido debe estar listo para ser impreso en papel membretado.
+  - Incluye secciones pertinentes (Introducción, Desarrollo, Conclusión/Acuerdos si aplica).
+  - No incluyas el encabezado de la institución (eso se añade automáticamente).
+  - Máximo 500 palabras.`;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-flash-preview',
+      contents: prompt,
+    });
+    return response.text;
+  } catch (error) {
+    console.error("Error drafting with Gemini:", error);
+    return "No se pudo generar el borrador automáticamente. Por favor redacte el contenido manualmente.";
+  }
+};
+
+export type RefineAction = 'expand' | 'shorten' | 'formalize' | 'persuade';
+
+export const refineSecretariatText = async (currentText: string, action: RefineAction) => {
+  const actionPrompts = {
+    expand: 'expándelo, añadiendo más detalle, formalidad y claridad, sin perder el punto principal',
+    shorten: 'resúmelo, haciéndolo más conciso y directo, manteniendo la formalidad y la información esencial',
+    formalize: 'hazlo más formal, institucional y solemne, mejorando el vocabulario y la estructura gramatical',
+    persuade: 'hazlo más persuasivo y motivador, resaltando la importancia de la participación y el beneficio común'
+  };
+
+  const prompt = `Actúa como un experto en redacción institucional para comités de vivienda. 
+  Toma el siguiente texto y ${actionPrompts[action]}.
+  
+  Texto actual:
+  ${currentText}
+  
+  Instrucciones:
+  - Mantén el sentido original del mensaje.
+  - El resultado debe ser solo el nuevo contenido del documento, listo para ser utilizado.`;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-flash-preview',
+      contents: prompt,
+    });
+    return response.text;
+  } catch (error) {
+    console.error("Error refining with Gemini:", error);
+    return currentText; 
   }
 };
 
@@ -67,17 +123,4 @@ export const generateReceiptText = (member: Member, transaction: Transaction) =>
          `*Concepto:* ${transaction.description}\n` +
          `------------------------------------------\n` +
          `_Documento digital generado por Sistema TE. Gracias por su puntualidad._`;
-};
-
-export const generateAssemblyReminderText = (member: Member, assembly: Assembly) => {
-  return `*CITACIÓN ASAMBLEA ${assembly.type.toUpperCase()}*\n` +
-         `*COMITÉ TIERRA ESPERANZA*\n\n` +
-         `Estimado(a) *${member.name}*,\n\n` +
-         `Le recordamos nuestra próxima asamblea:\n` +
-         `📅 *Fecha:* ${assembly.date}\n` +
-         `⏰ *Hora:* ${assembly.summonsTime} hrs.\n` +
-         `📍 *Lugar:* ${assembly.location}\n` +
-         `📝 *Motivo:* ${assembly.description}\n\n` +
-         `Su presencia es clave para la toma de decisiones.\n\n` +
-         `_Enviado vía Sistema Tierra Esperanza_`;
 };

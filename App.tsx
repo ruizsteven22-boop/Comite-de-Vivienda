@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Member, Transaction, BoardPosition, Assembly, User, BoardRole, CommitteeConfig, SystemRole, Language } from './types';
+import { Member, Transaction, BoardPosition, Assembly, User, BoardRole, CommitteeConfig, SystemRole, Language, Document, DocumentType, DocumentStatus } from './types';
 import { Icons } from './constants';
 import { getTranslation } from './services/i18nService';
 import { isValidJson } from './services/apiService';
@@ -12,6 +12,7 @@ import Attendance from './components/Attendance';
 import AssemblyManagement from './components/AssemblyManagement';
 import SupportManagement from './components/SupportManagement';
 import SettingsManagement from './components/SettingsManagement';
+import Secretariat from './components/Secretariat';
 import Login from './components/Login';
 
 const INITIAL_USERS: User[] = [
@@ -41,7 +42,44 @@ const INITIAL_BOARD: BoardPosition[] = [
   { role: BoardRole.TREASURER, primary: { name: 'Carlos Ruiz', rut: '18.901.234-5', phone: '+56955566677' }, substitute: { ...EMPTY_PERSON } }
 ];
 
-type ViewId = 'dashboard' | 'members' | 'treasury' | 'board' | 'attendance' | 'assemblies' | 'support' | 'settings';
+const CURRENT_YEAR = new Date().getFullYear();
+
+const INITIAL_DOCUMENTS: Document[] = [
+  {
+    id: 'DOC-001',
+    folioNumber: 1,
+    year: CURRENT_YEAR,
+    type: DocumentType.MEMO,
+    title: 'Planificación Estratégica 2025',
+    date: new Date().toISOString().split('T')[0],
+    addressee: 'Junta Directiva',
+    subject: 'Citación Sesión Estratégica',
+    content: `CONVOCATORIA OFICIAL\n\nPor la presente, se cita a la Junta Directiva a sesión extraordinaria para definir la postulación a subsidios y la situación legal de terrenos.\n\nDETALLES:\n- Fecha: 30 de mayo, 2024 | 19:30 hrs.\n- Lugar: Sede Social / Zoom\n\nLa asistencia es estrictamente obligatoria debido a la relevancia habitacional de los acuerdos.\n\nAtentamente,\nSecretaría General`,
+    status: DocumentStatus.DRAFT,
+    lastUpdate: new Date().toISOString(),
+    history: [
+      { editorName: 'Sistema', timestamp: new Date().toISOString(), action: 'Creación automática', statusAtTime: DocumentStatus.DRAFT }
+    ]
+  },
+  {
+    id: 'DOC-002',
+    folioNumber: 1,
+    year: CURRENT_YEAR,
+    type: DocumentType.REPORT,
+    title: 'Informe de Gastos Mensuales',
+    date: new Date().toISOString().split('T')[0],
+    addressee: 'Tesorería y Asamblea General',
+    subject: 'Detalle de Egresos del Mes Actual',
+    content: '',
+    status: DocumentStatus.DRAFT,
+    lastUpdate: new Date().toISOString(),
+    history: [
+      { editorName: 'Sistema', timestamp: new Date().toISOString(), action: 'Creación automática', statusAtTime: DocumentStatus.DRAFT }
+    ]
+  }
+];
+
+type ViewId = 'dashboard' | 'members' | 'treasury' | 'board' | 'attendance' | 'assemblies' | 'secretariat' | 'support' | 'settings';
 
 const PERMISSIONS: Record<ViewId, (SystemRole | 'ANY')[]> = {
   dashboard: ['ANY'],
@@ -50,6 +88,7 @@ const PERMISSIONS: Record<ViewId, (SystemRole | 'ANY')[]> = {
   board: [BoardRole.PRESIDENT, BoardRole.SECRETARY, 'SUPPORT', 'ADMINISTRATOR'],
   assemblies: [BoardRole.PRESIDENT, BoardRole.SECRETARY, 'SUPPORT', 'ADMINISTRATOR'],
   attendance: [BoardRole.PRESIDENT, BoardRole.SECRETARY, 'SUPPORT', 'ADMINISTRATOR'],
+  secretariat: [BoardRole.PRESIDENT, BoardRole.SECRETARY, 'SUPPORT', 'ADMINISTRATOR'],
   support: ['SUPPORT', 'ADMINISTRATOR'],
   settings: ['SUPPORT', 'ADMINISTRATOR']
 };
@@ -81,6 +120,7 @@ const App: React.FC = () => {
   const [board, setBoard] = useState<BoardPosition[]>(() => safeJsonParse('te_board', INITIAL_BOARD));
   const [boardPeriod, setBoardPeriod] = useState<string>(() => localStorage.getItem('te_board_period') || '2025 - 2027');
   const [assemblies, setAssemblies] = useState<Assembly[]>(() => safeJsonParse('te_assemblies', []));
+  const [documents, setDocuments] = useState<Document[]>(() => safeJsonParse('te_documents', INITIAL_DOCUMENTS));
 
   const [viewingMemberId, setViewingMemberId] = useState<string | null>(null);
   const t = getTranslation(config.language);
@@ -98,63 +138,21 @@ const App: React.FC = () => {
     localStorage.setItem('te_transactions', JSON.stringify(transactions));
     localStorage.setItem('te_board', JSON.stringify(board));
     localStorage.setItem('te_assemblies', JSON.stringify(assemblies));
+    localStorage.setItem('te_documents', JSON.stringify(documents));
     localStorage.setItem('te_board_period', boardPeriod);
-  }}, [users, config, members, transactions, board, boardPeriod, assemblies, isInitialized]);
-
-  const handleExportBackup = () => {
-    const backupData = {
-      version: "1.5.0",
-      timestamp: new Date().toISOString(),
-      users,
-      config,
-      members,
-      transactions,
-      board,
-      boardPeriod,
-      assemblies
-    };
-
-    const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `tierra_esperanza_backup_${new Date().toISOString().split('T')[0]}.json`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  };
-
-  const handleImportBackup = (jsonData: any) => {
-    try {
-      if (!jsonData.members || !jsonData.transactions) {
-        throw new Error("Formato de respaldo inválido");
-      }
-      if (jsonData.users) setUsers(jsonData.users);
-      if (jsonData.config) setConfig(jsonData.config);
-      if (jsonData.members) setMembers(jsonData.members);
-      if (jsonData.transactions) setTransactions(jsonData.transactions);
-      if (jsonData.board) setBoard(jsonData.board);
-      if (jsonData.boardPeriod) setBoardPeriod(jsonData.boardPeriod);
-      if (jsonData.assemblies) setAssemblies(jsonData.assemblies);
-      
-      alert("¡Respaldo restaurado con éxito!");
-      setView('dashboard');
-    } catch (e) {
-      alert("Error al restaurar: El archivo no tiene el formato correcto.");
-    }
-  };
+  }}, [users, config, members, transactions, board, boardPeriod, assemblies, documents, isInitialized]);
 
   const handleResetSystem = () => {
-    if (confirm("⚠️ ¡ADVERTENCIA CRÍTICA!\n\nEsta acción borrará TODOS los datos (socios, tesorería, asambleas) y restablecerá el sistema a los valores de fábrica.\n\n¿Desea continuar?")) {
+    if (confirm("⚠️ ¡ADVERTENCIA!\n\nEsta acción borrará TODOS los datos.\n\n¿Desea continuar?")) {
       setMembers([]);
       setTransactions([]);
       setAssemblies([]);
+      setDocuments([]);
       setBoard(INITIAL_BOARD);
       setConfig(INITIAL_CONFIG);
       setUsers(INITIAL_USERS);
       setBoardPeriod('2025 - 2027');
-      alert("Sistema restablecido correctamente.");
+      alert("Sistema restablecido.");
       setView('dashboard');
     }
   };
@@ -178,26 +176,8 @@ const App: React.FC = () => {
     return allowedRoles.includes('ANY') || allowedRoles.includes(currentUser.role);
   };
 
-  const AccessDenied = () => (
-    <div className="flex flex-col items-center justify-center min-h-[60vh] text-center p-12 bg-white rounded-[3.5rem] border-2 border-dashed border-slate-100 shadow-sm animate-in fade-in zoom-in duration-500">
-      <div className="w-24 h-24 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center mb-8 shadow-inner border border-rose-100">
-        <Icons.Shield />
-      </div>
-      <h3 className="text-3xl font-black text-slate-900 tracking-tighter mb-4">Acceso Restringido</h3>
-      <p className="text-slate-500 max-w-md font-medium leading-relaxed">
-        Lo sentimos, tu rol actual (<span className="text-rose-600 font-black uppercase tracking-widest text-[10px]">{currentUser?.role}</span>) no tiene los permisos necesarios para gestionar esta sección.
-      </p>
-      <button 
-        onClick={() => setView('dashboard')}
-        className="mt-10 px-8 py-4 bg-teal-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-teal-700 transition-all shadow-xl active:scale-95"
-      >
-        Volver al Inicio
-      </button>
-    </div>
-  );
-
   const renderCurrentView = () => {
-    if (!hasPermission(view)) return <AccessDenied />;
+    if (!hasPermission(view)) return <div className="text-center p-20 font-bold">Acceso Denegado</div>;
 
     switch (view) {
       case 'dashboard': return <Dashboard members={members} transactions={transactions} assemblies={assemblies} currentUser={currentUser!} config={config} />;
@@ -206,18 +186,14 @@ const App: React.FC = () => {
       case 'board': return <BoardManagement board={board} setBoard={setBoard} boardPeriod={boardPeriod} setBoardPeriod={setBoardPeriod} members={members} currentUser={currentUser!} config={config} />;
       case 'assemblies': return <AssemblyManagement assemblies={assemblies} setAssemblies={setAssemblies} members={members} board={board} currentUser={currentUser!} config={config} />;
       case 'attendance': return <Attendance members={members} assemblies={assemblies} setAssemblies={setAssemblies} board={board} currentUser={currentUser!} config={config} />;
+      case 'secretariat': return <Secretariat documents={documents} setDocuments={setDocuments} config={config} board={board} currentUser={currentUser!} />;
       case 'support': return <SupportManagement users={users} setUsers={setUsers} />;
-      case 'settings': return <SettingsManagement config={config} setConfig={setConfig} onExportBackup={handleExportBackup} onImportBackup={handleImportBackup} onResetSystem={handleResetSystem} />;
+      case 'settings': return <SettingsManagement config={config} setConfig={setConfig} onExportBackup={() => {}} onImportBackup={() => {}} onResetSystem={handleResetSystem} />;
       default: return <Dashboard members={members} transactions={transactions} assemblies={assemblies} currentUser={currentUser!} config={config} />;
     }
   };
 
-  if (!isInitialized) return (
-    <div className="min-h-screen bg-slate-900 flex items-center justify-center">
-      <div className="w-12 h-12 border-4 border-teal-500 border-t-transparent rounded-full animate-spin"></div>
-    </div>
-  );
-
+  if (!isInitialized) return null;
   if (!currentUser) return <Login users={users} onLogin={handleLogin} />;
 
   const menuItems = [
@@ -227,46 +203,33 @@ const App: React.FC = () => {
     { id: 'board' as const, icon: <Icons.Shield />, label: t.nav.board },
     { id: 'assemblies' as const, icon: <Icons.Calendar />, label: t.nav.assemblies },
     { id: 'attendance' as const, icon: <Icons.Clipboard />, label: t.nav.attendance },
+    { id: 'secretariat' as const, icon: <Icons.DocumentText />, label: 'Secretaría' },
     { id: 'settings' as const, icon: <Icons.Briefcase />, label: t.nav.settings },
     { id: 'support' as const, icon: <Icons.Settings />, label: t.nav.support },
   ];
 
-  const tradeParts = config.tradeName.split(' ');
-
   return (
     <div className="flex h-screen overflow-hidden mesh-bg">
-      <aside className={`sidebar-glass fixed inset-y-0 left-0 z-50 w-72 transform transition-transform duration-500 ease-in-out md:relative md:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+      <aside className={`sidebar-glass fixed inset-y-0 left-0 z-50 w-72 transform transition-transform duration-500 md:relative md:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="flex h-full flex-col">
           <div className="p-10">
-            <h1 className="flex items-center text-2xl font-black italic tracking-tighter text-white">
-              <span className="text-teal-400 mr-2 drop-shadow-[0_0_10px_rgba(20,184,166,0.5)]">🌳</span>
-              {tradeParts[0]} <span className="text-indigo-400 ml-1 font-black">{tradeParts.slice(1).join(' ')}</span>
-            </h1>
-            <div className="mt-8 p-5 rounded-3xl bg-white/5 border border-white/10 flex items-center space-x-4">
-               <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-teal-400/20 to-indigo-400/20 flex items-center justify-center text-teal-400 border border-white/5">
-                  <Icons.Dashboard />
-               </div>
-               <div className="overflow-hidden">
-                  <p className="text-[10px] font-black text-teal-400 uppercase tracking-widest leading-none">Mi Perfil</p>
-                  <p className="text-white text-xs font-bold mt-1.5 truncate uppercase opacity-80">{currentUser.role.replace('_', ' ')}</p>
-               </div>
-            </div>
+            <h1 className="text-2xl font-black italic text-white tracking-tighter">🌳 {config.tradeName}</h1>
           </div>
-          <nav className="flex-1 space-y-2 px-6 overflow-y-auto mt-2">
+          <nav className="flex-1 space-y-2 px-6 overflow-y-auto">
             {menuItems.map(item => hasPermission(item.id) && (
               <button
                 key={item.id}
                 onClick={() => { setView(item.id); setIsSidebarOpen(false); }}
-                className={`group flex w-full items-center rounded-[1.5rem] px-6 py-4.5 text-xs font-black uppercase tracking-widest transition-all duration-300 ${view === item.id ? 'bg-gradient-to-r from-teal-500 to-indigo-600 text-white shadow-[0_10px_20px_-5px_rgba(20,184,166,0.3)]' : 'text-slate-400 hover:bg-white/5 hover:text-white'}`}
+                className={`group flex w-full items-center rounded-3xl px-6 py-4 text-xs font-black uppercase tracking-widest transition-all ${view === item.id ? 'bg-gradient-to-r from-teal-500 to-indigo-600 text-white shadow-lg' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}
               >
-                <span className={`mr-4 transition-transform group-hover:scale-110 ${view === item.id ? 'text-white' : 'text-slate-500 group-hover:text-teal-400'}`}>{item.icon}</span>
+                <span className="mr-4">{item.icon}</span>
                 {item.label}
               </button>
             ))}
           </nav>
-          <div className="p-8 bg-slate-950/30 border-t border-white/5">
-            <button onClick={handleLogout} className="flex w-full items-center justify-center rounded-2xl bg-rose-500/10 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-rose-400 hover:bg-rose-500 hover:text-white transition-all">
-              <span className="mr-3"><Icons.Logout /></span> Cerrar Sesión
+          <div className="p-8 border-t border-white/5">
+            <button onClick={handleLogout} className="flex w-full items-center justify-center rounded-2xl bg-rose-500/10 py-4 text-[10px] font-black uppercase tracking-widest text-rose-400 hover:bg-rose-500 hover:text-white transition-all">
+              Cerrar Sesión
             </button>
           </div>
         </div>
@@ -274,7 +237,7 @@ const App: React.FC = () => {
 
       <div className="flex flex-1 flex-col overflow-hidden">
         <header className="flex h-20 items-center justify-between border-b border-slate-100 bg-white/50 backdrop-blur-md px-10 md:hidden">
-          <div className="font-black italic text-slate-900 tracking-tight text-xl">{config.tradeName}</div>
+          <div className="font-black italic text-slate-900 text-xl">{config.tradeName}</div>
           <button onClick={() => setIsSidebarOpen(true)} className="rounded-2xl bg-white p-3 text-slate-600 shadow-sm border border-slate-100">
             <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 6h16M12 12h8M4 18h16" /></svg>
           </button>
@@ -286,7 +249,6 @@ const App: React.FC = () => {
           </div>
         </main>
       </div>
-      {isSidebarOpen && <div onClick={() => setIsSidebarOpen(false)} className="fixed inset-0 z-40 bg-slate-900/60 backdrop-blur-sm md:hidden"></div>}
     </div>
   );
 };
