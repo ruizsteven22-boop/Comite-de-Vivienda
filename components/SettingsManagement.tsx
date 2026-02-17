@@ -188,7 +188,7 @@ const SettingsManagement: React.FC<SettingsManagementProps> = ({ config, setConf
              <div className="flex flex-col md:flex-row items-center justify-between gap-6 p-10 bg-white/50 rounded-[2.5rem] border border-rose-200 shadow-inner">
                 <div className="max-w-md">
                    <p className="text-sm font-black text-rose-900">Restablecer Sistema a Cero</p>
-                   <p className="text-[11px] font-medium text-rose-700 mt-1">Borrará permanentemente socios, finanzas, asambleas y devolverá la configuración a los valores de fábrica.</p>
+                   <p className="text-[11px] font-medium text-rose-700 mt-1">Borrará permanentemente socios, finanzas, asambleas, documentos de secretaría y devolverá la configuración a los valores de fábrica.</p>
                 </div>
                 <button 
                   onClick={onResetSystem}

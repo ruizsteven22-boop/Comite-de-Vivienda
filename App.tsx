@@ -42,26 +42,8 @@ const INITIAL_BOARD: BoardPosition[] = [
   { role: BoardRole.TREASURER, primary: { name: 'Carlos Ruiz', rut: '18.901.234-5', phone: '+56955566677' }, substitute: { ...EMPTY_PERSON } }
 ];
 
-const CURRENT_YEAR = new Date().getFullYear();
-
-const INITIAL_DOCUMENTS: Document[] = [
-  {
-    id: 'DOC-001',
-    folioNumber: 1,
-    year: CURRENT_YEAR,
-    type: DocumentType.MEMO,
-    title: 'Planificación Estratégica 2025',
-    date: new Date().toISOString().split('T')[0],
-    addressee: 'Junta Directiva',
-    subject: 'Citación Sesión Estratégica',
-    content: `CONVOCATORIA OFICIAL\n\nPor la presente, se cita a la Junta Directiva a sesión extraordinaria para definir la postulación a subsidios y la situación legal de terrenos.\n\nDETALLES:\n- Fecha: 30 de mayo, 2024 | 19:30 hrs.\n- Lugar: Sede Social / Zoom\n\nLa asistencia es estrictamente obligatoria debido a la relevancia habitacional de los acuerdos.\n\nAtentamente,\nSecretaría General`,
-    status: DocumentStatus.DRAFT,
-    lastUpdate: new Date().toISOString(),
-    history: [
-      { editorName: 'Sistema', timestamp: new Date().toISOString(), action: 'Creación automática', statusAtTime: DocumentStatus.DRAFT }
-    ]
-  }
-];
+// Se inicializa como vacío para que el reseteo a cero sea efectivo
+const INITIAL_DOCUMENTS: Document[] = [];
 
 type ViewId = 'dashboard' | 'members' | 'treasury' | 'board' | 'attendance' | 'assemblies' | 'secretariat' | 'support' | 'settings';
 
@@ -127,7 +109,7 @@ const App: React.FC = () => {
   }}, [users, config, members, transactions, board, boardPeriod, assemblies, documents, isInitialized]);
 
   const handleResetSystem = () => {
-    if (confirm("⚠️ ¡ADVERTENCIA CRÍTICA!\n\nEsta acción borrará permanentemente TODOS los datos registrados localmente (Socios, Finanzas, Actas, Documentos).\n\n¿Está absolutamente seguro de continuar?")) {
+    if (confirm("⚠️ ¡ADVERTENCIA CRÍTICA!\n\nEsta acción borrará permanentemente TODOS los datos registrados localmente (Socios, Finanzas, Actas, Documentos de Secretaría y Configuración Personalizada).\n\n¿Está absolutamente seguro de continuar?")) {
       // Limpiamos todo el localStorage para evitar persistencia de datos corruptos
       localStorage.clear();
       // Recargamos la aplicación para forzar el estado inicial
