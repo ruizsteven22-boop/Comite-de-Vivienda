@@ -3,10 +3,11 @@
   publish = "dist"
 
 [build.environment]
-  NODE_VERSION = "22.x"
+  NODE_VERSION = "20"
+  NPM_FLAGS = "--version"
 
 [[redirects]]
-  # Redirige todas las peticiones a index.html para que el enrutamiento del lado del cliente funcione
+  # Redirige todas las peticiones a index.html para que el enrutamiento de React funcione correctamente
   from = "/*"
   to = "/index.html"
   status = 200
