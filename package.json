@@ -1,26 +1,23 @@
-
 {
   "name": "tierra-esperanza-gestion",
-  "version": "1.2.0",
+  "version": "1.5.0",
   "private": true,
   "description": "Sistema de Gestión de Comité de Vivienda Tierra Esperanza",
   "type": "module",
   "dependencies": {
-    "@google/genai": "^1.34.0",
-    "express": "^4.19.2",
-    "react": "^19.2.3",
-    "react-dom": "^19.2.3",
-    "recharts": "^2.15.0"
+    "@google/genai": "^1.40.0",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "recharts": "^3.7.0"
   },
   "devDependencies": {
-    "@vitejs/plugin-react": "^4.3.4",
+    "@vitejs/plugin-react": "^5.1.3",
     "typescript": "^5.0.0",
-    "vite": "^6.0.0"
+    "vite": "^7.3.1"
   },
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview",
-    "start": "node server.js"
+    "preview": "vite preview"
   }
 }

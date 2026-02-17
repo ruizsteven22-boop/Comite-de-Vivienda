@@ -1,14 +1,12 @@
-
 [build]
-  # Forzamos el uso de npm scripts para que se utilicen los binarios locales de node_modules
   command = "npm run build"
   publish = "dist"
 
 [build.environment]
-  NODE_VERSION = "22.22.0"
+  NODE_VERSION = "22.x"
 
 [[redirects]]
-  # Soporte vital para Single Page Application (SPA) en Netlify
+  # Redirige todas las peticiones a index.html para que el enrutamiento del lado del cliente funcione
   from = "/*"
   to = "/index.html"
   status = 200
