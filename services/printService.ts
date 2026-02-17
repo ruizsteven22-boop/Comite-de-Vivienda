@@ -70,7 +70,7 @@ export const printOfficialDocument = (doc: Document, board: BoardPosition[], con
   printWindow.document.write(`
     <html>
       <head>
-        <title>${doc.type} N° ${doc.folioNumber} - ${doc.year}</title>
+        <title>${doc.type} N° ${doc.folioNumber || 'S/N'} - ${doc.year}</title>
         <style>
           @import url('https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;600;700&family=Inter:wght@400;700;900&display=swap');
           
@@ -220,7 +220,7 @@ export const printOfficialDocument = (doc: Document, board: BoardPosition[], con
               <p>RUT: ${config.rut} • ${config.municipalRes}</p>
             </div>
             <div class="doc-meta">
-              FOLIO: ${doc.type.toUpperCase()} N° ${doc.folioNumber} - ${doc.year}<br/>
+              FOLIO: ${doc.type.toUpperCase()} N° ${doc.folioNumber || '---'} - ${doc.year}<br/>
               FECHA: ${doc.date}
             </div>
           </div>
@@ -319,16 +319,18 @@ export const printMemberFile = (member: Member, transactions: Transaction[], ass
   printWindow.document.close();
 };
 
+// Fix for missing export: printAssemblyMinutes
 export const printAssemblyMinutes = (assembly: Assembly, members: Member[], board: BoardPosition[], config: CommitteeConfig) => {
-  const quorumPercentage = Math.round((assembly.attendees.length / (members.length || 1)) * 100);
-  const isQuorumReached = quorumPercentage >= 50;
   const president = board.find(b => b.role === BoardRole.PRESIDENT)?.primary.name || '____________________';
   const secretary = board.find(b => b.role === BoardRole.SECRETARY)?.primary.name || '____________________';
+  
+  const attendeesList = members
+    .filter(m => assembly.attendees.includes(m.rut))
+    .map(m => `<li>${m.name} (${m.rut})</li>`)
+    .join('');
 
-  const attendeesListHtml = assembly.attendees.map((rut, idx) => {
-    const member = members.find(m => m.rut === rut);
-    return `<tr><td>${idx + 1}</td><td>${member?.name || 'Socio'}</td><td>${rut}</td><td style="border-bottom: 1px solid #333; width: 120px;"></td></tr>`;
-  }).join('');
+  const agendaList = (assembly.agenda || []).map(item => `<li>${item}</li>`).join('');
+  const agreementsList = (assembly.agreements || []).map(item => `<li>${item}</li>`).join('');
 
   const printWindow = window.open('', '_blank');
   if (!printWindow) return;
@@ -336,69 +338,97 @@ export const printAssemblyMinutes = (assembly: Assembly, members: Member[], boar
   printWindow.document.write(`
     <html>
       <head>
-        <title>Acta ${assembly.id} - ${config.tradeName}</title>
+        <title>Acta de Asamblea - ${assembly.date}</title>
         <style>
-          @import url('https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;600;700&display=swap');
-          body { font-family: 'Crimson Pro', serif; padding: 40px; line-height: 1.5; color: #1a1a1a; font-size: 11pt; }
-          .header { text-align: center; border-bottom: 2px solid #059669; padding-bottom: 10px; margin-bottom: 20px; }
-          .header h1 { margin: 0; font-size: 18pt; color: #059669; }
-          table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 9pt; }
-          th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-          .signatures { margin-top: 40px; display: grid; grid-template-columns: 1fr 1fr; gap: 40px; }
-          .sig-box { text-align: center; border-top: 1px solid #000; padding-top: 5px; }
+          @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+          body { font-family: 'Inter', sans-serif; padding: 40px; color: #1e293b; line-height: 1.6; }
+          .header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 20px; margin-bottom: 30px; }
+          h1 { text-transform: uppercase; font-size: 16pt; margin: 0; }
+          .meta { margin-bottom: 30px; }
+          .section { margin-bottom: 25px; }
+          .section-title { font-weight: 900; text-transform: uppercase; font-size: 10pt; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-bottom: 10px; }
+          .signatures { margin-top: 60px; display: flex; justify-content: space-around; }
+          .sig-box { text-align: center; border-top: 1px solid #000; padding-top: 10px; width: 40%; font-size: 10pt; font-weight: bold; }
         </style>
       </head>
       <body>
         <div class="header">
-          <h1>${config.legalName}</h1>
-          <p>RUT: ${config.rut} • Acta de Asamblea #${assembly.id}</p>
+          <h1>ACTA DE ASAMBLEA ${assembly.type.toUpperCase()}</h1>
+          <p>${config.legalName}<br/>RUT: ${config.rut}</p>
         </div>
-        <p>Quórum registrado: ${assembly.attendees.length} de ${members.length} socios (${quorumPercentage}%). Estado: ${isQuorumReached ? 'RESOLUTIVO' : 'INFORMATIVO'}.</p>
-        <table><thead><tr><th>#</th><th>Nombre</th><th>RUT</th><th>Firma</th></tr></thead><tbody>${attendeesListHtml}</tbody></table>
+        <div class="meta">
+          <p><strong>Fecha:</strong> ${assembly.date}</p>
+          <p><strong>Lugar:</strong> ${assembly.location || 'Sede Social'}</p>
+          <p><strong>Hora Inicio:</strong> ${assembly.startTime || assembly.summonsTime}</p>
+        </div>
+        <div class="section">
+          <div class="section-title">Descripción / Motivo</div>
+          <p>${assembly.description}</p>
+        </div>
+        <div class="section">
+          <div class="section-title">Tabla / Agenda</div>
+          <ul>${agendaList || '<li>No se registró agenda específica</li>'}</ul>
+        </div>
+        <div class="section">
+          <div class="section-title">Acuerdos Adoptados</div>
+          <ul>${agreementsList || '<li>No se registraron acuerdos</li>'}</ul>
+        </div>
+        <div class="section">
+          <div class="section-title">Asistentes (${assembly.attendees.length})</div>
+          <ul style="column-count: 2; font-size: 9pt;">${attendeesList}</ul>
+        </div>
         <div class="signatures">
-          <div class="sig-box">${president}<br/>Presidente</div>
           <div class="sig-box">${secretary}<br/>Secretario(a)</div>
+          <div class="sig-box">${president}<br/>Presidente(a)</div>
         </div>
-        <script>window.onload = function() { window.print(); window.onafterprint = function() { window.close(); }; }</script>
       </body>
     </html>
   `);
   printWindow.document.close();
 };
 
+// Fix for missing export: printAttendanceReport
 export const printAttendanceReport = (assembly: Assembly, members: Member[], board: BoardPosition[], config: CommitteeConfig) => {
-  const totalPresent = assembly.attendees.length;
-  const quorumPercentage = Math.round((totalPresent / (members.length || 1)) * 100);
-  const secretary = board.find(b => b.role === BoardRole.SECRETARY)?.primary.name || '____________________';
-
-  const rowsHtml = members.map((member, idx) => {
-    const attended = assembly.attendees.includes(member.rut);
-    return `<tr><td>${idx + 1}</td><td>${member.name}</td><td>${member.rut}</td><td>${attended ? 'PRESENTE' : 'AUSENTE'}</td></tr>`;
-  }).join('');
-
   const printWindow = window.open('', '_blank');
   if (!printWindow) return;
+
+  const rows = members.map(m => `
+    <tr>
+      <td style="padding: 10px; border: 1px solid #ddd;">${m.name}</td>
+      <td style="padding: 10px; border: 1px solid #ddd; font-family: monospace;">${m.rut}</td>
+      <td style="padding: 10px; border: 1px solid #ddd; text-align: center;">${assembly.attendees.includes(m.rut) ? 'PRESENTE' : ''}</td>
+      <td style="padding: 10px; border: 1px solid #ddd; width: 150px;"></td>
+    </tr>
+  `).join('');
 
   printWindow.document.write(`
     <html>
       <head>
-        <title>Asistencia - ${config.tradeName}</title>
+        <title>Control de Asistencia - ${assembly.date}</title>
         <style>
           body { font-family: sans-serif; padding: 30px; }
-          .header { text-align: center; border-bottom: 2px solid #333; margin-bottom: 20px; }
-          table { width: 100%; border-collapse: collapse; font-size: 10pt; }
-          th, td { border: 1px solid #ccc; padding: 8px; }
+          table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+          th { background: #f8fafc; padding: 12px; border: 1px solid #ddd; text-align: left; font-size: 9pt; text-transform: uppercase; }
+          .header { text-align: center; margin-bottom: 30px; }
         </style>
       </head>
       <body>
         <div class="header">
-          <h2>${config.legalName}</h2>
-          <p>Reporte de Asistencia: ${assembly.description} (${assembly.date})</p>
+          <h2>LISTADO DE ASISTENCIA Y FIRMAS</h2>
+          <p>${config.legalName} - RUT: ${config.rut}</p>
+          <p>Asamblea: ${assembly.description} (${assembly.date})</p>
         </div>
-        <p>Participación: ${totalPresent} de ${members.length} socios (${quorumPercentage}%)</p>
-        <table><thead><tr><th>#</th><th>Socio</th><th>RUT</th><th>Estado</th></tr></thead><tbody>${rowsHtml}</tbody></table>
-        <p style="margin-top: 30px; text-align: right; border-top: 1px solid #333; display: inline-block; float: right;">Firma Responsable: ${secretary}</p>
-        <script>window.onload = function() { window.print(); window.onafterprint = function() { window.close(); }; }</script>
+        <table>
+          <thead>
+            <tr>
+              <th>Nombre del Socio</th>
+              <th>RUT</th>
+              <th>Estado</th>
+              <th>Firma</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
       </body>
     </html>
   `);
