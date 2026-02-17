@@ -60,22 +60,6 @@ const INITIAL_DOCUMENTS: Document[] = [
     history: [
       { editorName: 'Sistema', timestamp: new Date().toISOString(), action: 'Creación automática', statusAtTime: DocumentStatus.DRAFT }
     ]
-  },
-  {
-    id: 'DOC-002',
-    folioNumber: 1,
-    year: CURRENT_YEAR,
-    type: DocumentType.REPORT,
-    title: 'Informe de Gastos Mensuales',
-    date: new Date().toISOString().split('T')[0],
-    addressee: 'Tesorería y Asamblea General',
-    subject: 'Detalle de Egresos del Mes Actual',
-    content: '',
-    status: DocumentStatus.DRAFT,
-    lastUpdate: new Date().toISOString(),
-    history: [
-      { editorName: 'Sistema', timestamp: new Date().toISOString(), action: 'Creación automática', statusAtTime: DocumentStatus.DRAFT }
-    ]
   }
 ];
 
@@ -143,17 +127,56 @@ const App: React.FC = () => {
   }}, [users, config, members, transactions, board, boardPeriod, assemblies, documents, isInitialized]);
 
   const handleResetSystem = () => {
-    if (confirm("⚠️ ¡ADVERTENCIA!\n\nEsta acción borrará TODOS los datos.\n\n¿Desea continuar?")) {
-      setMembers([]);
-      setTransactions([]);
-      setAssemblies([]);
-      setDocuments([]);
-      setBoard(INITIAL_BOARD);
-      setConfig(INITIAL_CONFIG);
-      setUsers(INITIAL_USERS);
-      setBoardPeriod('2025 - 2027');
-      alert("Sistema restablecido.");
-      setView('dashboard');
+    if (confirm("⚠️ ¡ADVERTENCIA CRÍTICA!\n\nEsta acción borrará permanentemente TODOS los datos registrados localmente (Socios, Finanzas, Actas, Documentos).\n\n¿Está absolutamente seguro de continuar?")) {
+      // Limpiamos todo el localStorage para evitar persistencia de datos corruptos
+      localStorage.clear();
+      // Recargamos la aplicación para forzar el estado inicial
+      window.location.reload();
+    }
+  };
+
+  const handleExportBackup = () => {
+    const backupData = {
+      users,
+      config,
+      members,
+      transactions,
+      board,
+      boardPeriod,
+      assemblies,
+      documents,
+      exportDate: new Date().toISOString()
+    };
+    
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupData, null, 2));
+    const downloadAnchorNode = document.createElement('a');
+    downloadAnchorNode.setAttribute("href", dataStr);
+    downloadAnchorNode.setAttribute("download", `respaldo_te_${new Date().toISOString().split('T')[0]}.json`);
+    document.body.appendChild(downloadAnchorNode);
+    downloadAnchorNode.click();
+    downloadAnchorNode.remove();
+  };
+
+  const handleImportBackup = (data: any) => {
+    if (!data || typeof data !== 'object') {
+      alert("El archivo de respaldo no es válido.");
+      return;
+    }
+
+    try {
+      if (data.users) setUsers(data.users);
+      if (data.config) setConfig(data.config);
+      if (data.members) setMembers(data.members);
+      if (data.transactions) setTransactions(data.transactions);
+      if (data.board) setBoard(data.board);
+      if (data.boardPeriod) setBoardPeriod(data.boardPeriod);
+      if (data.assemblies) setAssemblies(data.assemblies);
+      if (data.documents) setDocuments(data.documents);
+      
+      alert("Sistema restaurado con éxito desde el archivo de respaldo.");
+    } catch (error) {
+      console.error("Error al importar respaldo:", error);
+      alert("Ocurrió un error al procesar el archivo de respaldo.");
     }
   };
 
@@ -188,7 +211,7 @@ const App: React.FC = () => {
       case 'attendance': return <Attendance members={members} assemblies={assemblies} setAssemblies={setAssemblies} board={board} currentUser={currentUser!} config={config} />;
       case 'secretariat': return <Secretariat documents={documents} setDocuments={setDocuments} config={config} board={board} currentUser={currentUser!} />;
       case 'support': return <SupportManagement users={users} setUsers={setUsers} />;
-      case 'settings': return <SettingsManagement config={config} setConfig={setConfig} onExportBackup={() => {}} onImportBackup={() => {}} onResetSystem={handleResetSystem} />;
+      case 'settings': return <SettingsManagement config={config} setConfig={setConfig} onExportBackup={handleExportBackup} onImportBackup={handleImportBackup} onResetSystem={handleResetSystem} />;
       default: return <Dashboard members={members} transactions={transactions} assemblies={assemblies} currentUser={currentUser!} config={config} />;
     }
   };
