@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { Document, DocumentType, DocumentStatus, CommitteeConfig, BoardPosition, BoardRole, User, DocumentLog } from '../types';
 import { Icons } from '../constants';
@@ -47,7 +46,6 @@ const Secretariat: React.FC<SecretariatProps> = ({ documents, setDocuments, conf
       const matchesType = filterType === 'ALL' || doc.type === filterType;
       return matchesSearch && matchesType;
     }).sort((a, b) => {
-        // Ordenar por folio si tienen, si no por fecha
         if (a.folioNumber && b.folioNumber && a.year === b.year && a.type === b.type) {
             return b.folioNumber - a.folioNumber;
         }
@@ -56,7 +54,6 @@ const Secretariat: React.FC<SecretariatProps> = ({ documents, setDocuments, conf
   }, [documents, searchTerm, filterType]);
 
   const getNextFolio = (type: DocumentType, year: number) => {
-    // Solo contar documentos que ya tienen folio asignado (están firmados o fueron asignados manualmente)
     const sameTypeAndYearDocs = documents.filter(d => d.type === type && d.year === year && d.folioNumber);
     const maxFolio = sameTypeAndYearDocs.reduce((max, d) => Math.max(max, d.folioNumber || 0), 0);
     return maxFolio + 1;
@@ -104,23 +101,18 @@ const Secretariat: React.FC<SecretariatProps> = ({ documents, setDocuments, conf
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
-    
     const docDate = new Date(formData.date || '');
     const docYear = docDate.getFullYear();
-    
-    // Si estamos guardando como Firmado y no tiene folio, asignar uno
     let finalFolio = formData.folioNumber;
     if (formData.status === DocumentStatus.SIGNED && !finalFolio) {
         finalFolio = getNextFolio(formData.type as DocumentType, docYear);
     }
-
     const log: DocumentLog = {
       editorName: currentUser.name,
       timestamp: new Date().toISOString(),
       action: editingId ? 'Actualización de contenido' : 'Creación inicial',
       statusAtTime: formData.status as DocumentStatus
     };
-
     const newDoc = {
       ...formData,
       folioNumber: finalFolio,
@@ -129,7 +121,6 @@ const Secretariat: React.FC<SecretariatProps> = ({ documents, setDocuments, conf
       lastUpdate: new Date().toISOString(),
       history: [...(formData.history || []), log]
     } as Document;
-
     if (editingId) {
       setDocuments(prev => prev.map(d => d.id === editingId ? newDoc : d));
     } else {
@@ -139,7 +130,7 @@ const Secretariat: React.FC<SecretariatProps> = ({ documents, setDocuments, conf
   };
 
   const handleDelete = (id: string) => {
-    if (window.confirm("¿Está seguro de eliminar este registro permanentemente? Esta acción es irreversible y se perderá toda la trazabilidad legal.")) {
+    if (window.confirm("¿Está seguro de eliminar este registro permanentemente?")) {
       setDocuments(prev => prev.filter(d => d.id !== id));
       if (previewId === id) setPreviewId(null);
     }
@@ -147,14 +138,11 @@ const Secretariat: React.FC<SecretariatProps> = ({ documents, setDocuments, conf
 
   const handleSign = (doc: Document) => {
     if (doc.status !== DocumentStatus.DRAFT) return;
-    
     const docYear = new Date(doc.date).getFullYear();
     const assignedFolio = getNextFolio(doc.type, docYear);
-    
-    let updated = addLog(doc, `Documento firmado y bloqueado. Folio N° ${assignedFolio} asignado.`, DocumentStatus.SIGNED);
+    let updated = addLog(doc, `Documento firmado. Folio N° ${assignedFolio} asignado.`, DocumentStatus.SIGNED);
     updated.folioNumber = assignedFolio;
     updated.year = docYear;
-    
     setDocuments(prev => prev.map(d => d.id === doc.id ? updated : d));
   };
 
@@ -162,24 +150,34 @@ const Secretariat: React.FC<SecretariatProps> = ({ documents, setDocuments, conf
     printOfficialDocument(doc, board, config);
   };
 
-  const handleSend = (doc: Document, channel: 'whatsapp' | 'email') => {
-    // Si es borrador, avisar que no tiene folio oficial
-    if (doc.status === DocumentStatus.DRAFT) {
-        if (!confirm("Este documento es un BORRADOR y no tiene Folio Oficial asignado. ¿Desea enviarlo de todas formas?")) return;
-    }
-
-    const folioText = doc.folioNumber ? `N° ${doc.folioNumber} - ${doc.year}` : '(BORRADOR)';
-    const message = `Hola, envío ${doc.type} oficial ${folioText}.\nAsunto: ${doc.subject}\n\nEste documento ha sido generado por la Secretaría de ${config.tradeName}. Solicite la copia PDF original si es necesario.`;
+  const handleDownloadPDF = (doc: Document) => {
+    // Cambiamos temporalmente el título de la página para que el navegador sugiera un nombre de archivo correcto
+    const originalTitle = document.title;
+    const cleanTitle = doc.title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+    const fileName = `${doc.type}_N${doc.folioNumber || 'SN'}_${doc.year}_${cleanTitle}`;
     
+    document.title = fileName;
+    printOfficialDocument(doc, board, config);
+    
+    // Restauramos el título original después de que el diálogo de impresión se haya disparado
+    setTimeout(() => {
+      document.title = originalTitle;
+    }, 1000);
+  };
+
+  const handleSend = (doc: Document, channel: 'whatsapp' | 'email') => {
+    if (doc.status === DocumentStatus.DRAFT) {
+        if (!confirm("Este documento es un BORRADOR sin Folio. ¿Desea enviarlo?")) return;
+    }
+    const folioText = doc.folioNumber ? `N° ${doc.folioNumber} - ${doc.year}` : '(BORRADOR)';
+    const message = `Hola, envío ${doc.type} oficial ${folioText}.\nAsunto: ${doc.subject}\n\nGenerado por Secretaría de ${config.tradeName}.`;
     if (channel === 'whatsapp') {
       window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
     } else {
       window.location.href = `mailto:?subject=${encodeURIComponent(doc.title)}&body=${encodeURIComponent(message)}`;
     }
-
-    // Actualizar estado a Enviado si estaba firmado
     if (doc.status === DocumentStatus.SIGNED) {
-        const updated = addLog(doc, `Documento enviado a destinatario vía ${channel}`, DocumentStatus.SENT);
+        const updated = addLog(doc, `Documento enviado vía ${channel}`, DocumentStatus.SENT);
         setDocuments(prev => prev.map(d => d.id === doc.id ? updated : d));
     }
   };
@@ -212,7 +210,6 @@ const Secretariat: React.FC<SecretariatProps> = ({ documents, setDocuments, conf
         </div>
       </header>
 
-      {/* Barra de Búsqueda y Filtro */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center bg-white/50 backdrop-blur-xl p-4 rounded-[2.5rem] border border-white shadow-sm">
         <div className="lg:col-span-3">
           <select 
@@ -235,7 +232,6 @@ const Secretariat: React.FC<SecretariatProps> = ({ documents, setDocuments, conf
         </div>
       </div>
 
-      {/* Tabla de Documentos */}
       <div className="bg-white rounded-[3.5rem] shadow-sm border border-slate-100 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
@@ -299,22 +295,20 @@ const Secretariat: React.FC<SecretariatProps> = ({ documents, setDocuments, conf
                         >
                           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                         </button>
-                        
                         <div className="h-6 w-px bg-slate-100 mx-1"></div>
-
                         {canEdit && (
                           <>
                             <button 
                               onClick={() => handleEdit(doc)} 
                               className={`p-3 rounded-xl transition-all shadow-sm ${doc.status === DocumentStatus.DRAFT ? 'bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white' : 'bg-slate-50 text-slate-300 cursor-not-allowed'}`} 
-                              title={doc.status === DocumentStatus.DRAFT ? "Editar Contenido" : "Bloqueado por Firma"}
+                              title={doc.status === DocumentStatus.DRAFT ? "Editar" : "Bloqueado"}
                             >
                               <Icons.Pencil />
                             </button>
                             <button 
                               onClick={() => handleDelete(doc.id)} 
                               className="p-3 bg-rose-50 text-rose-500 rounded-xl hover:bg-rose-600 hover:text-white transition-all shadow-sm" 
-                              title="Eliminar Definitivamente"
+                              title="Eliminar"
                             >
                               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                             </button>
@@ -325,105 +319,86 @@ const Secretariat: React.FC<SecretariatProps> = ({ documents, setDocuments, conf
                   </tr>
                 );
               })}
-              {filteredDocs.length === 0 && (
-                  <tr>
-                    <td colSpan={5} className="px-10 py-32 text-center">
-                        <div className="text-slate-200 mb-4 flex justify-center"><Icons.DocumentText /></div>
-                        <p className="text-slate-400 font-black text-sm uppercase tracking-widest">Sin documentos en el archivo</p>
-                    </td>
-                  </tr>
-              )}
             </tbody>
           </table>
         </div>
       </div>
 
-      {/* MODAL REDACCIÓN */}
       {showForm && (
         <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-xl flex items-center justify-center z-[110] p-6 overflow-y-auto">
           <div className="bg-white rounded-[4rem] w-full max-w-6xl shadow-2xl overflow-hidden animate-in zoom-in-95 my-auto max-h-[95vh] flex flex-col">
             <div className="bg-slate-900 p-12 text-white flex justify-between items-center shrink-0">
               <div>
-                <h3 className="text-3xl font-black tracking-tighter">{editingId ? 'Editar Documento' : 'Nueva Redacción Oficial'}</h3>
-                <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.3em] mt-2">Folio Digital Tierra Esperanza</p>
+                <h3 className="text-3xl font-black tracking-tighter">{editingId ? 'Editar Documento' : 'Nueva Redacción'}</h3>
+                <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.3em] mt-2">Plataforma Tierra Esperanza</p>
               </div>
               <button onClick={() => setShowForm(false)} className="w-14 h-14 rounded-[1.5rem] bg-white/10 hover:bg-white/20 text-white flex items-center justify-center text-4xl font-light transition-all">&times;</button>
             </div>
-            
             <form onSubmit={handleSave} className="flex-1 overflow-y-auto p-12 space-y-12">
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
                 <div className="lg:col-span-4 space-y-8">
                   <div className="p-8 bg-slate-50 rounded-[3rem] border border-slate-100 space-y-8">
-                    <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-200 pb-3">Parámetros</h4>
+                    <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-200 pb-3">Ajustes</h4>
                     <div>
-                      <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-2">Tipo de Documento</label>
+                      <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-2">Tipo</label>
                       <select className="w-full px-6 py-4 border-2 border-slate-200 rounded-[2rem] font-black text-xs uppercase bg-white focus:border-indigo-600 outline-none" value={formData.type} onChange={e => setFormData({...formData, type: e.target.value as DocumentType})}>
                         {Object.values(DocumentType).map(t => <option key={t} value={t}>{t}</option>)}
                       </select>
                     </div>
                     <div>
-                      <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-2">Estado del Documento</label>
+                      <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-2">Estado</label>
                       <select className="w-full px-6 py-4 border-2 border-slate-200 rounded-[2rem] font-black text-xs uppercase bg-white focus:border-indigo-600 outline-none" value={formData.status} onChange={e => setFormData({...formData, status: e.target.value as DocumentStatus})}>
                         {Object.values(DocumentStatus).map(s => <option key={s} value={s}>{s}</option>)}
                       </select>
                     </div>
-                    <div>
-                      <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-2">Fecha de Emisión</label>
-                      <input type="date" className="w-full px-6 py-4 border-2 border-slate-200 rounded-[2rem] font-black text-xs bg-white focus:border-indigo-600 outline-none" value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})}/>
-                    </div>
                   </div>
                 </div>
-
                 <div className="lg:col-span-8 space-y-8">
-                    <input required className="w-full px-8 py-5 border-2 border-slate-100 rounded-[2.5rem] focus:border-indigo-600 outline-none font-black text-slate-800 bg-slate-50/50 text-lg" placeholder="Título Identificatorio" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})}/>
-                    
+                    <input required className="w-full px-8 py-5 border-2 border-slate-100 rounded-[2.5rem] focus:border-indigo-600 outline-none font-black text-slate-800 bg-slate-50/50 text-lg" placeholder="Título" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})}/>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <input required className="w-full px-8 py-4 border-2 border-slate-100 rounded-[2rem] focus:border-indigo-600 outline-none font-bold text-slate-700 bg-slate-50/50" placeholder="Destinatario" value={formData.addressee} onChange={e => setFormData({...formData, addressee: e.target.value})}/>
-                      <input required className="w-full px-8 py-4 border-2 border-slate-100 rounded-[2rem] focus:border-indigo-600 outline-none font-bold text-slate-700 bg-slate-50/50" placeholder="Asunto (Referencia)" value={formData.subject} onChange={e => setFormData({...formData, subject: e.target.value})}/>
+                      <input required className="w-full px-8 py-4 border-2 border-slate-100 rounded-[2rem] focus:border-indigo-600 outline-none font-bold text-slate-700 bg-slate-50/50" placeholder="Asunto" value={formData.subject} onChange={e => setFormData({...formData, subject: e.target.value})}/>
                     </div>
-
                     <div className="space-y-3">
                       <div className="flex justify-between items-center ml-2">
-                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest">Contenido del Documento</label>
+                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest">Contenido</label>
                         <button type="button" onClick={async () => {
                            setIsDraftingAI(true);
                            const res = await draftSecretariatDocument(formData.type!, formData.subject!, formData.content || '');
                            setFormData({...formData, content: res});
                            setIsDraftingAI(false);
-                        }} className="text-[9px] font-black text-indigo-600 uppercase tracking-widest hover:underline disabled:opacity-50" disabled={isDraftingAI}>
-                          {isDraftingAI ? 'Procesando...' : 'Asistente IA ✨'}
+                        }} className="text-[9px] font-black text-indigo-600 uppercase tracking-widest disabled:opacity-50" disabled={isDraftingAI}>
+                          {isDraftingAI ? 'Procesando...' : 'IA ✨'}
                         </button>
                       </div>
-                      <textarea required className="w-full px-10 py-10 border-2 border-slate-100 rounded-[3rem] focus:border-indigo-600 outline-none font-medium text-slate-800 bg-slate-50/50 min-h-[400px] leading-relaxed" placeholder="Escriba aquí el cuerpo del documento..." value={formData.content} onChange={e => setFormData({...formData, content: e.target.value})}></textarea>
+                      <textarea required className="w-full px-10 py-10 border-2 border-slate-100 rounded-[3rem] focus:border-indigo-600 outline-none font-medium text-slate-800 bg-slate-50/50 min-h-[400px]" value={formData.content} onChange={e => setFormData({...formData, content: e.target.value})}></textarea>
                     </div>
                 </div>
               </div>
-
-              <div className="flex justify-end space-x-6 pt-12 border-t border-slate-100 shrink-0">
+              <div className="flex justify-end space-x-6 pt-12 border-t border-slate-100">
                 <button type="button" onClick={() => setShowForm(false)} className="px-10 py-5 font-black text-slate-400 uppercase tracking-widest text-xs">Descartar</button>
-                <button type="submit" className="px-14 py-5 bg-indigo-600 text-white rounded-[2rem] font-black shadow-2xl shadow-indigo-200 uppercase text-xs tracking-widest active:scale-95 transition-all">Guardar Cambios</button>
+                <button type="submit" className="px-14 py-5 bg-indigo-600 text-white rounded-[2rem] font-black shadow-xl uppercase text-xs tracking-widest transition-all">Guardar</button>
               </div>
             </form>
           </div>
         </div>
       )}
 
-      {/* MODAL VISTA PREVIA PROFESIONAL */}
+      {/* MODAL VISTA PREVIA CON BOTÓN DE DESCARGA PDF */}
       {previewId && previewDoc && (
         <div className="fixed inset-0 bg-slate-900/90 backdrop-blur-2xl flex items-center justify-center z-[130] p-6 overflow-y-auto">
           <div className="bg-white rounded-[4rem] w-full max-w-5xl shadow-2xl overflow-hidden animate-in zoom-in-95 my-auto max-h-[95vh] flex flex-col">
             <div className="bg-slate-50 p-10 border-b border-slate-100 flex justify-between items-center shrink-0">
               <div>
-                <h4 className="text-2xl font-black text-slate-800 uppercase tracking-tighter leading-none">Pre-visualización Institucional</h4>
+                <h4 className="text-2xl font-black text-slate-800 uppercase tracking-tighter">Vista Institucional</h4>
                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-2">
-                    {previewDoc.folioNumber ? `Folio N° ${previewDoc.folioNumber} - ${previewDoc.year}` : 'Borrador sin Folio Oficial'}
+                    {previewDoc.folioNumber ? `Folio N° ${previewDoc.folioNumber} - ${previewDoc.year}` : 'Borrador'}
                 </p>
               </div>
               <button onClick={() => setPreviewId(null)} className="w-12 h-12 rounded-2xl bg-white text-slate-400 hover:text-slate-600 flex items-center justify-center shadow-sm border border-slate-100 text-3xl font-light transition-all">&times;</button>
             </div>
             
             <div className="flex-1 overflow-y-auto p-12 bg-slate-200/50">
-               {/* Simulación de Hoja Oficial */}
                <div className="bg-white mx-auto max-w-[215.9mm] shadow-2xl p-[2.5cm] min-h-[279.4mm] border border-slate-200 relative text-black" style={{ fontFamily: '"Crimson Pro", serif' }}>
                   <div className="flex justify-between border-b-2 border-black pb-4 mb-8">
                     <div>
@@ -435,7 +410,6 @@ const Secretariat: React.FC<SecretariatProps> = ({ documents, setDocuments, conf
                       <p className="text-[10px] font-bold text-slate-500 mt-1 uppercase" style={{ fontFamily: 'Inter, sans-serif' }}>{previewDoc.date}</p>
                     </div>
                   </div>
-
                   <div className="space-y-6">
                     <p className="font-black text-xl text-center uppercase underline mb-10" style={{ fontFamily: 'Inter, sans-serif' }}>{previewDoc.type}</p>
                     <div className="text-[11.5pt] space-y-2 mb-10" style={{ fontFamily: 'Inter, sans-serif' }}>
@@ -447,7 +421,6 @@ const Secretariat: React.FC<SecretariatProps> = ({ documents, setDocuments, conf
                       {previewDoc.content}
                     </div>
                   </div>
-
                   <div className="mt-20 flex justify-between gap-12 pt-8" style={{ fontFamily: 'Inter, sans-serif' }}>
                     <div className="w-[45%] text-center border-t border-black pt-2">
                       <p className="text-[9pt] font-black uppercase">{board.find(b => b.role === BoardRole.SECRETARY)?.primary.name || 'SECRETARIO(A)'}</p>
@@ -458,10 +431,6 @@ const Secretariat: React.FC<SecretariatProps> = ({ documents, setDocuments, conf
                       <p className="text-[7pt] font-bold text-slate-500 uppercase">Presidencia</p>
                     </div>
                   </div>
-
-                  <div className="absolute bottom-10 left-[2.5cm] right-[2.5cm] text-center border-t border-slate-100 pt-4 text-[6.5pt] font-bold text-slate-400 uppercase tracking-widest" style={{ fontFamily: 'Inter, sans-serif' }}>
-                    Documento oficial generado vía Plataforma Tierra Esperanza • Registro Inalterable
-                  </div>
                </div>
             </div>
 
@@ -469,10 +438,18 @@ const Secretariat: React.FC<SecretariatProps> = ({ documents, setDocuments, conf
                <div className="flex gap-3">
                   <button 
                     onClick={() => handlePrint(previewDoc)} 
-                    className="bg-emerald-600 text-white px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl shadow-emerald-200 hover:bg-emerald-700 transition active:scale-95 flex items-center group"
+                    className="bg-emerald-600 text-white px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl shadow-emerald-200 hover:bg-emerald-700 transition active:scale-95 flex items-center"
                   >
                     <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
-                    Imprimir / PDF Oficial
+                    Imprimir
+                  </button>
+
+                  <button 
+                    onClick={() => handleDownloadPDF(previewDoc)} 
+                    className="bg-white border-2 border-indigo-600 text-indigo-600 px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl shadow-indigo-100 hover:bg-indigo-50 transition active:scale-95 flex items-center"
+                  >
+                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                    Descargar PDF
                   </button>
                   
                   {previewDoc.status === DocumentStatus.DRAFT && (
@@ -480,57 +457,18 @@ const Secretariat: React.FC<SecretariatProps> = ({ documents, setDocuments, conf
                       onClick={() => handleSign(previewDoc)} 
                       className="bg-indigo-600 text-white px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl shadow-indigo-200 hover:bg-indigo-700 transition active:scale-95"
                     >
-                      Firmar Oficialmente
+                      Firmar
                     </button>
                   )}
                </div>
-
                <div className="flex gap-2">
                   <button 
                     onClick={() => handleSend(previewDoc, 'whatsapp')} 
                     className="p-4 bg-white border-2 border-slate-200 text-emerald-600 rounded-2xl hover:border-emerald-600 transition shadow-sm"
-                    title="Enviar Referencia WhatsApp"
                   >
                     <Icons.WhatsApp />
                   </button>
-                  <button 
-                    onClick={() => handleSend(previewDoc, 'email')} 
-                    className="p-4 bg-white border-2 border-slate-200 text-blue-600 rounded-2xl hover:border-blue-600 transition shadow-sm"
-                    title="Enviar vía Email"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-                  </button>
                </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* MODAL HISTORIAL */}
-      {showHistory && historyDoc && (
-        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-xl flex items-center justify-center z-[120] p-6 overflow-y-auto">
-          <div className="bg-white rounded-[3rem] w-full max-w-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 my-auto max-h-[80vh] flex flex-col">
-            <div className="bg-slate-50 p-10 border-b border-slate-100 flex justify-between items-center">
-              <h4 className="text-2xl font-black text-slate-800 uppercase tracking-tighter leading-none">Bitácora de Trazabilidad</h4>
-              <button onClick={() => setShowHistory(null)} className="w-12 h-12 rounded-2xl bg-white text-slate-400 hover:text-slate-600 shadow-sm border border-slate-100 text-3xl font-light transition-all">&times;</button>
-            </div>
-            <div className="flex-1 overflow-y-auto p-10 space-y-8">
-              {historyDoc.history.map((log, i) => (
-                <div key={i} className="flex gap-8 items-start relative">
-                  {i < historyDoc.history.length - 1 && <div className="absolute left-[23px] top-12 bottom-[-32px] w-0.5 bg-slate-100"></div>}
-                  <div className={`w-12 h-12 rounded-full border-4 border-white shadow-lg flex items-center justify-center shrink-0 z-10 ${i === 0 ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-400'}`}>
-                    {i === 0 ? <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4"/></svg> : <Icons.Pencil />}
-                  </div>
-                  <div className="flex-1 bg-slate-50/50 rounded-[2rem] p-6 border border-slate-100">
-                    <div className="flex justify-between items-center mb-2">
-                      <p className="text-sm font-black text-slate-800">{log.editorName}</p>
-                      <span className="text-[9px] font-bold text-slate-400 uppercase">{new Date(log.timestamp).toLocaleString()}</span>
-                    </div>
-                    <p className="text-xs text-slate-600 font-medium mb-3">{log.action}</p>
-                    <span className="text-[8px] font-black uppercase px-3 py-1 rounded-lg border bg-white shadow-sm inline-block">{log.statusAtTime}</span>
-                  </div>
-                </div>
-              ))}
             </div>
           </div>
         </div>
