@@ -1,7 +1,8 @@
 
 import React, { useState, useMemo } from 'react';
-import { Transaction, TransactionType, Member, PaymentMethod, User, BoardRole } from '../types';
+import { Transaction, TransactionType, Member, PaymentMethod, User, BoardRole, BoardPosition, CommitteeConfig } from '../types';
 import { generateReceiptText } from '../services/geminiService';
+import { printPaymentReceipt } from '../services/printService';
 import { Icons } from '../constants';
 
 interface TreasuryProps {
@@ -10,9 +11,11 @@ interface TreasuryProps {
   members: Member[];
   onViewMember: (id: string) => void;
   currentUser: User;
+  config: CommitteeConfig;
+  board: BoardPosition[];
 }
 
-const Treasury: React.FC<TreasuryProps> = ({ transactions, setTransactions, members, onViewMember, currentUser }) => {
+const Treasury: React.FC<TreasuryProps> = ({ transactions, setTransactions, members, onViewMember, currentUser, config, board }) => {
   const [showForm, setShowForm] = useState(false);
   const [filterMethod, setFilterMethod] = useState<'ALL' | PaymentMethod>('ALL');
   const [showOnlyDebtors, setShowOnlyDebtors] = useState(false);
@@ -231,13 +234,22 @@ const Treasury: React.FC<TreasuryProps> = ({ transactions, setTransactions, memb
                     <td className="px-10 py-5 text-right">
                       <div className="flex justify-end space-x-2">
                         {tx.type === TransactionType.INCOME && member && (
-                          <button 
-                            onClick={() => handleSendReceipt(tx, 'whatsapp')} 
-                            className="p-3 bg-emerald-50 text-emerald-600 rounded-2xl hover:bg-emerald-100 transition shadow-sm"
-                            title="Enviar por WhatsApp"
-                          >
-                            <Icons.WhatsApp />
-                          </button>
+                          <>
+                            <button 
+                              onClick={() => printPaymentReceipt(tx, member, board, config)}
+                              className="p-3 bg-slate-50 text-slate-600 rounded-2xl hover:bg-slate-100 transition shadow-sm"
+                              title="Imprimir Boleta"
+                            >
+                              <Icons.Print />
+                            </button>
+                            <button 
+                              onClick={() => handleSendReceipt(tx, 'whatsapp')} 
+                              className="p-3 bg-emerald-50 text-emerald-600 rounded-2xl hover:bg-emerald-100 transition shadow-sm"
+                              title="Enviar por WhatsApp"
+                            >
+                              <Icons.WhatsApp />
+                            </button>
+                          </>
                         )}
                         {canEdit && (
                           <button onClick={() => handleDeleteTx(tx.id)} className="p-3 text-rose-300 hover:text-rose-600 rounded-2xl transition">

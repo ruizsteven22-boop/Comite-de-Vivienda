@@ -22,7 +22,7 @@ if (in_array($extension, ['js', 'css', 'json', 'png', 'jpg', 'svg', 'tsx'])) {
 
 // 3. Servir el frontend de la aplicación
 $template_uri = get_template_directory_uri();
-$html_path = __DIR__ . '/dist/index.html';
+$html_path = __DIR__ . '/index.html';
 
 if (file_exists($html_path)) {
     $html = file_get_contents($html_path);

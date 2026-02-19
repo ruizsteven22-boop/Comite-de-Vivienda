@@ -434,3 +434,112 @@ export const printAttendanceReport = (assembly: Assembly, members: Member[], boa
   `);
   printWindow.document.close();
 };
+
+export const printPaymentReceipt = (transaction: Transaction, member: Member, board: BoardPosition[], config: CommitteeConfig) => {
+  const treasurer = board.find(b => b.role === BoardRole.TREASURER)?.primary.name || '____________________';
+  
+  const printWindow = window.open('', '_blank');
+  if (!printWindow) return;
+
+  printWindow.document.write(`
+    <html>
+      <head>
+        <title>Comprobante de Pago - ${transaction.id}</title>
+        <style>
+          @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap');
+          body { font-family: 'Inter', sans-serif; padding: 30px; color: #1e293b; line-height: 1.5; }
+          .receipt-container { 
+            max-width: 500px; 
+            margin: 0 auto; 
+            border: 2px solid #e2e8f0; 
+            padding: 30px; 
+            border-radius: 20px;
+            background: #fff;
+          }
+          .header { text-align: center; border-bottom: 2px solid #059669; padding-bottom: 15px; margin-bottom: 20px; }
+          .header h1 { margin: 0; color: #059669; font-size: 16pt; font-weight: 900; text-transform: uppercase; }
+          .header p { margin: 5px 0 0 0; font-size: 8pt; font-weight: 700; color: #64748b; text-transform: uppercase; }
+          
+          .folio { text-align: right; font-size: 9pt; font-weight: 900; color: #0f172a; margin-bottom: 20px; }
+          .folio span { color: #059669; }
+
+          .details { margin-bottom: 30px; }
+          .detail-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f1f5f9; }
+          .detail-label { font-size: 8pt; font-weight: 800; color: #64748b; text-transform: uppercase; }
+          .detail-value { font-size: 10pt; font-weight: 600; color: #0f172a; }
+
+          .amount-box { 
+            background: #f8fafc; 
+            padding: 20px; 
+            border-radius: 15px; 
+            text-align: center; 
+            margin: 20px 0;
+            border: 1px solid #e2e8f0;
+          }
+          .amount-label { font-size: 9pt; font-weight: 900; color: #64748b; text-transform: uppercase; display: block; margin-bottom: 5px; }
+          .amount-value { font-size: 24pt; font-weight: 900; color: #059669; }
+
+          .signatures { margin-top: 40px; display: flex; justify-content: space-between; gap: 20px; }
+          .sig-box { flex: 1; text-align: center; border-top: 1px solid #334155; padding-top: 8px; font-size: 8pt; font-weight: bold; }
+          
+          .footer { margin-top: 30px; text-align: center; font-size: 7pt; color: #94a3b8; font-weight: 600; text-transform: uppercase; }
+          
+          @media print {
+            body { padding: 0; }
+            .receipt-container { border: none; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="receipt-container">
+          <div class="header">
+            <h1>${config.tradeName}</h1>
+            <p>${config.legalName}<br/>RUT: ${config.rut}</p>
+          </div>
+          
+          <div class="folio">COMPROBANTE N° <span>${transaction.id}</span></div>
+
+          <div class="details">
+            <div class="detail-row">
+              <span class="detail-label">Fecha</span>
+              <span class="detail-value">${transaction.date}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Socio</span>
+              <span class="detail-value">${member.name}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">RUT Socio</span>
+              <span class="detail-value">${member.rut}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Concepto</span>
+              <span class="detail-value">${transaction.description}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Método de Pago</span>
+              <span class="detail-value">${transaction.paymentMethod}</span>
+            </div>
+          </div>
+
+          <div class="amount-box">
+            <span class="amount-label">Total Pagado</span>
+            <span class="amount-value">$${transaction.amount.toLocaleString('es-CL')}</span>
+          </div>
+
+          <div class="signatures">
+            <div class="sig-box">Firma Recaudador<br/>${treasurer}</div>
+            <div class="sig-box">Firma Socio<br/>${member.name}</div>
+          </div>
+
+          <div class="footer">
+            Este es un comprobante oficial de recepción de fondos.<br/>
+            Generado el ${new Date().toLocaleString('es-CL')}
+          </div>
+        </div>
+        <script>window.onload = function() { window.print(); window.onafterprint = function() { window.close(); }; }</script>
+      </body>
+    </html>
+  `);
+  printWindow.document.close();
+};
