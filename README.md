@@ -17,8 +17,8 @@ Si vas a subir este proyecto a un hosting como **Hostinger, Bluehost, Namecheap 
     *   `index.html`: El punto de entrada.
     *   `index.tsx` y carpetas `components/`, `services/`: Deben mantener su estructura.
 4.  **Configura la API KEY**:
-    *   Si tu hosting permite variables de entorno (como Vercel o Netlify), añade `API_KEY`.
-    *   Si es un hosting estático simple, el sistema buscará `process.env.API_KEY`. En entornos sin servidor, deberás asegurarte de que la clave esté disponible o configurar un proxy si deseas ocultarla.
+    *   Si tu hosting permite variables de entorno (como Vercel o Netlify), añade `GEMINI_API_KEY`.
+    *   Si es un hosting estático simple, el sistema buscará `process.env.GEMINI_API_KEY`. En entornos sin servidor, deberás asegurarte de que la clave esté disponible o configurar un proxy si deseas ocultarla.
 
 ## 🛠️ Notas Técnicas
 - La aplicación utiliza **ESM (ES Modules)**, por lo que no requiere compilación previa (Build step). El navegador descarga y ejecuta los archivos directamente.

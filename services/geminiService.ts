@@ -2,7 +2,7 @@
 import { GoogleGenAI } from "@google/genai";
 import { Member, Transaction, Assembly, Document, DocumentType } from "../types";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 export const getFinancialSummary = async (transactions: Transaction[]) => {
   const prompt = `Actúa como un asesor financiero experto para organizaciones comunitarias. Analiza los siguientes movimientos contables del comité de vivienda "Tierra Esperanza" y genera un informe ejecutivo estratégico. 
