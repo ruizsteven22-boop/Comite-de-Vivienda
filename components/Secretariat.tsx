@@ -21,6 +21,7 @@ const Secretariat: React.FC<SecretariatProps> = ({ documents, setDocuments, conf
   const [isRefiningAI, setIsRefiningAI] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<'ALL' | DocumentType>('ALL');
+  const [notification, setNotification] = useState<{ message: string; type: 'success' | 'info' } | null>(null);
 
   const [formData, setFormData] = useState<Partial<Document>>({
     type: DocumentType.OFFICE,
@@ -171,11 +172,20 @@ const Secretariat: React.FC<SecretariatProps> = ({ documents, setDocuments, conf
     }
     const folioText = doc.folioNumber ? `N° ${doc.folioNumber} - ${doc.year}` : '(BORRADOR)';
     const message = `Hola, envío ${doc.type} oficial ${folioText}.\nAsunto: ${doc.subject}\n\nGenerado por Secretaría de ${config.tradeName}.`;
+    
     if (channel === 'whatsapp') {
       window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
     } else {
       window.location.href = `mailto:?subject=${encodeURIComponent(doc.title)}&body=${encodeURIComponent(message)}`;
     }
+
+    // Visual confirmation
+    setNotification({ 
+      message: `Documento preparado para envío vía ${channel === 'whatsapp' ? 'WhatsApp' : 'Email'}`, 
+      type: 'success' 
+    });
+    setTimeout(() => setNotification(null), 4000);
+
     if (doc.status === DocumentStatus.SIGNED) {
         const updated = addLog(doc, `Documento enviado vía ${channel}`, DocumentStatus.SENT);
         setDocuments(prev => prev.map(d => d.id === doc.id ? updated : d));
@@ -186,7 +196,26 @@ const Secretariat: React.FC<SecretariatProps> = ({ documents, setDocuments, conf
   const historyDoc = documents.find(d => d.id === showHistory);
 
   return (
-    <div className="space-y-12 animate-in fade-in duration-500 pb-20">
+    <div className="space-y-12 animate-in fade-in duration-500 pb-20 relative">
+      {/* Notificación Flotante */}
+      {notification && (
+        <div id="secretariat-notification" className="fixed top-10 left-1/2 -translate-x-1/2 z-[200] animate-in slide-in-from-top-10 duration-500">
+          <div className={`px-8 py-4 rounded-3xl shadow-2xl border-2 flex items-center space-x-4 backdrop-blur-xl ${
+            notification.type === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-indigo-50 border-indigo-200 text-indigo-800'
+          }`}>
+            <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${
+              notification.type === 'success' ? 'bg-emerald-500 text-white' : 'bg-indigo-500 text-white'
+            }`}>
+              {notification.type === 'success' ? '✓' : 'ℹ'}
+            </div>
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-widest opacity-50">Notificación de Sistema</p>
+              <p className="text-sm font-black tracking-tight">{notification.message}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-8">
         <div className="space-y-2">
           <h2 className="text-5xl font-black text-slate-900 tracking-tighter leading-none">
