@@ -10,6 +10,7 @@ interface SupportManagementProps {
 const SupportManagement: React.FC<SupportManagementProps> = ({ users, setUsers }) => {
   const [showForm, setShowForm] = useState(false);
   const [selectedUser, setSelectedUser] = useState<Partial<User> | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
   const logoInputRef = useRef<HTMLInputElement>(null);
 
   const roles: SystemRole[] = ['SUPPORT', 'ADMINISTRATOR', BoardRole.PRESIDENT, BoardRole.SECRETARY, BoardRole.TREASURER];
@@ -199,13 +200,26 @@ const SupportManagement: React.FC<SupportManagementProps> = ({ users, setUsers }
                   </div>
                   <div>
                     <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Contraseña</label>
-                    <input 
-                      type="password"
-                      className="w-full px-5 py-3 border-2 border-slate-100 rounded-2xl outline-none focus:border-indigo-500 font-bold bg-slate-50 transition"
-                      value={selectedUser?.password || ''}
-                      onChange={e => setSelectedUser({...selectedUser, password: e.target.value})}
-                      placeholder="••••••••"
-                    />
+                    <div className="relative">
+                      <input 
+                        type={showPassword ? "text" : "password"}
+                        className="w-full px-5 py-3 border-2 border-slate-100 rounded-2xl outline-none focus:border-indigo-500 font-bold bg-slate-50 transition pr-12"
+                        value={selectedUser?.password || ''}
+                        onChange={e => setSelectedUser({...selectedUser, password: e.target.value})}
+                        placeholder="••••••••"
+                      />
+                      <button 
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300 hover:text-indigo-600 transition-colors"
+                      >
+                        {showPassword ? (
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.542-7 1.274-4.057 5.064-7 9.542-7 1.225 0 2.39.223 3.465.625M15 12a3 3 0 11-6 0 3 3 0 016 0zm6.364.364l-1.414-1.414M15 12l-1.414-1.414M9 12l-1.414-1.414M3.636 11.636l1.414-1.414M12 12l1.414 1.414M12 12l-1.414-1.414" /></svg>
+                        ) : (
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                        )}
+                      </button>
+                    </div>
                   </div>
                 </div>
                 <div>

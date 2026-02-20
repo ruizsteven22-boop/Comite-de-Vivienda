@@ -12,6 +12,7 @@ interface LoginProps {
 const Login: React.FC<LoginProps> = ({ users, onLogin, config }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -76,16 +77,24 @@ const Login: React.FC<LoginProps> = ({ users, onLogin, config }) => {
                 <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-3 ml-2 group-focus-within:text-indigo-600 transition-colors">Contraseña</label>
                 <div className="relative">
                   <input 
-                    type="password" 
+                    type={showPassword ? "text" : "password"} 
                     required
-                    className="w-full px-8 py-5 border-2 border-slate-100 rounded-[2rem] focus:border-indigo-500 outline-none transition-all bg-slate-50/50 font-black text-slate-800 placeholder:text-slate-300 group-focus-within:bg-white"
+                    className="w-full px-8 py-5 border-2 border-slate-100 rounded-[2rem] focus:border-indigo-500 outline-none transition-all bg-slate-50/50 font-black text-slate-800 placeholder:text-slate-300 group-focus-within:bg-white pr-16"
                     placeholder="••••••••"
                     value={password}
                     onChange={e => setPassword(e.target.value)}
                   />
-                  <div className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-300">
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
-                  </div>
+                  <button 
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-300 hover:text-indigo-600 transition-colors"
+                  >
+                    {showPassword ? (
+                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.542-7 1.274-4.057 5.064-7 9.542-7 1.225 0 2.39.223 3.465.625M15 12a3 3 0 11-6 0 3 3 0 016 0zm6.364.364l-1.414-1.414M15 12l-1.414-1.414M9 12l-1.414-1.414M3.636 11.636l1.414-1.414M12 12l1.414 1.414M12 12l-1.414-1.414" /></svg>
+                    ) : (
+                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                    )}
+                  </button>
                 </div>
               </div>
             </div>
