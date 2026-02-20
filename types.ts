@@ -64,6 +64,7 @@ export interface CommitteeConfig {
   municipalRes: string;
   legalRes: string;
   language?: Language;
+  logoUrl?: string;
 }
 
 export interface FamilyMember {

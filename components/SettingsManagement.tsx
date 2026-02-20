@@ -15,6 +15,7 @@ const SettingsManagement: React.FC<SettingsManagementProps> = ({ config, setConf
   const [formData, setFormData] = useState<CommitteeConfig>(config);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const logoInputRef = useRef<HTMLInputElement>(null);
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,6 +51,23 @@ const SettingsManagement: React.FC<SettingsManagementProps> = ({ config, setConf
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 1024 * 1024) { // 1MB limit for base64 storage
+        alert("El logo es demasiado pesado. Por favor use una imagen de menos de 1MB.");
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const base64 = event.target?.result as string;
+        setFormData(prev => ({ ...prev, logoUrl: base64 }));
+      };
+      reader.readAsDataURL(file);
+    }
+    if (logoInputRef.current) logoInputRef.current.value = '';
+  };
+
   return (
     <div className="space-y-12 animate-in fade-in duration-500">
       <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
@@ -83,60 +101,95 @@ const SettingsManagement: React.FC<SettingsManagementProps> = ({ config, setConf
               <h3 className="text-sm font-black text-slate-700 uppercase tracking-widest">Identidad Institucional</h3>
             </div>
             <form onSubmit={handleSave} className="p-10 space-y-8">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div className="md:col-span-2">
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-2">Razón Social Legal</label>
-                  <input 
-                    required 
-                    className="w-full px-8 py-5 border-2 border-slate-100 rounded-[2rem] focus:border-violet-600 outline-none font-bold text-slate-800 bg-slate-50/50 transition-all"
-                    value={formData.legalName}
-                    onChange={e => handleChange('legalName', e.target.value)}
-                    placeholder="Ej: Comité de Vivienda Esperanza Ltda."
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-2">Nombre de Fantasía</label>
-                  <input 
-                    required 
-                    className="w-full px-8 py-5 border-2 border-slate-100 rounded-[2rem] focus:border-violet-600 outline-none font-bold text-slate-800 bg-slate-50/50 transition-all"
-                    value={formData.tradeName}
-                    onChange={e => handleChange('tradeName', e.target.value)}
-                    placeholder="Ej: Tierra Esperanza"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-2">RUT Institucional</label>
-                  <input 
-                    required 
-                    className="w-full px-8 py-5 border-2 border-slate-100 rounded-[2rem] focus:border-violet-600 outline-none font-mono text-slate-800 bg-slate-50/50 transition-all"
-                    value={formData.rut}
-                    onChange={e => handleChange('rut', e.target.value)}
-                    placeholder="76.000.000-0"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-2">Email Institucional</label>
-                  <input 
-                    type="email" 
-                    required 
-                    className="w-full px-8 py-5 border-2 border-slate-100 rounded-[2rem] focus:border-violet-600 outline-none font-bold text-slate-800 bg-slate-50/50 transition-all"
-                    value={formData.email}
-                    onChange={e => handleChange('email', e.target.value)}
-                    placeholder="comite@ejemplo.cl"
-                  />
+              <div className="flex flex-col md:flex-row gap-10 items-start">
+                {/* Logo Upload Section */}
+                <div className="w-full md:w-48 flex flex-col items-center gap-4">
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Logo Institucional</label>
+                  <div 
+                    onClick={() => logoInputRef.current?.click()}
+                    className="w-40 h-40 rounded-[2rem] border-2 border-dashed border-slate-200 bg-slate-50 flex flex-col items-center justify-center cursor-pointer hover:border-violet-400 hover:bg-violet-50 transition-all overflow-hidden group relative"
+                  >
+                    {formData.logoUrl ? (
+                      <>
+                        <img src={formData.logoUrl} alt="Logo" className="w-full h-full object-contain p-4" />
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <p className="text-[10px] font-black text-white uppercase tracking-widest">Cambiar</p>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-8 h-8 text-slate-300 mb-2 group-hover:text-violet-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest text-center px-4">Subir Logo</p>
+                      </>
+                    )}
+                  </div>
+                  <input type="file" ref={logoInputRef} className="hidden" accept="image/*" onChange={handleLogoUpload} />
+                  {formData.logoUrl && (
+                    <button 
+                      type="button"
+                      onClick={() => setFormData(prev => ({ ...prev, logoUrl: '' }))}
+                      className="text-[9px] font-black text-rose-500 uppercase tracking-widest hover:text-rose-700"
+                    >
+                      Eliminar Logo
+                    </button>
+                  )}
                 </div>
 
-                <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-2">Teléfono de Contacto</label>
-                  <input 
-                    className="w-full px-8 py-5 border-2 border-slate-100 rounded-[2rem] focus:border-violet-600 outline-none font-bold text-slate-800 bg-slate-50/50 transition-all"
-                    value={formData.phone}
-                    onChange={e => handleChange('phone', e.target.value)}
-                    placeholder="+56 9 1234 5678"
-                  />
+                <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="md:col-span-2">
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-2">Razón Social Legal</label>
+                    <input 
+                      required 
+                      className="w-full px-8 py-5 border-2 border-slate-100 rounded-[2rem] focus:border-violet-600 outline-none font-bold text-slate-800 bg-slate-50/50 transition-all"
+                      value={formData.legalName}
+                      onChange={e => handleChange('legalName', e.target.value)}
+                      placeholder="Ej: Comité de Vivienda Esperanza Ltda."
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-2">Nombre de Fantasía</label>
+                    <input 
+                      required 
+                      className="w-full px-8 py-5 border-2 border-slate-100 rounded-[2rem] focus:border-violet-600 outline-none font-bold text-slate-800 bg-slate-50/50 transition-all"
+                      value={formData.tradeName}
+                      onChange={e => handleChange('tradeName', e.target.value)}
+                      placeholder="Ej: Tierra Esperanza"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-2">RUT Institucional</label>
+                    <input 
+                      required 
+                      className="w-full px-8 py-5 border-2 border-slate-100 rounded-[2rem] focus:border-violet-600 outline-none font-mono text-slate-800 bg-slate-50/50 transition-all"
+                      value={formData.rut}
+                      onChange={e => handleChange('rut', e.target.value)}
+                      placeholder="76.000.000-0"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-2">Email Institucional</label>
+                    <input 
+                      type="email" 
+                      required 
+                      className="w-full px-8 py-5 border-2 border-slate-100 rounded-[2rem] focus:border-violet-600 outline-none font-bold text-slate-800 bg-slate-50/50 transition-all"
+                      value={formData.email}
+                      onChange={e => handleChange('email', e.target.value)}
+                      placeholder="comite@ejemplo.cl"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-2">Teléfono de Contacto</label>
+                    <input 
+                      className="w-full px-8 py-5 border-2 border-slate-100 rounded-[2rem] focus:border-violet-600 outline-none font-bold text-slate-800 bg-slate-50/50 transition-all"
+                      value={formData.phone}
+                      onChange={e => handleChange('phone', e.target.value)}
+                      placeholder="+56 9 1234 5678"
+                    />
+                  </div>
                 </div>
               </div>
 

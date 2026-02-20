@@ -31,7 +31,8 @@ const INITIAL_CONFIG: CommitteeConfig = {
   phone: '+56 9 1234 5678',
   municipalRes: 'Res. Exenta N° 456/2023',
   legalRes: 'Pers. Jurídica N° 7890-S',
-  language: Language.ES
+  language: Language.ES,
+  logoUrl: ''
 };
 
 const EMPTY_PERSON = { name: '', rut: '', phone: '' };
@@ -208,7 +209,7 @@ const App: React.FC = () => {
   };
 
   if (!isInitialized) return null;
-  if (!currentUser) return <Login users={users} onLogin={handleLogin} />;
+  if (!currentUser) return <Login users={users} onLogin={handleLogin} config={config} />;
 
   const menuItems = [
     { id: 'dashboard' as const, icon: <Icons.Dashboard />, label: t.nav.dashboard },
@@ -226,8 +227,15 @@ const App: React.FC = () => {
     <div className="flex h-screen overflow-hidden mesh-bg">
       <aside className={`sidebar-glass fixed inset-y-0 left-0 z-50 w-72 transform transition-transform duration-500 md:relative md:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="flex h-full flex-col">
-          <div className="p-10">
-            <h1 className="text-2xl font-black italic text-white tracking-tighter">🌳 {config.tradeName}</h1>
+          <div className="p-10 flex flex-col items-center gap-4">
+            {config.logoUrl ? (
+              <img src={config.logoUrl} alt="Logo" className="w-20 h-20 object-contain rounded-2xl bg-white/10 p-2" />
+            ) : (
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-teal-500 to-indigo-600 flex items-center justify-center text-3xl shadow-lg">
+                🌳
+              </div>
+            )}
+            <h1 className="text-xl font-black italic text-white tracking-tighter text-center">{config.tradeName}</h1>
           </div>
           <nav className="flex-1 space-y-2 px-6 overflow-y-auto">
             {menuItems.map(item => hasPermission(item.id) && (

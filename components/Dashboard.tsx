@@ -102,14 +102,19 @@ const Dashboard: React.FC<DashboardProps> = ({ members, transactions, assemblies
     <div className="space-y-12 pb-20">
       {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 animate-in fade-in slide-in-from-top-4 duration-700">
-        <div className="space-y-2">
-          <h2 className="text-6xl font-black tracking-tighter text-slate-900 leading-tight">
-            {t.dashboard.welcome}, <br className="hidden sm:block md:hidden" />
-            <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 via-violet-600 to-fuchsia-600">{currentUser.name.split(' ')[0]}</span>
-          </h2>
-          <div className="flex items-center space-x-3">
-             <span className="h-1.5 w-12 bg-indigo-600 rounded-full"></span>
-             <p className="text-slate-400 font-black uppercase tracking-[0.3em] text-[10px]">{t.dashboard.subtitle}</p>
+        <div className="flex items-center gap-6">
+          {config.logoUrl && (
+            <img src={config.logoUrl} alt="Logo" className="w-24 h-24 object-contain rounded-3xl bg-white shadow-xl p-3 border border-slate-100" />
+          )}
+          <div className="space-y-2">
+            <h2 className="text-6xl font-black tracking-tighter text-slate-900 leading-tight">
+              {t.dashboard.welcome}, <br className="hidden sm:block md:hidden" />
+              <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 via-violet-600 to-fuchsia-600">{currentUser.name.split(' ')[0]}</span>
+            </h2>
+            <div className="flex items-center space-x-3">
+               <span className="h-1.5 w-12 bg-indigo-600 rounded-full"></span>
+               <p className="text-slate-400 font-black uppercase tracking-[0.3em] text-[10px]">{t.dashboard.subtitle}</p>
+            </div>
           </div>
         </div>
         

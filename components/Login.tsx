@@ -1,14 +1,15 @@
 
 import React, { useState } from 'react';
-import { User } from '../types';
+import { User, CommitteeConfig } from '../types';
 import { Icons } from '../constants';
 
 interface LoginProps {
   users: User[];
   onLogin: (user: User) => void;
+  config: CommitteeConfig;
 }
 
-const Login: React.FC<LoginProps> = ({ users, onLogin }) => {
+const Login: React.FC<LoginProps> = ({ users, onLogin, config }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -35,9 +36,18 @@ const Login: React.FC<LoginProps> = ({ users, onLogin }) => {
 
       <div className="bg-white/80 backdrop-blur-2xl w-full max-w-lg rounded-[3.5rem] shadow-[0_40px_80px_-15px_rgba(0,0,0,0.1)] overflow-hidden animate-in zoom-in-95 duration-700 relative z-10 border border-white/50">
         <div className="bg-gradient-to-br from-teal-500 via-indigo-600 to-purple-600 p-16 text-white text-center relative overflow-hidden">
-          <div className="relative z-10">
-            <h1 className="text-5xl font-black tracking-tighter uppercase leading-none italic drop-shadow-sm">Tierra<br/><span className="text-teal-200">Esperanza</span></h1>
-            <p className="text-white/70 mt-6 font-black tracking-[0.4em] text-[10px] uppercase">Comunidad Digital</p>
+          <div className="relative z-10 flex flex-col items-center">
+            {config.logoUrl ? (
+              <img src={config.logoUrl} alt="Logo" className="w-24 h-24 object-contain rounded-3xl bg-white/20 p-3 mb-6 shadow-2xl" />
+            ) : (
+              <div className="w-20 h-20 rounded-3xl bg-white/20 flex items-center justify-center text-4xl mb-6 shadow-2xl backdrop-blur-md">
+                🌳
+              </div>
+            )}
+            <h1 className="text-4xl font-black tracking-tighter uppercase leading-tight italic drop-shadow-sm">
+              {config.tradeName}
+            </h1>
+            <p className="text-white/70 mt-4 font-black tracking-[0.4em] text-[10px] uppercase">Comunidad Digital</p>
           </div>
           <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_50%_120%,rgba(255,255,255,0.2),transparent)]"></div>
         </div>

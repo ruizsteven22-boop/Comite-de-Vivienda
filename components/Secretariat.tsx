@@ -429,10 +429,15 @@ const Secretariat: React.FC<SecretariatProps> = ({ documents, setDocuments, conf
             
             <div className="flex-1 overflow-y-auto p-12 bg-slate-200/50">
                <div className="bg-white mx-auto max-w-[215.9mm] shadow-2xl p-[2.5cm] min-h-[279.4mm] border border-slate-200 relative text-black" style={{ fontFamily: '"Crimson Pro", serif' }}>
-                  <div className="flex justify-between border-b-2 border-black pb-4 mb-8">
-                    <div>
-                      <p className="font-black text-sm uppercase" style={{ fontFamily: 'Inter, sans-serif' }}>{config.legalName}</p>
-                      <p className="text-[7.5pt] font-bold text-slate-500 uppercase tracking-widest mt-1" style={{ fontFamily: 'Inter, sans-serif' }}>{config.municipalRes}</p>
+                  <div className="flex justify-between border-b-2 border-black pb-4 mb-8 items-center">
+                    <div className="flex items-center gap-4">
+                      {config.logoUrl && (
+                        <img src={config.logoUrl} alt="Logo" className="w-16 h-16 object-contain" />
+                      )}
+                      <div>
+                        <p className="font-black text-sm uppercase" style={{ fontFamily: 'Inter, sans-serif' }}>{config.legalName}</p>
+                        <p className="text-[7.5pt] font-bold text-slate-500 uppercase tracking-widest mt-1" style={{ fontFamily: 'Inter, sans-serif' }}>{config.municipalRes}</p>
+                      </div>
                     </div>
                     <div className="text-right">
                       <p className="font-black text-xs uppercase" style={{ fontFamily: 'Inter, sans-serif' }}>FOLIO: {previewDoc.folioNumber || 'BORRADOR'}</p>

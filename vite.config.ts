@@ -3,6 +3,7 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
 export default defineConfig({
+  base: './',
   plugins: [react()],
   define: {
     // Inyectamos process.env.GEMINI_API_KEY para cumplir con los requisitos del SDK de Google GenAI

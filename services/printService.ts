@@ -37,6 +37,7 @@ export const printBoardReport = (board: BoardPosition[], period: string, config:
       </head>
       <body>
         <div class="header">
+          ${config.logoUrl ? `<img src="${config.logoUrl}" style="height: 80px; margin-bottom: 15px; object-fit: contain;">` : ''}
           <h1>${config.legalName}</h1>
           <p class="legal-info">RUT: ${config.rut} • Nómina Oficial de Directorio</p>
         </div>
@@ -215,9 +216,12 @@ export const printOfficialDocument = (doc: Document, board: BoardPosition[], con
       <body>
         <div class="container">
           <div class="header">
-            <div class="header-left">
-              <h1>${config.legalName}</h1>
-              <p>RUT: ${config.rut} • ${config.municipalRes}</p>
+            <div class="header-left" style="display: flex; align-items: center; gap: 15px;">
+              ${config.logoUrl ? `<img src="${config.logoUrl}" style="height: 60px; object-fit: contain;">` : ''}
+              <div>
+                <h1>${config.legalName}</h1>
+                <p>RUT: ${config.rut} • ${config.municipalRes}</p>
+              </div>
             </div>
             <div class="doc-meta">
               FOLIO: ${doc.type.toUpperCase()} N° ${doc.folioNumber || '---'} - ${doc.year}<br/>
@@ -289,9 +293,12 @@ export const printMemberFile = (member: Member, transactions: Transaction[], ass
       </head>
       <body>
         <div class="header">
-          <div>
-            <h1>${config.legalName}</h1>
-            <p>EXPEDIENTE DE SOCIO FOLIO #${member.id}</p>
+          <div style="display: flex; align-items: center; gap: 20px;">
+            ${config.logoUrl ? `<img src="${config.logoUrl}" style="height: 70px; object-fit: contain;">` : ''}
+            <div>
+              <h1>${config.legalName}</h1>
+              <p>EXPEDIENTE DE SOCIO FOLIO #${member.id}</p>
+            </div>
           </div>
           <div style="text-align: right">
             <p>Fecha de Emisión: ${new Date().toLocaleDateString('es-CL')}</p>
@@ -353,6 +360,7 @@ export const printAssemblyMinutes = (assembly: Assembly, members: Member[], boar
       </head>
       <body>
         <div class="header">
+          ${config.logoUrl ? `<img src="${config.logoUrl}" style="height: 60px; margin-bottom: 10px; object-fit: contain;">` : ''}
           <h1>ACTA DE ASAMBLEA ${assembly.type.toUpperCase()}</h1>
           <p>${config.legalName}<br/>RUT: ${config.rut}</p>
         </div>
@@ -414,6 +422,7 @@ export const printAttendanceReport = (assembly: Assembly, members: Member[], boa
       </head>
       <body>
         <div class="header">
+          ${config.logoUrl ? `<img src="${config.logoUrl}" style="height: 60px; margin-bottom: 10px; object-fit: contain;">` : ''}
           <h2>LISTADO DE ASISTENCIA Y FIRMAS</h2>
           <p>${config.legalName} - RUT: ${config.rut}</p>
           <p>Asamblea: ${assembly.description} (${assembly.date})</p>
@@ -493,6 +502,7 @@ export const printPaymentReceipt = (transaction: Transaction, member: Member, bo
       <body>
         <div class="receipt-container">
           <div class="header">
+            ${config.logoUrl ? `<img src="${config.logoUrl}" style="height: 50px; margin-bottom: 10px; object-fit: contain;">` : ''}
             <h1>${config.tradeName}</h1>
             <p>${config.legalName}<br/>RUT: ${config.rut}</p>
           </div>
