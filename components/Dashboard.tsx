@@ -37,7 +37,14 @@ const Dashboard: React.FC<DashboardProps> = ({ members, transactions, assemblies
     if (!isTesoOrAdmin) return [];
 
     const now = new Date();
-    const months = [];
+    interface MonthData {
+      label: string;
+      month: number;
+      year: number;
+      income: number;
+      expense: number;
+    }
+    const months: MonthData[] = [];
     for (let i = 5; i >= 0; i--) {
       const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
       months.push({
@@ -49,7 +56,7 @@ const Dashboard: React.FC<DashboardProps> = ({ members, transactions, assemblies
       });
     }
 
-    transactions.forEach(tx => {
+    transactions.forEach((tx: any) => {
       const txDate = new Date(tx.date);
       const monthIdx = months.findIndex(m => m.month === txDate.getMonth() && m.year === txDate.getFullYear());
       if (monthIdx !== -1) {

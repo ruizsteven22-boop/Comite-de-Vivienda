@@ -17,7 +17,7 @@ import Login from './components/Login';
 
 const INITIAL_USERS: User[] = [
   { id: '1', username: 'soporte', password: 'soporte.password', role: 'SUPPORT', name: 'Soporte Técnico' },
-  { id: '2', username: 'admin', password: 'admin.password', role: 'ADMINISTRATOR', name: 'Administrador' },
+  { id: '2', username: 'admin', password: 'Lio061624', role: 'ADMINISTRATOR', name: 'Administrador' },
   { id: '3', username: 'presi', password: 'te2024', role: BoardRole.PRESIDENT, name: 'Presidente' },
   { id: '4', username: 'teso', password: 'te2024', role: BoardRole.TREASURER, name: 'Tesorero' },
   { id: '5', username: 'secre', password: 'te2024', role: BoardRole.SECRETARY, name: 'Secretario' }
@@ -94,6 +94,15 @@ const App: React.FC = () => {
   useEffect(() => {
     const savedUser = safeJsonParse('te_session', null);
     if (savedUser) setCurrentUser(savedUser);
+    
+    // Migración: Asegurar que el usuario admin tenga la contraseña solicitada si aún tiene la antigua
+    setUsers((prev: User[]) => prev.map((u: User) => {
+      if (u.username === 'admin' && u.password === 'admin.password') {
+        return { ...u, password: 'Lio061624' };
+      }
+      return u;
+    }));
+    
     setIsInitialized(true);
   }, []);
 
