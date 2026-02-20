@@ -249,8 +249,22 @@ const App: React.FC = () => {
               </button>
             ))}
           </nav>
-          <div className="p-8 border-t border-white/5">
-            <button onClick={handleLogout} className="flex w-full items-center justify-center rounded-2xl bg-rose-500/10 py-4 text-[10px] font-black uppercase tracking-widest text-rose-400 hover:bg-rose-500 hover:text-white transition-all">
+
+          <div className="px-8 py-6 border-t border-white/5">
+            <div className="flex items-center gap-4 mb-6 px-2">
+              {currentUser.logoUrl ? (
+                <img src={currentUser.logoUrl} alt={currentUser.name} className="w-10 h-10 rounded-xl object-cover border border-white/10" />
+              ) : (
+                <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-xs font-black text-white">
+                  {currentUser.name.charAt(0)}
+                </div>
+              )}
+              <div className="flex-1 min-w-0">
+                <p className="text-[10px] font-black text-white truncate uppercase tracking-wider">{currentUser.name}</p>
+                <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">{currentUser.role}</p>
+              </div>
+            </div>
+            <button onClick={handleLogout} className="flex w-full items-center justify-center rounded-2xl bg-rose-500/10 py-4 text-[10px] font-black uppercase tracking-widest text-rose-400 hover:bg-rose-50 hover:text-white transition-all">
               Cerrar Sesión
             </button>
           </div>

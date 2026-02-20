@@ -157,4 +157,5 @@ export interface User {
   role: SystemRole;
   name: string;
   lastLogin?: string;
+  logoUrl?: string;
 }

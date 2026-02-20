@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { User, SystemRole, BoardRole } from '../types';
 
 interface SupportManagementProps {
@@ -10,6 +10,7 @@ interface SupportManagementProps {
 const SupportManagement: React.FC<SupportManagementProps> = ({ users, setUsers }) => {
   const [showForm, setShowForm] = useState(false);
   const [selectedUser, setSelectedUser] = useState<Partial<User> | null>(null);
+  const logoInputRef = useRef<HTMLInputElement>(null);
 
   const roles: SystemRole[] = ['SUPPORT', 'ADMINISTRATOR', BoardRole.PRESIDENT, BoardRole.SECRETARY, BoardRole.TREASURER];
 
@@ -70,9 +71,13 @@ const SupportManagement: React.FC<SupportManagementProps> = ({ users, setUsers }
             </div>
             
             <div className="flex items-center space-x-4 mb-6">
-              <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center text-xl font-black text-slate-800">
-                {user.name.charAt(0)}
-              </div>
+              {user.logoUrl ? (
+                <img src={user.logoUrl} alt={user.name} className="w-14 h-14 rounded-2xl object-cover border border-slate-100 shadow-sm" />
+              ) : (
+                <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center text-xl font-black text-slate-800">
+                  {user.name.charAt(0)}
+                </div>
+              )}
               <div>
                 <h3 className="font-bold text-slate-800 text-lg">{user.name}</h3>
                 <p className="text-sm text-slate-400 font-medium">@{user.username}</p>
@@ -124,6 +129,52 @@ const SupportManagement: React.FC<SupportManagementProps> = ({ users, setUsers }
               <p className="text-indigo-100 text-sm mt-1">Defina el nivel de privilegio y credenciales.</p>
             </div>
             <form onSubmit={handleSave} className="p-10 space-y-6">
+              <div className="flex flex-col items-center mb-6">
+                <div 
+                  onClick={() => logoInputRef.current?.click()}
+                  className="w-24 h-24 rounded-3xl border-2 border-dashed border-slate-200 bg-slate-50 flex flex-col items-center justify-center cursor-pointer hover:border-indigo-400 hover:bg-indigo-50 transition-all overflow-hidden group relative"
+                >
+                  {selectedUser?.logoUrl ? (
+                    <>
+                      <img src={selectedUser.logoUrl} alt="Avatar" className="w-full h-full object-cover" />
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <p className="text-[8px] font-black text-white uppercase tracking-widest">Cambiar</p>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-6 h-6 text-slate-300 mb-1 group-hover:text-indigo-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                      <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest text-center px-2">Foto</p>
+                    </>
+                  )}
+                </div>
+                <input 
+                  type="file" 
+                  ref={logoInputRef} 
+                  className="hidden" 
+                  accept="image/*" 
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      const reader = new FileReader();
+                      reader.onload = (event) => {
+                        setSelectedUser(prev => ({ ...prev, logoUrl: event.target?.result as string }));
+                      };
+                      reader.readAsDataURL(file);
+                    }
+                  }} 
+                />
+                {selectedUser?.logoUrl && (
+                  <button 
+                    type="button"
+                    onClick={() => setSelectedUser(prev => ({ ...prev, logoUrl: '' }))}
+                    className="text-[9px] font-black text-rose-500 uppercase tracking-widest mt-2 hover:text-rose-700"
+                  >
+                    Eliminar Foto
+                  </button>
+                )}
+              </div>
+
               <div className="space-y-4">
                 <div>
                   <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Nombre Completo del Usuario</label>

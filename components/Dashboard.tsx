@@ -107,9 +107,12 @@ const Dashboard: React.FC<DashboardProps> = ({ members, transactions, assemblies
             <img src={config.logoUrl} alt="Logo" className="w-24 h-24 object-contain rounded-3xl bg-white shadow-xl p-3 border border-slate-100" />
           )}
           <div className="space-y-2">
-            <h2 className="text-6xl font-black tracking-tighter text-slate-900 leading-tight">
+            <h2 className="text-6xl font-black tracking-tighter text-slate-900 leading-tight flex items-center gap-4">
               {t.dashboard.welcome}, <br className="hidden sm:block md:hidden" />
               <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 via-violet-600 to-fuchsia-600">{currentUser.name.split(' ')[0]}</span>
+              {currentUser.logoUrl && (
+                <img src={currentUser.logoUrl} alt="Avatar" className="w-16 h-16 rounded-2xl object-cover border-2 border-white shadow-lg" />
+              )}
             </h2>
             <div className="flex items-center space-x-3">
                <span className="h-1.5 w-12 bg-indigo-600 rounded-full"></span>
