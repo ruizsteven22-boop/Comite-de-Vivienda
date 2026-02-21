@@ -80,32 +80,73 @@ const App: React.FC = () => {
   const [isInitialized, setIsInitialized] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   
-  const [users, setUsers] = useState<User[]>(() => safeJsonParse('te_users', INITIAL_USERS));
-  const [config, setConfig] = useState<CommitteeConfig>(() => safeJsonParse('te_config', INITIAL_CONFIG));
-  const [members, setMembers] = useState<Member[]>(() => safeJsonParse('te_members', []));
-  const [transactions, setTransactions] = useState<Transaction[]>(() => safeJsonParse('te_transactions', []));
-  const [board, setBoard] = useState<BoardPosition[]>(() => safeJsonParse('te_board', INITIAL_BOARD));
-  const [boardPeriod, setBoardPeriod] = useState<string>(() => localStorage.getItem('te_board_period') || '2025 - 2027');
-  const [assemblies, setAssemblies] = useState<Assembly[]>(() => safeJsonParse('te_assemblies', []));
-  const [documents, setDocuments] = useState<Document[]>(() => safeJsonParse('te_documents', INITIAL_DOCUMENTS));
+  const [users, setUsers] = useState<User[]>(INITIAL_USERS);
+  const [config, setConfig] = useState<CommitteeConfig>(INITIAL_CONFIG);
+  const [members, setMembers] = useState<Member[]>([]);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [board, setBoard] = useState<BoardPosition[]>(INITIAL_BOARD);
+  const [boardPeriod, setBoardPeriod] = useState<string>('2025 - 2027');
+  const [assemblies, setAssemblies] = useState<Assembly[]>([]);
+  const [documents, setDocuments] = useState<Document[]>(INITIAL_DOCUMENTS);
 
   const [viewingMemberId, setViewingMemberId] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const t = getTranslation(config.language);
 
   useEffect(() => {
+    const loadData = async () => {
+      try {
+        const response = await fetch('/api/data');
+        if (response.ok) {
+          const data = await response.json();
+          setUsers(data.users || INITIAL_USERS);
+          setConfig(data.config || INITIAL_CONFIG);
+          setMembers(data.members || []);
+          setTransactions(data.transactions || []);
+          setBoard(data.board || INITIAL_BOARD);
+          setBoardPeriod(data.boardPeriod || '2025 - 2027');
+          setAssemblies(data.assemblies || []);
+          setDocuments(data.documents || INITIAL_DOCUMENTS);
+        }
+      } catch (error) {
+        console.error("Failed to load data from server:", error);
+      } finally {
+        setIsLoading(false);
+        setIsInitialized(true);
+      }
+    };
+
+    loadData();
+
     const savedUser = safeJsonParse('te_session', null);
     if (savedUser) setCurrentUser(savedUser);
-    
-    // Migración: Asegurar que el usuario admin tenga la contraseña solicitada si aún tiene la antigua
-    setUsers((prev: User[]) => prev.map((u: User) => {
-      if (u.username === 'admin' && u.password === 'admin.password') {
-        return { ...u, password: 'Lio061624' };
-      }
-      return u;
-    }));
-    
-    setIsInitialized(true);
   }, []);
+
+  useEffect(() => {
+    if (isInitialized && !isLoading) {
+      const saveData = async () => {
+        try {
+          await fetch('/api/data', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              users,
+              config,
+              members,
+              transactions,
+              board,
+              boardPeriod,
+              assemblies,
+              documents
+            })
+          });
+        } catch (error) {
+          console.error("Failed to save data to server:", error);
+        }
+      };
+      saveData();
+    }
+  }, [users, config, members, transactions, board, boardPeriod, assemblies, documents, isInitialized, isLoading]);
 
   useEffect(() => {
     if (currentUser) {
@@ -117,23 +158,28 @@ const App: React.FC = () => {
     }
   }, [users, currentUser]);
 
-  useEffect(() => { if (isInitialized) {
-    localStorage.setItem('te_users', JSON.stringify(users));
-    localStorage.setItem('te_config', JSON.stringify(config));
-    localStorage.setItem('te_members', JSON.stringify(members));
-    localStorage.setItem('te_transactions', JSON.stringify(transactions));
-    localStorage.setItem('te_board', JSON.stringify(board));
-    localStorage.setItem('te_assemblies', JSON.stringify(assemblies));
-    localStorage.setItem('te_documents', JSON.stringify(documents));
-    localStorage.setItem('te_board_period', boardPeriod);
-  }}, [users, config, members, transactions, board, boardPeriod, assemblies, documents, isInitialized]);
-
-  const handleResetSystem = () => {
-    if (confirm("⚠️ ¡ADVERTENCIA CRÍTICA!\n\nEsta acción borrará permanentemente TODOS los datos registrados localmente (Socios, Finanzas, Actas, Documentos de Secretaría y Configuración Personalizada).\n\n¿Está absolutamente seguro de continuar?")) {
-      // Limpiamos todo el localStorage para evitar persistencia de datos corruptos
-      localStorage.clear();
-      // Recargamos la aplicación para forzar el estado inicial
-      window.location.reload();
+  const handleResetSystem = async () => {
+    if (confirm("⚠️ ¡ADVERTENCIA CRÍTICA!\n\nEsta acción borrará permanentemente TODOS los datos registrados en el servidor (Socios, Finanzas, Actas, Documentos de Secretaría y Configuración Personalizada).\n\n¿Está absolutamente seguro de continuar?")) {
+      try {
+        await fetch('/api/data', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            users: INITIAL_USERS,
+            config: INITIAL_CONFIG,
+            members: [],
+            transactions: [],
+            board: INITIAL_BOARD,
+            boardPeriod: '2025 - 2027',
+            assemblies: [],
+            documents: []
+          })
+        });
+        localStorage.removeItem('te_session');
+        window.location.reload();
+      } catch (error) {
+        alert("Error al restablecer el sistema.");
+      }
     }
   };
 
@@ -218,7 +264,11 @@ const App: React.FC = () => {
     }
   };
 
-  if (!isInitialized) return null;
+  if (!isInitialized || isLoading) return (
+    <div className="min-h-screen mesh-bg flex items-center justify-center">
+      <div className="text-white font-black animate-pulse uppercase tracking-[0.5em]">Cargando Sistema...</div>
+    </div>
+  );
   if (!currentUser) return <Login users={users} onLogin={handleLogin} config={config} />;
 
   const menuItems = [
