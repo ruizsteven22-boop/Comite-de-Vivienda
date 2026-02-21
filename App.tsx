@@ -91,6 +91,7 @@ const App: React.FC = () => {
 
   const [viewingMemberId, setViewingMemberId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const t = getTranslation(config.language);
 
   useEffect(() => {
@@ -107,12 +108,15 @@ const App: React.FC = () => {
           setBoardPeriod(data.boardPeriod || '2025 - 2027');
           setAssemblies(data.assemblies || []);
           setDocuments(data.documents || INITIAL_DOCUMENTS);
+          setIsInitialized(true);
+        } else {
+          setLoadError(true);
         }
       } catch (error) {
         console.error("Failed to load data from server:", error);
+        setLoadError(true);
       } finally {
         setIsLoading(false);
-        setIsInitialized(true);
       }
     };
 
@@ -123,10 +127,10 @@ const App: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (isInitialized && !isLoading) {
+    if (isInitialized && !isLoading && !loadError) {
       const saveData = async () => {
         try {
-          await fetch('/api/data', {
+          const response = await fetch('/api/data', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -140,13 +144,19 @@ const App: React.FC = () => {
               documents
             })
           });
+          if (!response.ok) {
+            console.error("Server rejected data save");
+          }
         } catch (error) {
           console.error("Failed to save data to server:", error);
         }
       };
-      saveData();
+      
+      // Debounce save to avoid too many requests
+      const timeout = setTimeout(saveData, 1000);
+      return () => clearTimeout(timeout);
     }
-  }, [users, config, members, transactions, board, boardPeriod, assemblies, documents, isInitialized, isLoading]);
+  }, [users, config, members, transactions, board, boardPeriod, assemblies, documents, isInitialized, isLoading, loadError]);
 
   useEffect(() => {
     if (currentUser) {
@@ -157,6 +167,12 @@ const App: React.FC = () => {
       }
     }
   }, [users, currentUser]);
+
+  const handleResetConfig = () => {
+    if (confirm("¿Desea restablecer solo los parámetros de configuración institucional? Los datos de socios, finanzas y documentos se mantendrán intactos.")) {
+      setConfig(INITIAL_CONFIG);
+    }
+  };
 
   const handleResetSystem = async () => {
     if (confirm("⚠️ ¡ADVERTENCIA CRÍTICA!\n\nEsta acción borrará permanentemente TODOS los datos registrados en el servidor (Socios, Finanzas, Actas, Documentos de Secretaría y Configuración Personalizada).\n\n¿Está absolutamente seguro de continuar?")) {
@@ -259,10 +275,21 @@ const App: React.FC = () => {
       case 'attendance': return <Attendance members={members} assemblies={assemblies} setAssemblies={setAssemblies} board={board} currentUser={currentUser!} config={config} />;
       case 'secretariat': return <Secretariat documents={documents} setDocuments={setDocuments} config={config} board={board} currentUser={currentUser!} />;
       case 'support': return <SupportManagement users={users} setUsers={setUsers} />;
-      case 'settings': return <SettingsManagement config={config} setConfig={setConfig} onExportBackup={handleExportBackup} onImportBackup={handleImportBackup} onResetSystem={handleResetSystem} currentUser={currentUser!} setUsers={setUsers} />;
+      case 'settings': return <SettingsManagement config={config} setConfig={setConfig} onExportBackup={handleExportBackup} onImportBackup={handleImportBackup} onResetSystem={handleResetSystem} onResetConfig={handleResetConfig} currentUser={currentUser!} setUsers={setUsers} />;
       default: return <Dashboard members={members} transactions={transactions} assemblies={assemblies} currentUser={currentUser!} config={config} />;
     }
   };
+
+  if (loadError) return (
+    <div className="min-h-screen mesh-bg flex items-center justify-center p-10">
+      <div className="bg-white p-12 rounded-[3rem] shadow-2xl text-center max-w-md">
+        <div className="text-rose-500 text-5xl mb-6">⚠️</div>
+        <h2 className="text-2xl font-black text-slate-900 mb-4">Error de Conexión</h2>
+        <p className="text-slate-500 font-medium mb-8">No se pudo conectar con el servidor de datos. Por favor, verifique su conexión y recargue la página.</p>
+        <button onClick={() => window.location.reload()} className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest hover:bg-black transition">Reintentar</button>
+      </div>
+    </div>
+  );
 
   if (!isInitialized || isLoading) return (
     <div className="min-h-screen mesh-bg flex items-center justify-center">

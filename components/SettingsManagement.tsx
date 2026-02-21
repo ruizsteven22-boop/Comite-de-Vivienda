@@ -9,11 +9,12 @@ interface SettingsManagementProps {
   onExportBackup: () => void;
   onImportBackup: (data: any) => void;
   onResetSystem: () => void;
+  onResetConfig: () => void;
   currentUser: User;
   setUsers: React.Dispatch<React.SetStateAction<User[]>>;
 }
 
-const SettingsManagement: React.FC<SettingsManagementProps> = ({ config, setConfig, onExportBackup, onImportBackup, onResetSystem, currentUser, setUsers }) => {
+const SettingsManagement: React.FC<SettingsManagementProps> = ({ config, setConfig, onExportBackup, onImportBackup, onResetSystem, onResetConfig, currentUser, setUsers }) => {
   const [formData, setFormData] = useState<CommitteeConfig>(config);
   const [profileData, setProfileData] = useState({ name: currentUser.name, password: currentUser.password || '' });
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
@@ -317,16 +318,29 @@ const SettingsManagement: React.FC<SettingsManagementProps> = ({ config, setConf
                </div>
              </div>
              
+              <div className="flex flex-col md:flex-row items-center justify-between gap-6 p-10 bg-white/50 rounded-[2.5rem] border border-rose-200 shadow-inner">
+                <div className="max-w-md">
+                   <p className="text-sm font-black text-rose-900">Restablecer Parámetros Institucionales</p>
+                   <p className="text-[11px] font-medium text-rose-700 mt-1">Devuelve el nombre, RUT y contacto a los valores de fábrica. <strong>Mantiene socios y finanzas.</strong></p>
+                </div>
+                <button 
+                  onClick={onResetConfig}
+                  className="w-full md:w-auto px-10 py-5 bg-white border-2 border-rose-200 text-rose-600 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-rose-50 transition active:scale-95"
+                >
+                  Solo Parámetros
+                </button>
+             </div>
+
              <div className="flex flex-col md:flex-row items-center justify-between gap-6 p-10 bg-white/50 rounded-[2.5rem] border border-rose-200 shadow-inner">
                 <div className="max-w-md">
-                   <p className="text-sm font-black text-rose-900">Restablecer Sistema a Cero</p>
-                   <p className="text-[11px] font-medium text-rose-700 mt-1">Borrará permanentemente socios, finanzas, asambleas, documentos de secretaría y devolverá la configuración a los valores de fábrica.</p>
+                   <p className="text-sm font-black text-rose-900">Restablecer TODO el Sistema</p>
+                   <p className="text-[11px] font-medium text-rose-700 mt-1">Borrará permanentemente socios, finanzas, asambleas, documentos de secretaría y configuración.</p>
                 </div>
                 <button 
                   onClick={handleReset}
                   className="w-full md:w-auto px-10 py-5 bg-rose-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-rose-700 transition shadow-xl shadow-rose-200 active:scale-95"
                 >
-                  Restablecer Base de Datos
+                  Restablecer TODO
                 </button>
              </div>
           </div>
