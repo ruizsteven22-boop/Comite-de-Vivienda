@@ -1,10 +1,8 @@
 import express from "express";
 import { createServer as createViteServer } from "vite";
-import fs from "fs/promises";
 import path from "path";
 import cors from "cors";
-
-const DATA_FILE = path.join(process.cwd(), "data.json");
+import { initDB, readDB, writeDB, INITIAL_DATA } from "./db";
 
 async function startServer() {
   const app = express();
@@ -13,68 +11,19 @@ async function startServer() {
   app.use(express.json({ limit: '50mb' }));
   app.use(cors());
 
-  // Initialize data file if it doesn't exist
-  try {
-    await fs.access(DATA_FILE);
-    // Migration: Ensure admin has correct password if it's still default
-    const dataRaw = await fs.readFile(DATA_FILE, "utf-8");
-    const data = JSON.parse(dataRaw);
-    let changed = false;
-    data.users = data.users.map((u: any) => {
-      if (u.username === 'admin' && u.password === 'admin.password') {
-        u.password = 'Lio061624';
-        changed = true;
-      }
-      return u;
-    });
-    if (changed) {
-      await fs.writeFile(DATA_FILE, JSON.stringify(data, null, 2));
-    }
-  } catch {
-    const initialData = {
-      users: [
-        { id: '1', username: 'soporte', password: 'soporte.password', role: 'SUPPORT', name: 'Soporte Técnico' },
-        { id: '2', username: 'admin', password: 'Lio061624', role: 'ADMINISTRATOR', name: 'Administrador' },
-        { id: '3', username: 'presi', password: 'te2024', role: 'PRESIDENT', name: 'Presidente' },
-        { id: '4', username: 'teso', password: 'te2024', role: 'TREASURER', name: 'Tesorero' },
-        { id: '5', username: 'secre', password: 'te2024', role: 'SECRETARY', name: 'Secretario' }
-      ],
-      config: {
-        legalName: 'Comité de Vivienda Tierra Esperanza',
-        tradeName: 'Tierra Esperanza',
-        rut: '76.123.456-7',
-        email: 'contacto@tierraesperanza.cl',
-        phone: '+56 9 1234 5678',
-        municipalRes: 'Res. Exenta N° 456/2023',
-        legalRes: 'Pers. Jurídica N° 7890-S',
-        language: 'es',
-        logoUrl: ''
-      },
-      members: [],
-      transactions: [],
-      board: [
-        { role: 'Presidente', primary: { name: 'Juan Pérez', rut: '12.345.678-9', phone: '+56912345678' }, substitute: { name: '', rut: '', phone: '' } },
-        { role: 'Secretario', primary: { name: 'María López', rut: '15.678.901-2', phone: '+56987654321' }, substitute: { name: '', rut: '', phone: '' } },
-        { role: 'Tesorero', primary: { name: 'Carlos Ruiz', rut: '18.901.234-5', phone: '+56955566677' }, substitute: { name: '', rut: '', phone: '' } }
-      ],
-      boardPeriod: '2025 - 2027',
-      assemblies: [],
-      documents: []
-    };
-    await fs.writeFile(DATA_FILE, JSON.stringify(initialData, null, 2));
-  }
+  // Initialize database
+  await initDB();
 
   // API Routes
   app.get("/api/data", async (req, res) => {
     try {
-      const data = await fs.readFile(DATA_FILE, "utf-8");
-      const parsedData = JSON.parse(data);
+      const data = await readDB();
       // Sanitize users for the general data fetch (remove passwords)
-      const sanitizedUsers = parsedData.users.map((u: any) => {
+      const sanitizedUsers = data.users.map((u: any) => {
         const { password, ...rest } = u;
         return rest;
       });
-      res.json({ ...parsedData, users: sanitizedUsers });
+      res.json({ ...data, users: sanitizedUsers });
     } catch (error) {
       res.status(500).json({ error: "Failed to read data" });
     }
@@ -83,9 +32,8 @@ async function startServer() {
   app.post("/api/login", async (req, res) => {
     const { username, password } = req.body;
     try {
-      const data = await fs.readFile(DATA_FILE, "utf-8");
-      const parsedData = JSON.parse(data);
-      const user = parsedData.users.find((u: any) => 
+      const data = await readDB();
+      const user = data.users.find((u: any) => 
         u.username.toLowerCase() === username.toLowerCase() && 
         u.password === password
       );
@@ -103,13 +51,7 @@ async function startServer() {
 
   app.post("/api/data", async (req, res) => {
     try {
-      // When saving data, we need to preserve passwords if they aren't provided in the payload
-      // This is tricky because the client doesn't have passwords anymore.
-      // We should probably have a separate endpoint for updating users or handle it carefully.
-      
-      const currentDataRaw = await fs.readFile(DATA_FILE, "utf-8");
-      const currentData = JSON.parse(currentDataRaw);
-      
+      const currentData = await readDB();
       const newData = req.body;
       
       // Merge passwords back into users
@@ -123,7 +65,7 @@ async function startServer() {
         });
       }
 
-      await fs.writeFile(DATA_FILE, JSON.stringify(newData, null, 2));
+      await writeDB(newData);
       res.json({ status: "ok" });
     } catch (error) {
       res.status(500).json({ error: "Failed to save data" });
