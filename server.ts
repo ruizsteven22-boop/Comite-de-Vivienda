@@ -16,6 +16,20 @@ async function startServer() {
   // Initialize data file if it doesn't exist
   try {
     await fs.access(DATA_FILE);
+    // Migration: Ensure admin has correct password if it's still default
+    const dataRaw = await fs.readFile(DATA_FILE, "utf-8");
+    const data = JSON.parse(dataRaw);
+    let changed = false;
+    data.users = data.users.map((u: any) => {
+      if (u.username === 'admin' && u.password === 'admin.password') {
+        u.password = 'Lio061624';
+        changed = true;
+      }
+      return u;
+    });
+    if (changed) {
+      await fs.writeFile(DATA_FILE, JSON.stringify(data, null, 2));
+    }
   } catch {
     const initialData = {
       users: [

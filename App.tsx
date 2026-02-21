@@ -16,11 +16,11 @@ import Secretariat from './components/Secretariat';
 import Login from './components/Login';
 
 const INITIAL_USERS: User[] = [
-  { id: '1', username: 'soporte', password: 'soporte.password', role: 'SUPPORT', name: 'Soporte Técnico' },
-  { id: '2', username: 'admin', password: 'Lio061624', role: 'ADMINISTRATOR', name: 'Administrador' },
-  { id: '3', username: 'presi', password: 'te2024', role: BoardRole.PRESIDENT, name: 'Presidente' },
-  { id: '4', username: 'teso', password: 'te2024', role: BoardRole.TREASURER, name: 'Tesorero' },
-  { id: '5', username: 'secre', password: 'te2024', role: BoardRole.SECRETARY, name: 'Secretario' }
+  { id: '1', username: 'soporte', role: 'SUPPORT', name: 'Soporte Técnico' },
+  { id: '2', username: 'admin', role: 'ADMINISTRATOR', name: 'Administrador' },
+  { id: '3', username: 'presi', role: BoardRole.PRESIDENT, name: 'Presidente' },
+  { id: '4', username: 'teso', role: BoardRole.TREASURER, name: 'Tesorero' },
+  { id: '5', username: 'secre', role: BoardRole.SECRETARY, name: 'Secretario' }
 ];
 
 const INITIAL_CONFIG: CommitteeConfig = {
