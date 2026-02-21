@@ -22,6 +22,17 @@ const SupportManagement: React.FC<SupportManagementProps> = ({ users, setUsers }
       return;
     }
 
+    // Validar nombre de usuario único
+    const isDuplicate = users.some(u => 
+      u.username.toLowerCase() === selectedUser.username?.toLowerCase() && 
+      u.id !== selectedUser.id
+    );
+
+    if (isDuplicate) {
+      alert("El nombre de usuario ya está en uso. Por favor elija otro.");
+      return;
+    }
+
     if (selectedUser.id) {
       setUsers(prev => prev.map(u => u.id === selectedUser.id ? selectedUser as User : u));
     } else {
@@ -34,6 +45,7 @@ const SupportManagement: React.FC<SupportManagementProps> = ({ users, setUsers }
     }
     setShowForm(false);
     setSelectedUser(null);
+    setShowPassword(false);
   };
 
   const deleteUser = (id: string) => {

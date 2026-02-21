@@ -1,6 +1,6 @@
 
 import React, { useState, useRef } from 'react';
-import { CommitteeConfig, Language } from '../types';
+import { CommitteeConfig, Language, User } from '../types';
 import { formatRut } from '../services/utils';
 
 interface SettingsManagementProps {
@@ -9,11 +9,16 @@ interface SettingsManagementProps {
   onExportBackup: () => void;
   onImportBackup: (data: any) => void;
   onResetSystem: () => void;
+  currentUser: User;
+  setUsers: React.Dispatch<React.SetStateAction<User[]>>;
 }
 
-const SettingsManagement: React.FC<SettingsManagementProps> = ({ config, setConfig, onExportBackup, onImportBackup, onResetSystem }) => {
+const SettingsManagement: React.FC<SettingsManagementProps> = ({ config, setConfig, onExportBackup, onImportBackup, onResetSystem, currentUser, setUsers }) => {
   const [formData, setFormData] = useState<CommitteeConfig>(config);
+  const [profileData, setProfileData] = useState({ name: currentUser.name, password: currentUser.password || '' });
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const [profileStatus, setProfileStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const [showPassword, setShowPassword] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
 
@@ -24,6 +29,16 @@ const SettingsManagement: React.FC<SettingsManagementProps> = ({ config, setConf
       setConfig(formData);
       setSaveStatus('saved');
       setTimeout(() => setSaveStatus('idle'), 3000);
+    }, 800);
+  };
+
+  const handleProfileSave = (e: React.FormEvent) => {
+    e.preventDefault();
+    setProfileStatus('saving');
+    setTimeout(() => {
+      setUsers(prev => prev.map(u => u.id === currentUser.id ? { ...u, name: profileData.name, password: profileData.password } : u));
+      setProfileStatus('saved');
+      setTimeout(() => setProfileStatus('idle'), 3000);
     }, 800);
   };
 
@@ -66,6 +81,17 @@ const SettingsManagement: React.FC<SettingsManagementProps> = ({ config, setConf
       reader.readAsDataURL(file);
     }
     if (logoInputRef.current) logoInputRef.current.value = '';
+  };
+
+  const handleReset = () => {
+    const confirmText = "BORRAR TODO";
+    const userInput = prompt(`⚠️ ATENCIÓN: Esta acción eliminará permanentemente todos los datos del sistema.\n\nPara confirmar, escriba exactamente: ${confirmText}`);
+    
+    if (userInput === confirmText) {
+      onResetSystem();
+    } else if (userInput !== null) {
+      alert("Confirmación incorrecta. No se realizaron cambios.");
+    }
   };
 
   return (
@@ -227,6 +253,59 @@ const SettingsManagement: React.FC<SettingsManagementProps> = ({ config, setConf
             </form>
           </div>
 
+          <div className="bg-white rounded-[2.5rem] shadow-sm border border-slate-100 overflow-hidden">
+            <div className="px-10 py-6 bg-slate-50 border-b border-slate-100">
+              <h3 className="text-sm font-black text-slate-700 uppercase tracking-widest">Mi Perfil de Usuario</h3>
+            </div>
+            <form onSubmit={handleProfileSave} className="p-10 space-y-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-2">Nombre para Mostrar</label>
+                  <input 
+                    required 
+                    className="w-full px-8 py-5 border-2 border-slate-100 rounded-[2rem] focus:border-violet-600 outline-none font-bold text-slate-800 bg-slate-50/50 transition-all"
+                    value={profileData.name}
+                    onChange={e => setProfileData(prev => ({ ...prev, name: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-2">Cambiar Contraseña</label>
+                  <div className="relative">
+                    <input 
+                      type={showPassword ? "text" : "password"}
+                      required 
+                      className="w-full px-8 py-5 border-2 border-slate-100 rounded-[2rem] focus:border-violet-600 outline-none font-bold text-slate-800 bg-slate-50/50 transition-all pr-16"
+                      value={profileData.password}
+                      onChange={e => setProfileData(prev => ({ ...prev, password: e.target.value }))}
+                    />
+                    <button 
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-300 hover:text-violet-600 transition-colors"
+                    >
+                      {showPassword ? (
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.542-7 1.274-4.057 5.064-7 9.542-7 1.225 0 2.39.223 3.465.625M15 12a3 3 0 11-6 0 3 3 0 016 0zm6.364.364l-1.414-1.414M15 12l-1.414-1.414M9 12l-1.414-1.414M3.636 11.636l1.414-1.414M12 12l1.414 1.414M12 12l-1.414-1.414" /></svg>
+                      ) : (
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div className="flex justify-end pt-6">
+                <button 
+                  type="submit" 
+                  disabled={profileStatus === 'saving'}
+                  className={`px-12 py-5 rounded-[2rem] font-black text-xs uppercase tracking-[0.2em] shadow-2xl transition-all active:scale-95 ${
+                    profileStatus === 'saved' ? 'bg-emerald-600 text-white shadow-emerald-200' : 'bg-slate-900 text-white hover:bg-black shadow-slate-900/20'
+                  }`}
+                >
+                  {profileStatus === 'saving' ? 'Actualizando...' : profileStatus === 'saved' ? '¡Perfil Actualizado!' : 'Actualizar Perfil'}
+                </button>
+              </div>
+            </form>
+          </div>
+
           <div className="bg-rose-50 border-2 border-rose-100 rounded-[2.5rem] p-10 space-y-6">
              <div className="flex items-center space-x-4">
                <div className="p-3 bg-rose-200 rounded-2xl text-rose-700">
@@ -244,7 +323,7 @@ const SettingsManagement: React.FC<SettingsManagementProps> = ({ config, setConf
                    <p className="text-[11px] font-medium text-rose-700 mt-1">Borrará permanentemente socios, finanzas, asambleas, documentos de secretaría y devolverá la configuración a los valores de fábrica.</p>
                 </div>
                 <button 
-                  onClick={onResetSystem}
+                  onClick={handleReset}
                   className="w-full md:w-auto px-10 py-5 bg-rose-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-rose-700 transition shadow-xl shadow-rose-200 active:scale-95"
                 >
                   Restablecer Base de Datos

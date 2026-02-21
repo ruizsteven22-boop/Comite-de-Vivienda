@@ -107,6 +107,16 @@ const App: React.FC = () => {
     setIsInitialized(true);
   }, []);
 
+  useEffect(() => {
+    if (currentUser) {
+      const updatedUser = users.find(u => u.id === currentUser.id);
+      if (updatedUser && JSON.stringify(updatedUser) !== JSON.stringify(currentUser)) {
+        setCurrentUser(updatedUser);
+        localStorage.setItem('te_session', JSON.stringify(updatedUser));
+      }
+    }
+  }, [users, currentUser]);
+
   useEffect(() => { if (isInitialized) {
     localStorage.setItem('te_users', JSON.stringify(users));
     localStorage.setItem('te_config', JSON.stringify(config));
@@ -203,7 +213,7 @@ const App: React.FC = () => {
       case 'attendance': return <Attendance members={members} assemblies={assemblies} setAssemblies={setAssemblies} board={board} currentUser={currentUser!} config={config} />;
       case 'secretariat': return <Secretariat documents={documents} setDocuments={setDocuments} config={config} board={board} currentUser={currentUser!} />;
       case 'support': return <SupportManagement users={users} setUsers={setUsers} />;
-      case 'settings': return <SettingsManagement config={config} setConfig={setConfig} onExportBackup={handleExportBackup} onImportBackup={handleImportBackup} onResetSystem={handleResetSystem} />;
+      case 'settings': return <SettingsManagement config={config} setConfig={setConfig} onExportBackup={handleExportBackup} onImportBackup={handleImportBackup} onResetSystem={handleResetSystem} currentUser={currentUser!} setUsers={setUsers} />;
       default: return <Dashboard members={members} transactions={transactions} assemblies={assemblies} currentUser={currentUser!} config={config} />;
     }
   };

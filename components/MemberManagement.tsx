@@ -86,6 +86,18 @@ const MemberManagement: React.FC<MemberManagementProps> = ({
     e.preventDefault();
     if (!selectedMember || !canEdit) return;
 
+    // Validar RUT único
+    const cleanRut = selectedMember.rut?.replace(/[^0-9kK]/g, "").toLowerCase();
+    const isDuplicate = members.some(m => 
+      m.rut.replace(/[^0-9kK]/g, "").toLowerCase() === cleanRut && 
+      m.id !== selectedMember.id
+    );
+
+    if (isDuplicate) {
+      alert("Este RUT ya se encuentra registrado en el sistema.");
+      return;
+    }
+
     if (selectedMember.id) {
       setMembers(prev => prev.map(m => m.id === selectedMember.id ? selectedMember as Member : m));
     } else {

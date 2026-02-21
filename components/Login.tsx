@@ -25,7 +25,12 @@ const Login: React.FC<LoginProps> = ({ users, onLogin, config }) => {
     if (foundUser) {
       onLogin(foundUser);
     } else {
-      setError('Credenciales incorrectas. Intenta de nuevo.');
+      const userExists = users.some(u => u.username.toLowerCase() === username.toLowerCase());
+      if (userExists) {
+        setError('Contraseña incorrecta. Por favor verifique sus datos.');
+      } else {
+        setError('El usuario no existe en el sistema.');
+      }
     }
   };
 
