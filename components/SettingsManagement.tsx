@@ -270,14 +270,14 @@ const SettingsManagement: React.FC<SettingsManagementProps> = ({ config, setConf
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-2">Cambiar Contraseña</label>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-2">Cambiar Contraseña (Opcional)</label>
                   <div className="relative">
                     <input 
                       type={showPassword ? "text" : "password"}
-                      required 
                       className="w-full px-8 py-5 border-2 border-slate-100 rounded-[2rem] focus:border-violet-600 outline-none font-bold text-slate-800 bg-slate-50/50 transition-all pr-16"
                       value={profileData.password}
                       onChange={e => setProfileData(prev => ({ ...prev, password: e.target.value }))}
+                      placeholder="Dejar en blanco para mantener"
                     />
                     <button 
                       type="button"

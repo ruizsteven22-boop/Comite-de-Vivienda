@@ -296,7 +296,7 @@ const App: React.FC = () => {
       <div className="text-white font-black animate-pulse uppercase tracking-[0.5em]">Cargando Sistema...</div>
     </div>
   );
-  if (!currentUser) return <Login users={users} onLogin={handleLogin} config={config} />;
+  if (!currentUser) return <Login onLogin={handleLogin} config={config} />;
 
   const menuItems = [
     { id: 'dashboard' as const, icon: <Icons.Dashboard />, label: t.nav.dashboard },

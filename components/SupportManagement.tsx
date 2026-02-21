@@ -211,14 +211,14 @@ const SupportManagement: React.FC<SupportManagementProps> = ({ users, setUsers }
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Contraseña</label>
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Contraseña {selectedUser?.id ? '(Opcional)' : ''}</label>
                     <div className="relative">
                       <input 
                         type={showPassword ? "text" : "password"}
                         className="w-full px-5 py-3 border-2 border-slate-100 rounded-2xl outline-none focus:border-indigo-500 font-bold bg-slate-50 transition pr-12"
                         value={selectedUser?.password || ''}
                         onChange={e => setSelectedUser({...selectedUser, password: e.target.value})}
-                        placeholder="••••••••"
+                        placeholder={selectedUser?.id ? "Dejar en blanco para mantener" : "••••••••"}
                       />
                       <button 
                         type="button"

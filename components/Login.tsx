@@ -4,33 +4,36 @@ import { User, CommitteeConfig } from '../types';
 import { Icons } from '../constants';
 
 interface LoginProps {
-  users: User[];
   onLogin: (user: User) => void;
   config: CommitteeConfig;
 }
 
-const Login: React.FC<LoginProps> = ({ users, onLogin, config }) => {
+const Login: React.FC<LoginProps> = ({ onLogin, config }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const foundUser = users.find(u => 
-      u.username.toLowerCase() === username.toLowerCase() && 
-      u.password === password
-    );
+    setError('');
+    
+    try {
+      const response = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      });
 
-    if (foundUser) {
-      onLogin(foundUser);
-    } else {
-      const userExists = users.some(u => u.username.toLowerCase() === username.toLowerCase());
-      if (userExists) {
-        setError('Contraseña incorrecta. Por favor verifique sus datos.');
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        onLogin(result.user);
       } else {
-        setError('El usuario no existe en el sistema.');
+        setError(result.message || 'Credenciales incorrectas. Por favor verifique sus datos.');
       }
+    } catch (err) {
+      setError('Error al conectar con el servidor. Intente más tarde.');
     }
   };
 

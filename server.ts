@@ -54,15 +54,62 @@ async function startServer() {
   app.get("/api/data", async (req, res) => {
     try {
       const data = await fs.readFile(DATA_FILE, "utf-8");
-      res.json(JSON.parse(data));
+      const parsedData = JSON.parse(data);
+      // Sanitize users for the general data fetch (remove passwords)
+      const sanitizedUsers = parsedData.users.map((u: any) => {
+        const { password, ...rest } = u;
+        return rest;
+      });
+      res.json({ ...parsedData, users: sanitizedUsers });
     } catch (error) {
       res.status(500).json({ error: "Failed to read data" });
     }
   });
 
+  app.post("/api/login", async (req, res) => {
+    const { username, password } = req.body;
+    try {
+      const data = await fs.readFile(DATA_FILE, "utf-8");
+      const parsedData = JSON.parse(data);
+      const user = parsedData.users.find((u: any) => 
+        u.username.toLowerCase() === username.toLowerCase() && 
+        u.password === password
+      );
+      
+      if (user) {
+        const { password, ...sanitizedUser } = user;
+        res.json({ success: true, user: sanitizedUser });
+      } else {
+        res.status(401).json({ success: false, message: "Credenciales inválidas" });
+      }
+    } catch (error) {
+      res.status(500).json({ error: "Login failed" });
+    }
+  });
+
   app.post("/api/data", async (req, res) => {
     try {
-      await fs.writeFile(DATA_FILE, JSON.stringify(req.body, null, 2));
+      // When saving data, we need to preserve passwords if they aren't provided in the payload
+      // This is tricky because the client doesn't have passwords anymore.
+      // We should probably have a separate endpoint for updating users or handle it carefully.
+      
+      const currentDataRaw = await fs.readFile(DATA_FILE, "utf-8");
+      const currentData = JSON.parse(currentDataRaw);
+      
+      const newData = req.body;
+      
+      // Merge passwords back into users
+      if (newData.users) {
+        newData.users = newData.users.map((u: any) => {
+          const existingUser = currentData.users.find((eu: any) => eu.id === u.id);
+          return {
+            ...u,
+            password: u.password || (existingUser ? existingUser.password : 'te2024')
+          };
+        });
+      }
+
+      await fs.writeFile(DATA_FILE, JSON.stringify(newData, null, 2));
       res.json({ status: "ok" });
     } catch (error) {
       res.status(500).json({ error: "Failed to save data" });
