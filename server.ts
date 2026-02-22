@@ -14,6 +14,11 @@ async function startServer() {
   // Initialize database
   await initDB();
 
+  // Health Check
+  app.get("/api/health", (req, res) => {
+    res.json({ status: "ok", message: "Server is running and database is initialized" });
+  });
+
   // API Routes
   app.get("/api/data", async (req, res) => {
     try {
