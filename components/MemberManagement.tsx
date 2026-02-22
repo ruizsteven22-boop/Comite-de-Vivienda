@@ -5,6 +5,9 @@ import { formatRut } from '../services/utils';
 import { Icons } from '../constants';
 import { printMemberFile } from '../services/printService';
 import { CHILE_REGIONS } from '../services/chileData';
+import Pagination from './Pagination';
+
+const ITEMS_PER_PAGE = 10;
 
 interface MemberManagementProps {
   members: Member[];
@@ -31,6 +34,7 @@ const MemberManagement: React.FC<MemberManagementProps> = ({
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<MemberStatus | 'ALL'>('ALL');
+  const [currentPage, setCurrentPage] = useState(1);
   const [isEditing, setIsEditing] = useState(false);
   const [isViewing, setIsViewing] = useState(false);
   const [selectedMember, setSelectedMember] = useState<Partial<Member> | null>(null);
@@ -53,6 +57,10 @@ const MemberManagement: React.FC<MemberManagementProps> = ({
       }
     }
   }, [viewingMemberId, members]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, statusFilter]);
 
   const filteredMembers = useMemo(() => {
     const normalizedSearch = searchTerm
@@ -81,6 +89,11 @@ const MemberManagement: React.FC<MemberManagementProps> = ({
       return matchesName || matchesRut;
     });
   }, [members, searchTerm, statusFilter]);
+
+  const paginatedMembers = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredMembers.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [filteredMembers, currentPage]);
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
@@ -306,7 +319,7 @@ const MemberManagement: React.FC<MemberManagementProps> = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {filteredMembers.map(member => (
+              {paginatedMembers.map(member => (
                 <tr key={member.id} className="hover:bg-slate-50 transition-all group duration-300">
                   <td className="px-10 py-6">
                     <div className="flex items-center space-x-6">
@@ -366,6 +379,14 @@ const MemberManagement: React.FC<MemberManagementProps> = ({
             </tbody>
           </table>
         </div>
+        
+        <Pagination 
+          currentPage={currentPage}
+          totalPages={Math.ceil(filteredMembers.length / ITEMS_PER_PAGE)}
+          onPageChange={setCurrentPage}
+          totalItems={filteredMembers.length}
+          itemsPerPage={ITEMS_PER_PAGE}
+        />
         
         <div className="p-8 bg-slate-50/50 border-t border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-6">
            <div className="flex items-center space-x-4">

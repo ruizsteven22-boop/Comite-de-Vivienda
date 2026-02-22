@@ -1,8 +1,11 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Document, DocumentType, DocumentStatus, CommitteeConfig, BoardPosition, BoardRole, User, DocumentLog } from '../types';
 import { Icons } from '../constants';
 import { draftSecretariatDocument, refineSecretariatText, RefineAction } from '../services/geminiService';
 import { printOfficialDocument } from '../services/printService';
+import Pagination from './Pagination';
+
+const ITEMS_PER_PAGE = 10;
 
 interface SecretariatProps {
   documents: Document[];
@@ -21,6 +24,7 @@ const Secretariat: React.FC<SecretariatProps> = ({ documents, setDocuments, conf
   const [isRefiningAI, setIsRefiningAI] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<'ALL' | DocumentType>('ALL');
+  const [currentPage, setCurrentPage] = useState(1);
   const [notification, setNotification] = useState<{ message: string; type: 'success' | 'info' } | null>(null);
 
   const [formData, setFormData] = useState<Partial<Document>>({
@@ -39,6 +43,10 @@ const Secretariat: React.FC<SecretariatProps> = ({ documents, setDocuments, conf
                   currentUser.role === BoardRole.SECRETARY ||
                   currentUser.role === BoardRole.PRESIDENT;
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, filterType]);
+
   const filteredDocs = useMemo(() => {
     return documents.filter(doc => {
       const matchesSearch = doc.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -53,6 +61,11 @@ const Secretariat: React.FC<SecretariatProps> = ({ documents, setDocuments, conf
         return new Date(b.date).getTime() - new Date(a.date).getTime();
     });
   }, [documents, searchTerm, filterType]);
+
+  const paginatedDocs = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredDocs.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [filteredDocs, currentPage]);
 
   const getNextFolio = (type: DocumentType, year: number) => {
     const sameTypeAndYearDocs = documents.filter(d => d.type === type && d.year === year && d.folioNumber);
@@ -274,7 +287,7 @@ const Secretariat: React.FC<SecretariatProps> = ({ documents, setDocuments, conf
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
-              {filteredDocs.map(doc => {
+              {paginatedDocs.map(doc => {
                 const lastLog = doc.history && doc.history.length > 0 ? doc.history[doc.history.length - 1] : null;
                 return (
                   <tr key={doc.id} className="hover:bg-slate-50/30 transition-all group">
@@ -351,6 +364,13 @@ const Secretariat: React.FC<SecretariatProps> = ({ documents, setDocuments, conf
             </tbody>
           </table>
         </div>
+        <Pagination 
+          currentPage={currentPage}
+          totalPages={Math.ceil(filteredDocs.length / ITEMS_PER_PAGE)}
+          onPageChange={setCurrentPage}
+          totalItems={filteredDocs.length}
+          itemsPerPage={ITEMS_PER_PAGE}
+        />
       </div>
 
       {showForm && (
