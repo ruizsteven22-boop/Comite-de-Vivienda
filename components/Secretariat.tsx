@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Document, DocumentType, DocumentStatus, CommitteeConfig, BoardPosition, BoardRole, User, DocumentLog } from '../types';
 import { Icons } from '../constants';
-import { draftSecretariatDocument, refineSecretariatText, RefineAction } from '../services/geminiService';
+import { draftSecretariatDocument, refineSecretariatText, RefineAction, summarizeDocument } from '../services/geminiService';
 import { printOfficialDocument } from '../services/printService';
 import Pagination from './Pagination';
 
@@ -22,6 +22,8 @@ const Secretariat: React.FC<SecretariatProps> = ({ documents, setDocuments, conf
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isDraftingAI, setIsDraftingAI] = useState(false);
   const [isRefiningAI, setIsRefiningAI] = useState(false);
+  const [isSummarizingAI, setIsSummarizingAI] = useState(false);
+  const [aiSummary, setAiSummary] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<'ALL' | DocumentType>('ALL');
   const [currentPage, setCurrentPage] = useState(1);
@@ -100,6 +102,7 @@ const Secretariat: React.FC<SecretariatProps> = ({ documents, setDocuments, conf
       history: []
     });
     setEditingId(null);
+    setAiSummary(null);
     setShowForm(true);
   };
 
@@ -110,6 +113,7 @@ const Secretariat: React.FC<SecretariatProps> = ({ documents, setDocuments, conf
     }
     setFormData({ ...doc });
     setEditingId(doc.id);
+    setAiSummary(null);
     setShowForm(true);
   };
 
@@ -421,6 +425,55 @@ const Secretariat: React.FC<SecretariatProps> = ({ documents, setDocuments, conf
                         </button>
                       </div>
                       <textarea required className="w-full px-10 py-10 border-2 border-slate-100 rounded-[3rem] focus:border-indigo-600 outline-none font-medium text-slate-800 bg-slate-50/50 min-h-[400px]" value={formData.content} onChange={e => setFormData({...formData, content: e.target.value})}></textarea>
+                    </div>
+
+                    {/* AI Summary Section */}
+                    <div className="space-y-4">
+                      <div className="flex justify-between items-center ml-2">
+                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest">Resumen Ejecutivo (IA)</label>
+                        <button 
+                          type="button" 
+                          onClick={async () => {
+                            if (!formData.content || formData.content.length < 20) {
+                              alert("El documento debe tener contenido para generar un resumen.");
+                              return;
+                            }
+                            setIsSummarizingAI(true);
+                            const res = await summarizeDocument(formData.content);
+                            setAiSummary(res || "No se pudo generar el resumen.");
+                            setIsSummarizingAI(false);
+                          }} 
+                          className="px-4 py-2 bg-indigo-50 text-indigo-600 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-indigo-600 hover:text-white transition-all disabled:opacity-50 flex items-center"
+                          disabled={isSummarizingAI}
+                        >
+                          {isSummarizingAI ? (
+                            <>
+                              <svg className="animate-spin -ml-1 mr-2 h-3 w-3 text-indigo-600 group-hover:text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                              </svg>
+                              Resumiendo...
+                            </>
+                          ) : 'Resumir con IA ✨'}
+                        </button>
+                      </div>
+                      
+                      {aiSummary && (
+                        <div className="p-8 bg-indigo-50/30 rounded-[2.5rem] border-2 border-indigo-100/50 animate-in fade-in slide-in-from-top-4 duration-500">
+                          <p className="text-sm text-slate-700 leading-relaxed italic">
+                            "{aiSummary}"
+                          </p>
+                          <div className="mt-4 flex justify-end">
+                             <button 
+                               type="button" 
+                               onClick={() => setAiSummary(null)}
+                               className="text-[8px] font-black text-slate-400 uppercase tracking-widest hover:text-rose-500 transition-colors"
+                             >
+                               Limpiar Resumen
+                             </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                 </div>
               </div>

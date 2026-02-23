@@ -85,6 +85,27 @@ export const refineSecretariatText = async (currentText: string, action: RefineA
   }
 };
 
+export const summarizeDocument = async (content: string) => {
+  const prompt = `Actúa como un asistente administrativo experto. Resume el siguiente documento institucional de forma muy concisa (máximo 100 palabras). 
+  Enfócate en los puntos clave, acuerdos o acciones requeridas.
+  
+  Contenido del documento:
+  ${content}
+  
+  Responde solo con el resumen, sin introducciones.`;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-flash-preview',
+      contents: prompt,
+    });
+    return response.text;
+  } catch (error) {
+    console.error("Error summarizing with Gemini:", error);
+    return "No se pudo generar el resumen en este momento.";
+  }
+};
+
 export const generateMassNotificationDraft = async (assembly: Assembly, channel: 'email' | 'sms') => {
   const prompt = `Actúa como el secretario de un comité de vivienda "Tierra Esperanza". 
   Redacta un ${channel === 'email' ? 'correo electrónico formal' : 'mensaje de texto (SMS) breve'} 

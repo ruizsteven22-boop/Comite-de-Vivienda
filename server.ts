@@ -2,7 +2,12 @@ import express from "express";
 import { createServer as createViteServer } from "vite";
 import path from "path";
 import cors from "cors";
-import { initDB, readDB, writeDB, INITIAL_DATA } from "./db";
+import * as jsonDB from "./db";
+import * as mysqlDB from "./mysql_db";
+
+// Seleccionar motor de base de datos
+const useMySQL = process.env.USE_MYSQL === 'true';
+const db = useMySQL ? mysqlDB : jsonDB;
 
 async function startServer() {
   const app = express();
@@ -12,17 +17,21 @@ async function startServer() {
   app.use(cors());
 
   // Initialize database
-  await initDB();
+  await db.initDB();
 
   // Health Check
   app.get("/api/health", (req, res) => {
-    res.json({ status: "ok", message: "Server is running and database is initialized" });
+    res.json({ 
+      status: "ok", 
+      message: "Server is running",
+      database: useMySQL ? "MySQL" : "JSON"
+    });
   });
 
   // API Routes
   app.get("/api/data", async (req, res) => {
     try {
-      const data = await readDB();
+      const data = await db.readDB();
       // Sanitize users for the general data fetch (remove passwords)
       const sanitizedUsers = data.users.map((u: any) => {
         const { password, ...rest } = u;
@@ -30,6 +39,7 @@ async function startServer() {
       });
       res.json({ ...data, users: sanitizedUsers });
     } catch (error) {
+      console.error("Read error:", error);
       res.status(500).json({ error: "Failed to read data" });
     }
   });
@@ -37,7 +47,7 @@ async function startServer() {
   app.post("/api/login", async (req, res) => {
     const { username, password } = req.body;
     try {
-      const data = await readDB();
+      const data = await db.readDB();
       const user = data.users.find((u: any) => 
         u.username.toLowerCase() === username.toLowerCase() && 
         u.password === password
@@ -56,7 +66,7 @@ async function startServer() {
 
   app.post("/api/data", async (req, res) => {
     try {
-      const currentData = await readDB();
+      const currentData = await db.readDB();
       const newData = req.body;
       
       // Merge passwords back into users
@@ -70,9 +80,10 @@ async function startServer() {
         });
       }
 
-      await writeDB(newData);
+      await db.writeDB(newData);
       res.json({ status: "ok" });
     } catch (error) {
+      console.error("Write error:", error);
       res.status(500).json({ error: "Failed to save data" });
     }
   });

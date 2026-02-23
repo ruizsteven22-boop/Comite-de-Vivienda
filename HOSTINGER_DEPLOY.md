@@ -33,8 +33,19 @@ Archivos indispensables:
 En la configuración de la aplicación Node.js en Hostinger, añade las siguientes variables:
 - `NODE_ENV`: `production`
 - `GEMINI_API_KEY`: Tu clave de API de Google Gemini.
+- `USE_MYSQL`: `true` (Para activar el motor MySQL)
+- `DB_HOST`: El host de tu base de datos (ej: `localhost`)
+- `DB_USER`: Tu usuario de base de datos.
+- `DB_PASSWORD`: Tu contraseña de base de datos.
+- `DB_NAME`: El nombre de la base de datos creada.
 
-## 5. Ejecución
+## 5. Configuración de Base de Datos (MySQL)
+1. Ve a **Bases de Datos MySQL** en Hostinger y crea una nueva base de datos.
+2. Abre **phpMyAdmin**.
+3. Selecciona tu base de datos e importa el archivo `database.sql` que se encuentra en la raíz del proyecto.
+4. Asegúrate de que las variables de entorno en el paso 4 coincidan con los datos de la base de datos creada.
+
+## 6. Ejecución
 Una vez instaladas las dependencias, inicia la aplicación. Hostinger detectará automáticamente el script `start` de tu `package.json`.
 
 ---
