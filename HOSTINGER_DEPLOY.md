@@ -14,18 +14,19 @@ Sube todos los archivos de la raíz del proyecto a tu servidor Hostinger (vía A
 
 Archivos indispensables:
 - `dist/` (Generado en el paso 1)
-- `server.ts`
-- `db.ts`
+- `src/` (Código fuente frontend)
+- `server/` (Código fuente backend)
 - `package.json`
 - `tsconfig.json`
 - `data.json` (Tu base de datos actual)
+- `ecosystem.config.cjs` (Para PM2)
 
 ## 3. Configuración en Hostinger (Panel de Control)
 1. Ve a la sección **Node.js** en tu panel de Hostinger.
 2. Crea una nueva aplicación:
    - **App Directory**: La carpeta donde subiste los archivos.
    - **App Domain**: Tu dominio o subdominio.
-   - **App Entry Point**: `server.ts`
+   - **App Entry Point**: `server/index.ts`
    - **Node.js Version**: Selecciona 20.x o superior.
 3. Haz clic en **Install Dependencies** (esto ejecutará `npm install` en el servidor).
 

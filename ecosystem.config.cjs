@@ -3,7 +3,7 @@ module.exports = {
     {
       name: 'tierra-esperanza',
       script: 'node_modules/.bin/tsx',
-      args: 'server.ts',
+      args: 'server/index.ts',
       env: {
         NODE_ENV: 'production',
         PORT: 3000
