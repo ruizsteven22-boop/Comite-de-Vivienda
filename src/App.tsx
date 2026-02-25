@@ -4,7 +4,7 @@ import { Member, Transaction, BoardPosition, Assembly, User, BoardRole, Committe
 import { Icons } from './constants';
 import { getTranslation } from './services/i18nService';
 import { isValidJson } from './services/apiService';
-import Dashboard from './components/Dashboard';
+import Dashboard from "./components/Dashboard";
 import MemberManagement from './components/MemberManagement';
 import Treasury from './components/Treasury';
 import BoardManagement from './components/BoardManagement';
