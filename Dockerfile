@@ -1,24 +1,21 @@
-# Dockerfile para Aplicación Full-Stack (Node.js + Vite)
-FROM node:20-alpine
+FROM node:20-alpine AS build
 WORKDIR /app
-
-# Instalar dependencias
 COPY package*.json ./
 RUN npm ci
-
-# Copiar código y construir frontend
 COPY . .
 RUN npm run build
 
-# Limpiar dependencias de desarrollo para reducir tamaño
-RUN npm prune --omit=dev
-
-# Exponer el puerto 3000 (puerto por defecto del servidor Express)
-EXPOSE 3000
-
-# Variables de entorno por defecto
+FROM node:20-alpine
+WORKDIR /app
 ENV NODE_ENV=production
-ENV PORT=3000
+COPY package*.json ./
+RUN npm ci --omit=dev
+# Copiamos el build del frontend
+COPY --from=build /app/dist ./dist
+# IMPORTANTE: Copiamos los archivos del servidor necesarios para 'npm start'
+COPY server/ ./server
+# También copiamos tsconfig.json si es necesario para tsx (opcional pero recomendado)
+COPY tsconfig.json ./ 
 
-# Comando para iniciar el servidor
+EXPOSE 3000
 CMD ["npm", "start"]
