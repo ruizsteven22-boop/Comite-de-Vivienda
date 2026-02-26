@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
+import ... from "./services/i18nService";
 import { Member, Transaction, BoardPosition, Assembly, User, BoardRole, CommitteeConfig, SystemRole, Language, Document, DocumentType, DocumentStatus } from './types';
 import { Icons } from './constants';
 import { getTranslation } from './services/i18nService';
