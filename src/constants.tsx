@@ -1,6 +1,9 @@
 
 import React from 'react';
 
+const envApiUrl = import.meta.env.VITE_API_URL;
+export const API_URL = (envApiUrl && envApiUrl !== 'undefined') ? envApiUrl : '';
+
 export const COLORS = {
   primary: '#8b5cf6', // Violeta Eléctrico
   secondary: '#10b981', // Esmeralda Neón

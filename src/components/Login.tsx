@@ -1,7 +1,8 @@
 
 import React, { useState } from 'react';
 import { User, CommitteeConfig } from '../types';
-import { Icons } from '../constants';
+import { Icons, API_URL } from '../constants';
+import { safeRequest } from '../services/apiService';
 
 interface LoginProps {
   onLogin: (user: User) => void;
@@ -19,21 +20,19 @@ const Login: React.FC<LoginProps> = ({ onLogin, config }) => {
     setError('');
     
     try {
-      const response = await fetch('/api/login', {
+      const result = await safeRequest<any>(`${API_URL}/api/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password })
       });
 
-      const result = await response.json();
-
-      if (response.ok && result.success) {
+      if (result.success) {
         onLogin(result.user);
       } else {
         setError(result.message || 'Credenciales incorrectas. Por favor verifique sus datos.');
       }
-    } catch (err) {
-      setError('Error al conectar con el servidor. Intente más tarde.');
+    } catch (err: any) {
+      setError(err.message || 'Error al conectar con el servidor. Intente más tarde.');
     }
   };
 

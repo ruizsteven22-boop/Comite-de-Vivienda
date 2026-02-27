@@ -6,6 +6,7 @@
  */
 
 export const safeRequest = async <T>(url: string, options?: RequestInit): Promise<T> => {
+  console.log(`[safeRequest] Fetching: ${url}`);
   try {
     const response = await fetch(url, options);
 

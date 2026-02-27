@@ -1,9 +1,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { Member, Transaction, BoardPosition, Assembly, User, BoardRole, CommitteeConfig, SystemRole, Language, Document, DocumentType, DocumentStatus } from './types';
-import { Icons } from './constants';
+import { Icons, API_URL } from './constants';
 import { getTranslation } from './services/i18nService';
-import { isValidJson } from './services/apiService';
+import { isValidJson, safeRequest } from './services/apiService';
 import Dashboard from "./components/Dashboard";
 import MemberManagement from './components/MemberManagement';
 import Treasury from './components/Treasury';
@@ -75,6 +75,7 @@ const safeJsonParse = (key: string, fallback: any) => {
 };
 
 const App: React.FC = () => {
+  console.log("[App] API_URL:", API_URL);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [view, setView] = useState<ViewId>('dashboard');
   const [isInitialized, setIsInitialized] = useState(false);
@@ -97,21 +98,16 @@ const App: React.FC = () => {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const response = await fetch('/api/data');
-        if (response.ok) {
-          const data = await response.json();
-          setUsers(data.users || INITIAL_USERS);
-          setConfig(data.config || INITIAL_CONFIG);
-          setMembers(data.members || []);
-          setTransactions(data.transactions || []);
-          setBoard(data.board || INITIAL_BOARD);
-          setBoardPeriod(data.boardPeriod || '2025 - 2027');
-          setAssemblies(data.assemblies || []);
-          setDocuments(data.documents || INITIAL_DOCUMENTS);
-          setIsInitialized(true);
-        } else {
-          setLoadError(true);
-        }
+        const data = await safeRequest<any>(`${API_URL}/api/data`);
+        setUsers(data.users || INITIAL_USERS);
+        setConfig(data.config || INITIAL_CONFIG);
+        setMembers(data.members || []);
+        setTransactions(data.transactions || []);
+        setBoard(data.board || INITIAL_BOARD);
+        setBoardPeriod(data.boardPeriod || '2025 - 2027');
+        setAssemblies(data.assemblies || []);
+        setDocuments(data.documents || INITIAL_DOCUMENTS);
+        setIsInitialized(true);
       } catch (error) {
         console.error("Failed to load data from server:", error);
         setLoadError(true);
@@ -130,7 +126,7 @@ const App: React.FC = () => {
     if (isInitialized && !isLoading && !loadError) {
       const saveData = async () => {
         try {
-          const response = await fetch('/api/data', {
+          const response = await fetch(`${API_URL}/api/data`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -177,7 +173,7 @@ const App: React.FC = () => {
   const handleResetSystem = async () => {
     if (confirm("⚠️ ¡ADVERTENCIA CRÍTICA!\n\nEsta acción borrará permanentemente TODOS los datos registrados en el servidor (Socios, Finanzas, Actas, Documentos de Secretaría y Configuración Personalizada).\n\n¿Está absolutamente seguro de continuar?")) {
       try {
-        await fetch('/api/data', {
+        await fetch(`${API_URL}/api/data`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
