@@ -6,9 +6,38 @@
     <title>Tierra Esperanza - Sistema de Gestión</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+      body { background-color: #f8fafc; margin: 0; font-family: 'Inter', sans-serif; }
+      .initial-loader {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        color: #8b5cf6;
+      }
+      .spinner {
+        width: 40px;
+        height: 40px;
+        border: 4px solid #f1f5f9;
+        border-top: 4px solid #8b5cf6;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-bottom: 16px;
+      }
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+    </style>
 </head>
 <body>
-    <div id="root"></div>
-    <script type="module" src="./src/index.tsx"></script>
+    <div id="root">
+      <div class="initial-loader">
+        <div class="spinner"></div>
+        <p style="font-weight: 500;">Iniciando Tierra Esperanza...</p>
+      </div>
+    </div>
+    <script type="module" src="/src/index.tsx"></script>
 </body>
 </html>

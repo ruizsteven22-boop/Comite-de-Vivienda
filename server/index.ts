@@ -13,7 +13,7 @@ const db = useMySQL ? mysqlDB : jsonDB;
 
 async function startServer() {
   const app = express();
-  const PORT = process.env.PORT || 4000;
+  const PORT = process.env.PORT || 3000;
 
   // Logging middleware - MUST BE FIRST
   app.use((req, res, next) => {
@@ -38,7 +38,6 @@ async function startServer() {
 
   // API Routes
   app.get(["/api/data", "/api/data/", "/data", "/data/"], async (req, res) => {
-    console.log(`Handling GET ${req.url}`);
     try {
       const data = await db.readDB();
       const sanitizedUsers = data.users.map((u: any) => {
@@ -53,7 +52,6 @@ async function startServer() {
   });
 
   app.post(["/api/login", "/api/login/", "/login", "/login/"], async (req, res) => {
-    console.log(`Handling POST ${req.url}`, req.body?.username);
     const { username, password } = req.body;
     try {
       const data = await db.readDB();

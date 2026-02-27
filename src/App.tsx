@@ -75,7 +75,6 @@ const safeJsonParse = (key: string, fallback: any) => {
 };
 
 const App: React.FC = () => {
-  console.log("[App] API_URL:", API_URL);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [view, setView] = useState<ViewId>('dashboard');
   const [isInitialized, setIsInitialized] = useState(false);
