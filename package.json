@@ -5,7 +5,7 @@
   "description": "Sistema de Gestión de Comité de Vivienda Tierra Esperanza",
   "type": "module",
   "engines": {
-    "node": ">=20.0.0"
+    "node": "22.x"
   },
   "dependencies": {
     "@google/genai": "^1.40.0",
