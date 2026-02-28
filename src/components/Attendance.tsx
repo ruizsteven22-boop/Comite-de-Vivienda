@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Assembly, Member, AssemblyStatus, AssemblyType, BoardPosition, BoardRole, User, CommitteeConfig } from '../types';
 import { Icons } from '../constants';
 import { printAssemblyMinutes, printAttendanceReport } from '../services/printService';
-import { formatRut } from '../services/utils';
+import { formatRut, isValidRut } from '../services/utils';
 
 interface AttendanceProps {
   members: Member[];
@@ -136,12 +136,19 @@ const Attendance: React.FC<AttendanceProps> = ({ members, assemblies, setAssembl
                 <div className="p-8 bg-emerald-50 rounded-[2.5rem] border-2 border-emerald-100 shadow-inner">
                   <label className="block text-[10px] font-black text-emerald-800 uppercase tracking-[0.2em] mb-4 text-center">Registro Rápido (RUT)</label>
                   <input 
-                    className="w-full px-4 py-6 border-2 border-white rounded-2xl text-center font-mono text-3xl font-black text-emerald-900 bg-white shadow-lg focus:ring-8 focus:ring-emerald-200/50 outline-none transition-all uppercase placeholder:text-emerald-100" 
+                    className={`w-full px-4 py-6 border-2 rounded-2xl text-center font-mono text-3xl font-black bg-white shadow-lg focus:ring-8 outline-none transition-all uppercase placeholder:text-emerald-100 ${
+                      rutInput && !isValidRut(rutInput) && rutInput.length > 5
+                        ? 'border-rose-300 focus:ring-rose-200/50 text-rose-900' 
+                        : 'border-white focus:ring-emerald-200/50 text-emerald-900'
+                    }`} 
                     placeholder="12.345.678-9" 
                     autoFocus
                     value={rutInput} 
                     onChange={e => setRutInput(formatRut(e.target.value))}
                   />
+                  {rutInput && !isValidRut(rutInput) && rutInput.length > 5 && (
+                    <p className="text-[10px] text-rose-500 font-black mt-4 uppercase tracking-widest text-center">Formato de RUT Inválido</p>
+                  )}
                 </div>
                 <button type="submit" className="w-full py-5 bg-emerald-700 text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-2xl shadow-emerald-900/30 hover:bg-emerald-800 transition active:scale-95">Registrar Socio</button>
                 

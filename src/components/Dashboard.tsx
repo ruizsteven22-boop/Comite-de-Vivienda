@@ -1,9 +1,17 @@
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, Suspense, lazy } from 'react';
 import { Member, Transaction, Assembly, TransactionType, User, BoardRole, CommitteeConfig } from '../types';
 import { getFinancialSummary } from '../services/geminiService';
 import { getTranslation } from '../services/i18nService';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, Legend } from 'recharts';
+
+// Lazy load recharts components
+const BarChart = lazy(() => import('recharts').then(module => ({ default: module.BarChart })));
+const Bar = lazy(() => import('recharts').then(module => ({ default: module.Bar })));
+const XAxis = lazy(() => import('recharts').then(module => ({ default: module.XAxis })));
+const YAxis = lazy(() => import('recharts').then(module => ({ default: module.YAxis })));
+const CartesianGrid = lazy(() => import('recharts').then(module => ({ default: module.CartesianGrid })));
+const Tooltip = lazy(() => import('recharts').then(module => ({ default: module.Tooltip })));
+const ResponsiveContainer = lazy(() => import('recharts').then(module => ({ default: module.ResponsiveContainer })));
 
 interface DashboardProps {
   members: Member[];
@@ -104,14 +112,14 @@ const Dashboard: React.FC<DashboardProps> = ({ members, transactions, assemblies
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 animate-in fade-in slide-in-from-top-4 duration-700">
         <div className="flex items-center gap-6">
           {config.logoUrl && (
-            <img src={config.logoUrl} alt="Logo" className="w-24 h-24 object-contain rounded-3xl bg-white shadow-xl p-3 border border-slate-100" />
+            <img src={config.logoUrl} alt={`${config.tradeName} Logo`} className="w-24 h-24 object-contain rounded-3xl bg-white shadow-xl p-3 border border-slate-100" />
           )}
           <div className="space-y-2">
             <h2 className="text-6xl font-black tracking-tighter text-slate-900 leading-tight flex items-center gap-4">
               {t.dashboard.welcome}, <br className="hidden sm:block md:hidden" />
               <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 via-violet-600 to-fuchsia-600">{currentUser.name.split(' ')[0]}</span>
               {currentUser.logoUrl && (
-                <img src={currentUser.logoUrl} alt="Avatar" className="w-16 h-16 rounded-2xl object-cover border-2 border-white shadow-lg" />
+                <img src={currentUser.logoUrl} alt={`Avatar de ${currentUser.name}`} className="w-16 h-16 rounded-2xl object-cover border-2 border-white shadow-lg" />
               )}
             </h2>
             <div className="flex items-center space-x-3">
@@ -150,8 +158,8 @@ const Dashboard: React.FC<DashboardProps> = ({ members, transactions, assemblies
           { label: 'Saldo de Caja', val: isTesoOrAdmin ? `$${balance.toLocaleString('es-CL')}` : '---', sub: 'Fondos Disponibles', color: 'bg-emerald-600', light: 'bg-emerald-50', icon: 'M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z' },
           { label: 'Ingresos', val: isTesoOrAdmin ? `$${totalIncome.toLocaleString('es-CL')}` : '---', sub: 'Histórico Total', color: 'bg-blue-600', light: 'bg-blue-50', icon: 'M7 11l5-5m0 0l5 5m-5-5v12' },
           { label: 'Participación', val: assemblies.length, sub: 'Asambleas Citadas', color: 'bg-fuchsia-600', light: 'bg-fuchsia-50', icon: 'M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4' },
-        ].map((kpi, i) => (
-          <div key={i} className="group relative overflow-hidden rounded-[2.5rem] bg-white p-10 shadow-sm border border-slate-100 transition-all hover:shadow-2xl hover:-translate-y-2 duration-500">
+        ].map((kpi) => (
+          <div key={kpi.label} className="group relative overflow-hidden rounded-[2.5rem] bg-white p-10 shadow-sm border border-slate-100 transition-all hover:shadow-2xl hover:-translate-y-2 duration-500">
             <div className={`mb-8 flex h-16 w-16 items-center justify-center rounded-[1.5rem] ${kpi.light} transition-all group-hover:scale-110`}>
               <svg className={`h-8 w-8 ${kpi.color.replace('bg-', 'text-')}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d={kpi.icon} /></svg>
             </div>
@@ -190,31 +198,33 @@ const Dashboard: React.FC<DashboardProps> = ({ members, transactions, assemblies
           
           <div className="h-[450px] w-full">
             {isTesoOrAdmin ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={cashFlowData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                  <XAxis 
-                    dataKey="label" 
-                    axisLine={false} 
-                    tickLine={false} 
-                    tick={{ fontSize: 11, fontWeight: 900, fill: '#94a3b8' }} 
-                    dy={15}
-                  />
-                  <YAxis 
-                    axisLine={false} 
-                    tickLine={false} 
-                    tick={{ fontSize: 11, fontWeight: 900, fill: '#94a3b8' }}
-                    tickFormatter={(val) => `$${val / 1000}k`}
-                  />
-                  <Tooltip 
-                    cursor={{ fill: '#f8fafc', radius: 20 }}
-                    contentStyle={{ borderRadius: '2rem', border: 'none', boxShadow: '0 40px 80px -15px rgba(0,0,0,0.15)', padding: '24px' }}
-                    itemStyle={{ fontWeight: 800, textTransform: 'uppercase', fontSize: '10px' }}
-                  />
-                  <Bar dataKey="income" fill="#10b981" radius={[10, 10, 10, 10]} barSize={40} />
-                  <Bar dataKey="expense" fill="#f43f5e" radius={[10, 10, 10, 10]} barSize={40} />
-                </BarChart>
-              </ResponsiveContainer>
+              <Suspense fallback={<div className="flex h-full items-center justify-center text-slate-300 font-bold">Cargando gráficos...</div>}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={cashFlowData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                    <XAxis 
+                      dataKey="label" 
+                      axisLine={false} 
+                      tickLine={false} 
+                      tick={{ fontSize: 11, fontWeight: 900, fill: '#94a3b8' }} 
+                      dy={15}
+                    />
+                    <YAxis 
+                      axisLine={false} 
+                      tickLine={false} 
+                      tick={{ fontSize: 11, fontWeight: 900, fill: '#94a3b8' }}
+                      tickFormatter={(val) => `$${val / 1000}k`}
+                    />
+                    <Tooltip 
+                      cursor={{ fill: '#f8fafc', radius: 20 }}
+                      contentStyle={{ borderRadius: '2rem', border: 'none', boxShadow: '0 40px 80px -15px rgba(0,0,0,0.15)', padding: '24px' }}
+                      itemStyle={{ fontWeight: 800, textTransform: 'uppercase', fontSize: '10px' }}
+                    />
+                    <Bar dataKey="income" fill="#10b981" radius={[10, 10, 10, 10]} barSize={40} />
+                    <Bar dataKey="expense" fill="#f43f5e" radius={[10, 10, 10, 10]} barSize={40} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </Suspense>
             ) : (
               <div className="flex h-full items-center justify-center text-slate-300 italic font-bold border-2 border-dashed border-slate-100 rounded-[3rem] bg-slate-50/50">
                 Acceso restringido a visualización de flujos contables.

@@ -12,9 +12,15 @@ const pool = mysql.createPool({
 });
 
 export async function initDB() {
-  // En un entorno real, aquí podríamos ejecutar las migraciones o el archivo .sql
-  // Por ahora, asumimos que las tablas existen según el archivo database.sql proporcionado.
-  console.log('MySQL Pool initialized');
+  try {
+    // Verificar conexión al iniciar
+    const connection = await pool.getConnection();
+    connection.release();
+    console.log('MySQL Pool initialized and connection verified');
+  } catch (error) {
+    console.error('MySQL connection failed during initialization:', error);
+    throw error;
+  }
 }
 
 export async function readDB() {

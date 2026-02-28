@@ -7,8 +7,16 @@
 
 export const safeRequest = async <T>(url: string, options?: RequestInit): Promise<T> => {
   console.log(`[safeRequest] Fetching: ${url}`);
+  
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), 15000); // 15 seconds timeout
+
   try {
-    const response = await fetch(url, options);
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal
+    });
+    clearTimeout(id);
 
     // 1. Verificar si la respuesta fue exitosa (status 200-299)
     if (!response.ok) {
@@ -32,6 +40,7 @@ export const safeRequest = async <T>(url: string, options?: RequestInit): Promis
     // 3. Parsear JSON con manejo de errores interno
     return JSON.parse(text) as T;
   } catch (error) {
+    clearTimeout(id);
     console.error("[API Service Error]:", error);
     throw error;
   }

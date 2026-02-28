@@ -1,7 +1,7 @@
 
 import React, { useState, useRef } from 'react';
 import { CommitteeConfig, Language, User } from '../types';
-import { formatRut } from '../services/utils';
+import { formatRut, isValidRut } from '../services/utils';
 
 interface SettingsManagementProps {
   config: CommitteeConfig;
@@ -189,11 +189,18 @@ const SettingsManagement: React.FC<SettingsManagementProps> = ({ config, setConf
                     <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-2">RUT Institucional</label>
                     <input 
                       required 
-                      className="w-full px-8 py-5 border-2 border-slate-100 rounded-[2rem] focus:border-violet-600 outline-none font-mono text-slate-800 bg-slate-50/50 transition-all"
+                      className={`w-full px-8 py-5 border-2 rounded-[2rem] focus:border-violet-600 outline-none font-mono text-slate-800 bg-slate-50/50 transition-all ${
+                        formData.rut && !isValidRut(formData.rut) && formData.rut.length > 5
+                          ? 'border-rose-300 focus:border-rose-500' 
+                          : 'border-slate-100'
+                      }`}
                       value={formData.rut}
                       onChange={e => handleChange('rut', e.target.value)}
                       placeholder="76.000.000-0"
                     />
+                    {formData.rut && !isValidRut(formData.rut) && formData.rut.length > 5 && (
+                      <p className="text-[9px] text-rose-500 font-bold mt-2 ml-4 uppercase tracking-widest">RUT Inválido</p>
+                    )}
                   </div>
 
                   <div>

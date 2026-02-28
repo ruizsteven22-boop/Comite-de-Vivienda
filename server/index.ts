@@ -5,41 +5,46 @@ import cors from "cors";
 import * as jsonDB from "./db";
 import * as mysqlDB from "./mysql_db";
 
-console.log("Starting Express server...");
-
 // Seleccionar motor de base de datos
 const useMySQL = process.env.USE_MYSQL === 'true';
-const db = useMySQL ? mysqlDB : jsonDB;
+let db: any = useMySQL ? mysqlDB : jsonDB;
 
 async function startServer() {
   const app = express();
   const PORT = process.env.PORT || 3000;
 
-  // Logging middleware - MUST BE FIRST
-  app.use((req, res, next) => {
-    console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
-    next();
-  });
-
   app.use(express.json({ limit: '50mb' }));
   app.use(cors());
 
   // Initialize database
-  await db.initDB();
+  try {
+    await db.initDB();
+    console.log(`Database initialized using ${useMySQL ? "MySQL" : "JSON"}`);
+  } catch (error: any) {
+    if (useMySQL) {
+      console.error(`MySQL initialization failed: ${error.message}. Falling back to JSON database.`);
+      db = jsonDB;
+      await db.initDB();
+    } else {
+      console.error("Database initialization failed:", error);
+      process.exit(1);
+    }
+  }
 
   // Health Check
   app.get("/api/health", (req, res) => {
     res.json({ 
       status: "ok", 
       message: "Server is running",
-      database: useMySQL ? "MySQL" : "JSON"
+      database: db === mysqlDB ? "MySQL" : "JSON"
     });
   });
 
   // API Routes
-  app.get(["/api/data", "/api/data/", "/data", "/data/"], async (req, res) => {
+  app.get("/api/data", async (req, res) => {
     try {
       const data = await db.readDB();
+      // Sanitize users for the general data fetch (remove passwords)
       const sanitizedUsers = data.users.map((u: any) => {
         const { password, ...rest } = u;
         return rest;
@@ -51,7 +56,7 @@ async function startServer() {
     }
   });
 
-  app.post(["/api/login", "/api/login/", "/login", "/login/"], async (req, res) => {
+  app.post("/api/login", async (req, res) => {
     const { username, password } = req.body;
     try {
       const data = await db.readDB();
@@ -71,12 +76,12 @@ async function startServer() {
     }
   });
 
-  app.post(["/api/data", "/api/data/", "/data", "/data/"], async (req, res) => {
-    console.log(`Handling POST ${req.url}`);
+  app.post("/api/data", async (req, res) => {
     try {
       const currentData = await db.readDB();
       const newData = req.body;
       
+      // Merge passwords back into users
       if (newData.users) {
         newData.users = newData.users.map((u: any) => {
           const existingUser = currentData.users.find((eu: any) => eu.id === u.id);
@@ -93,12 +98,6 @@ async function startServer() {
       console.error("Write error:", error);
       res.status(500).json({ error: "Failed to save data" });
     }
-  });
-
-  // Catch-all for undefined API routes to prevent falling through to Vite/HTML
-  app.all("/api/*", (req, res) => {
-    console.log(`[404] API Route not found: ${req.method} ${req.url}`);
-    res.status(404).json({ error: `API route not found: ${req.url}` });
   });
 
   // Vite middleware for development

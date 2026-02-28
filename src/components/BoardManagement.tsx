@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { BoardPosition, BoardRole, Member, User, Person, CommitteeConfig } from '../types';
-import { formatRut } from '../services/utils';
+import { formatRut, isValidRut } from '../services/utils';
 import { printBoardReport } from '../services/printService';
 import { Icons } from '../constants';
 
@@ -99,7 +99,19 @@ const BoardManagement: React.FC<BoardManagementProps> = ({ board, setBoard, boar
                 {isEditing ? (
                   <div className="space-y-4">
                     <input className="w-full px-5 py-3 border-2 border-slate-50 rounded-2xl font-black text-sm bg-slate-50/50 outline-none focus:border-emerald-600" placeholder="Nombre completo" value={pos.primary.name} onChange={e => handleUpdatePosition(pos.role, 'primary', 'name', e.target.value)}/>
-                    <input className="w-full px-5 py-3 border-2 border-slate-100 rounded-2xl font-mono text-xs bg-slate-50/50 outline-none focus:border-emerald-600" placeholder="RUT" value={pos.primary.rut} onChange={e => handleUpdatePosition(pos.role, 'primary', 'rut', e.target.value)}/>
+                    <input 
+                      className={`w-full px-5 py-3 border-2 rounded-2xl font-mono text-xs bg-slate-50/50 outline-none focus:border-emerald-600 ${
+                        pos.primary.rut && !isValidRut(pos.primary.rut) && pos.primary.rut.length > 5
+                          ? 'border-rose-300 focus:border-rose-500' 
+                          : 'border-slate-100'
+                      }`} 
+                      placeholder="RUT" 
+                      value={pos.primary.rut} 
+                      onChange={e => handleUpdatePosition(pos.role, 'primary', 'rut', e.target.value)}
+                    />
+                    {pos.primary.rut && !isValidRut(pos.primary.rut) && pos.primary.rut.length > 5 && (
+                      <p className="text-[8px] text-rose-500 font-bold ml-2 uppercase tracking-widest">RUT Inválido</p>
+                    )}
                   </div>
                 ) : (
                   <div>
@@ -117,7 +129,19 @@ const BoardManagement: React.FC<BoardManagementProps> = ({ board, setBoard, boar
                 {isEditing ? (
                   <div className="space-y-4">
                     <input className="w-full px-5 py-3 border-2 border-slate-100 rounded-2xl font-black text-sm bg-slate-50/50 outline-none focus:border-amber-600" placeholder="Nombre del suplente" value={pos.substitute.name} onChange={e => handleUpdatePosition(pos.role, 'substitute', 'name', e.target.value)}/>
-                    <input className="w-full px-5 py-3 border-2 border-slate-100 rounded-2xl font-mono text-xs bg-slate-50/50 outline-none focus:border-amber-600" placeholder="RUT" value={pos.substitute.rut} onChange={e => handleUpdatePosition(pos.role, 'substitute', 'rut', e.target.value)}/>
+                    <input 
+                      className={`w-full px-5 py-3 border-2 rounded-2xl font-mono text-xs bg-slate-50/50 outline-none focus:border-amber-600 ${
+                        pos.substitute.rut && !isValidRut(pos.substitute.rut) && pos.substitute.rut.length > 5
+                          ? 'border-rose-300 focus:border-rose-500' 
+                          : 'border-slate-100'
+                      }`} 
+                      placeholder="RUT" 
+                      value={pos.substitute.rut} 
+                      onChange={e => handleUpdatePosition(pos.role, 'substitute', 'rut', e.target.value)}
+                    />
+                    {pos.substitute.rut && !isValidRut(pos.substitute.rut) && pos.substitute.rut.length > 5 && (
+                      <p className="text-[8px] text-rose-500 font-bold ml-2 uppercase tracking-widest">RUT Inválido</p>
+                    )}
                   </div>
                 ) : (
                   <div>

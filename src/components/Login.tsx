@@ -46,7 +46,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, config }) => {
         <div className="bg-gradient-to-br from-teal-500 via-indigo-600 to-purple-600 p-16 text-white text-center relative overflow-hidden">
           <div className="relative z-10 flex flex-col items-center">
             {config.logoUrl ? (
-              <img src={config.logoUrl} alt="Logo" className="w-24 h-24 object-contain rounded-3xl bg-white/20 p-3 mb-6 shadow-2xl" />
+              <img src={config.logoUrl} alt={`${config.tradeName} Logo`} className="w-24 h-24 object-contain rounded-3xl bg-white/20 p-3 mb-6 shadow-2xl" />
             ) : (
               <div className="w-20 h-20 rounded-3xl bg-white/20 flex items-center justify-center text-4xl mb-6 shadow-2xl backdrop-blur-md">
                 🌳
@@ -64,9 +64,10 @@ const Login: React.FC<LoginProps> = ({ onLogin, config }) => {
           <form onSubmit={handleSubmit} className="space-y-8">
             <div className="space-y-6">
               <div className="group">
-                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-3 ml-2 group-focus-within:text-teal-600 transition-colors">Usuario</label>
+                <label htmlFor="username" className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-3 ml-2 group-focus-within:text-teal-600 transition-colors">Usuario</label>
                 <div className="relative">
                   <input 
+                    id="username"
                     type="text" 
                     required
                     className="w-full px-8 py-5 border-2 border-slate-100 rounded-[2rem] focus:border-teal-500 outline-none transition-all bg-slate-50/50 font-black text-slate-800 placeholder:text-slate-300 group-focus-within:bg-white"
@@ -81,9 +82,10 @@ const Login: React.FC<LoginProps> = ({ onLogin, config }) => {
               </div>
 
               <div className="group">
-                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-3 ml-2 group-focus-within:text-indigo-600 transition-colors">Contraseña</label>
+                <label htmlFor="password" className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-3 ml-2 group-focus-within:text-indigo-600 transition-colors">Contraseña</label>
                 <div className="relative">
                   <input 
+                    id="password"
                     type={showPassword ? "text" : "password"} 
                     required
                     className="w-full px-8 py-5 border-2 border-slate-100 rounded-[2rem] focus:border-indigo-500 outline-none transition-all bg-slate-50/50 font-black text-slate-800 placeholder:text-slate-300 group-focus-within:bg-white pr-16"

@@ -96,8 +96,11 @@ const App: React.FC = () => {
 
   useEffect(() => {
     const loadData = async () => {
+      console.log("[App] Starting data load...");
+      setIsLoading(true);
       try {
         const data = await safeRequest<any>(`${API_URL}/api/data`);
+        console.log("[App] Data loaded successfully:", data ? "Object received" : "Empty");
         setUsers(data.users || INITIAL_USERS);
         setConfig(data.config || INITIAL_CONFIG);
         setMembers(data.members || []);
@@ -108,9 +111,10 @@ const App: React.FC = () => {
         setDocuments(data.documents || INITIAL_DOCUMENTS);
         setIsInitialized(true);
       } catch (error) {
-        console.error("Failed to load data from server:", error);
+        console.error("[App] Failed to load data from server:", error);
         setLoadError(true);
       } finally {
+        console.log("[App] Data load finished.");
         setIsLoading(false);
       }
     };
@@ -258,30 +262,32 @@ const App: React.FC = () => {
     return allowedRoles.includes('ANY') || allowedRoles.includes(currentUser.role);
   };
 
-  const renderCurrentView = () => {
-    if (!hasPermission(view)) return <div className="text-center p-20 font-bold">Acceso Denegado</div>;
-
-    switch (view) {
-      case 'dashboard': return <Dashboard members={members} transactions={transactions} assemblies={assemblies} currentUser={currentUser!} config={config} />;
-      case 'members': return <MemberManagement members={members} setMembers={setMembers} assemblies={assemblies} transactions={transactions} board={board} viewingMemberId={viewingMemberId} onClearViewingMember={() => setViewingMemberId(null)} currentUser={currentUser!} config={config} />;
-      case 'treasury': return <Treasury transactions={transactions} setTransactions={setTransactions} members={members} onViewMember={(id) => { setViewingMemberId(id); setView('members'); }} currentUser={currentUser!} config={config} board={board} />;
-      case 'board': return <BoardManagement board={board} setBoard={setBoard} boardPeriod={boardPeriod} setBoardPeriod={setBoardPeriod} members={members} currentUser={currentUser!} config={config} />;
-      case 'assemblies': return <AssemblyManagement assemblies={assemblies} setAssemblies={setAssemblies} members={members} board={board} currentUser={currentUser!} config={config} />;
-      case 'attendance': return <Attendance members={members} assemblies={assemblies} setAssemblies={setAssemblies} board={board} currentUser={currentUser!} config={config} />;
-      case 'secretariat': return <Secretariat documents={documents} setDocuments={setDocuments} config={config} board={board} currentUser={currentUser!} />;
-      case 'support': return <SupportManagement users={users} setUsers={setUsers} />;
-      case 'settings': return <SettingsManagement config={config} setConfig={setConfig} onExportBackup={handleExportBackup} onImportBackup={handleImportBackup} onResetSystem={handleResetSystem} onResetConfig={handleResetConfig} currentUser={currentUser!} setUsers={setUsers} />;
-      default: return <Dashboard members={members} transactions={transactions} assemblies={assemblies} currentUser={currentUser!} config={config} />;
-    }
-  };
-
   if (loadError) return (
     <div className="min-h-screen mesh-bg flex items-center justify-center p-10">
-      <div className="bg-white p-12 rounded-[3rem] shadow-2xl text-center max-w-md">
-        <div className="text-rose-500 text-5xl mb-6">⚠️</div>
+      <div className="bg-white p-12 rounded-[3rem] shadow-2xl text-center max-w-md border border-slate-100">
+        <div className="w-20 h-20 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl">
+          ⚠️
+        </div>
         <h2 className="text-2xl font-black text-slate-900 mb-4">Error de Conexión</h2>
         <p className="text-slate-500 font-medium mb-8">No se pudo conectar con el servidor de datos. Por favor, verifique su conexión y recargue la página.</p>
-        <button onClick={() => window.location.reload()} className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest hover:bg-black transition">Reintentar</button>
+        
+        <div className="bg-slate-50 p-6 rounded-2xl mb-8 text-left border border-slate-100">
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Diagnóstico</p>
+          <div className="space-y-2">
+            <p className="text-xs font-mono text-slate-500 flex justify-between">
+              <span>API Endpoint:</span>
+              <span className="font-bold">{API_URL || '(Relative)'}</span>
+            </p>
+            <p className="text-xs font-mono text-slate-500 flex justify-between">
+              <span>Status:</span>
+              <span className="text-rose-600 font-bold">Offline / Error</span>
+            </p>
+          </div>
+        </div>
+
+        <button onClick={() => window.location.reload()} className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest hover:bg-black transition shadow-lg shadow-slate-200">
+          Reintentar Conexión
+        </button>
       </div>
     </div>
   );
@@ -311,7 +317,7 @@ const App: React.FC = () => {
         <div className="flex h-full flex-col">
           <div className="p-10 flex flex-col items-center gap-4">
             {config.logoUrl ? (
-              <img src={config.logoUrl} alt="Logo" className="w-20 h-20 object-contain rounded-2xl bg-white/10 p-2" />
+              <img src={config.logoUrl} alt={`${config.tradeName} Logo`} className="w-20 h-20 object-contain rounded-2xl bg-white/10 p-2" />
             ) : (
               <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-teal-500 to-indigo-600 flex items-center justify-center text-3xl shadow-lg">
                 🌳
@@ -335,7 +341,7 @@ const App: React.FC = () => {
           <div className="px-8 py-6 border-t border-white/5">
             <div className="flex items-center gap-4 mb-6 px-2">
               {currentUser.logoUrl ? (
-                <img src={currentUser.logoUrl} alt={currentUser.name} className="w-10 h-10 rounded-xl object-cover border border-white/10" />
+                <img src={currentUser.logoUrl} alt={`Avatar de ${currentUser.name}`} className="w-10 h-10 rounded-xl object-cover border border-white/10" />
               ) : (
                 <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-xs font-black text-white">
                   {currentUser.name.charAt(0)}
@@ -363,7 +369,21 @@ const App: React.FC = () => {
 
         <main className="flex-1 overflow-y-auto p-8 md:p-14 lg:p-20">
           <div className="mx-auto max-w-7xl page-transition">
-            {renderCurrentView()}
+            {!hasPermission(view) ? (
+              <div className="text-center p-20 font-bold">Acceso Denegado</div>
+            ) : (
+              <>
+                {view === 'dashboard' && <Dashboard members={members} transactions={transactions} assemblies={assemblies} currentUser={currentUser!} config={config} />}
+                {view === 'members' && <MemberManagement members={members} setMembers={setMembers} assemblies={assemblies} transactions={transactions} board={board} viewingMemberId={viewingMemberId} onClearViewingMember={() => setViewingMemberId(null)} currentUser={currentUser!} config={config} />}
+                {view === 'treasury' && <Treasury transactions={transactions} setTransactions={setTransactions} members={members} onViewMember={(id) => { setViewingMemberId(id); setView('members'); }} currentUser={currentUser!} config={config} board={board} />}
+                {view === 'board' && <BoardManagement board={board} setBoard={setBoard} boardPeriod={boardPeriod} setBoardPeriod={setBoardPeriod} members={members} currentUser={currentUser!} config={config} />}
+                {view === 'assemblies' && <AssemblyManagement assemblies={assemblies} setAssemblies={setAssemblies} members={members} board={board} currentUser={currentUser!} config={config} />}
+                {view === 'attendance' && <Attendance members={members} assemblies={assemblies} setAssemblies={setAssemblies} board={board} currentUser={currentUser!} config={config} />}
+                {view === 'secretariat' && <Secretariat documents={documents} setDocuments={setDocuments} config={config} board={board} currentUser={currentUser!} />}
+                {view === 'support' && <SupportManagement users={users} setUsers={setUsers} />}
+                {view === 'settings' && <SettingsManagement config={config} setConfig={setConfig} onExportBackup={handleExportBackup} onImportBackup={handleImportBackup} onResetSystem={handleResetSystem} onResetConfig={handleResetConfig} currentUser={currentUser!} setUsers={setUsers} />}
+              </>
+            )}
           </div>
         </main>
       </div>

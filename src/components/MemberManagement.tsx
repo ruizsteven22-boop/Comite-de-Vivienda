@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Member, MemberStatus, FamilyMember, Assembly, Transaction, BoardPosition, User, BoardRole, CommitteeConfig } from '../types';
-import { formatRut } from '../services/utils';
+import { formatRut, isValidRut } from '../services/utils';
 import { Icons } from '../constants';
 import { printMemberFile } from '../services/printService';
 import { CHILE_REGIONS } from '../services/chileData';
@@ -443,7 +443,20 @@ const MemberManagement: React.FC<MemberManagementProps> = ({
                   </div>
                   <div>
                     <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-2">RUT / Identificador</label>
-                    <input required className="w-full px-8 py-5 border-2 border-slate-100 rounded-[2rem] focus:border-violet-600 outline-none transition font-black text-slate-900 bg-slate-50/50 font-mono" value={selectedMember.rut} onChange={e => setSelectedMember({...selectedMember, rut: formatRut(e.target.value)})} placeholder="12.345.678-9"/>
+                    <input 
+                      required 
+                      className={`w-full px-8 py-5 border-2 rounded-[2rem] focus:border-violet-600 outline-none transition font-black text-slate-900 bg-slate-50/50 font-mono ${
+                        selectedMember.rut && !isValidRut(selectedMember.rut) && selectedMember.rut.length > 5
+                          ? 'border-rose-300 focus:border-rose-500' 
+                          : 'border-slate-100'
+                      }`} 
+                      value={selectedMember.rut} 
+                      onChange={e => setSelectedMember({...selectedMember, rut: formatRut(e.target.value)})} 
+                      placeholder="12.345.678-9"
+                    />
+                    {selectedMember.rut && !isValidRut(selectedMember.rut) && selectedMember.rut.length > 5 && (
+                      <p className="text-[9px] text-rose-500 font-bold mt-2 ml-4 uppercase tracking-widest">RUT Inválido</p>
+                    )}
                   </div>
                   <div>
                     <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-2">Fecha de Ingreso</label>
@@ -544,7 +557,19 @@ const MemberManagement: React.FC<MemberManagementProps> = ({
                     </div>
                     <div>
                       <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-2">RUT del Familiar</label>
-                      <input className="w-full px-8 py-5 border-2 border-slate-100 rounded-2xl outline-none focus:border-violet-500 font-bold bg-slate-50 font-mono" value={newFamilyMember.rut} onChange={e => setNewFamilyMember({...newFamilyMember, rut: formatRut(e.target.value)})} placeholder="12.345.678-k"/>
+                      <input 
+                        className={`w-full px-8 py-5 border-2 rounded-2xl outline-none focus:border-violet-500 font-bold bg-slate-50 font-mono ${
+                          newFamilyMember.rut && !isValidRut(newFamilyMember.rut) && newFamilyMember.rut.length > 5
+                            ? 'border-rose-300 focus:border-rose-500' 
+                            : 'border-slate-100'
+                        }`} 
+                        value={newFamilyMember.rut} 
+                        onChange={e => setNewFamilyMember({...newFamilyMember, rut: formatRut(e.target.value)})} 
+                        placeholder="12.345.678-k"
+                      />
+                      {newFamilyMember.rut && !isValidRut(newFamilyMember.rut) && newFamilyMember.rut.length > 5 && (
+                        <p className="text-[9px] text-rose-500 font-bold mt-1 ml-2 uppercase tracking-widest">RUT Inválido</p>
+                      )}
                     </div>
                     <div>
                       <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-2">Vínculo de Parentesco</label>
