@@ -11,7 +11,6 @@ let db: any = useMySQL ? mysqlDB : jsonDB;
 
 async function startServer() {
   const app = express();
-  const PORT = process.env.PORT || 3000;
 
   app.use(express.json({ limit: '50mb' }));
   app.use(cors());
@@ -114,8 +113,8 @@ async function startServer() {
     });
   }
 
-  app.listen(Number(PORT), "0.0.0.0", () => {
-    console.log(`Server running on http://localhost:${PORT}`);
+  app.listen(Number(process.env.PORT) || 3000, "0.0.0.0", () => {
+    console.log(`Server running on http://0.0.0.0:${process.env.PORT || 3000}`);
   });
 }
 
