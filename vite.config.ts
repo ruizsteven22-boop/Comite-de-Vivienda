@@ -13,6 +13,6 @@ export default defineConfig({
  emptyOutDir: true,
  },
  server: {
-  allowedHosts: ['comitetierraesperanza.com', 'www.comitetierraesperanza.com'],
+  allowedHosts: true,
  },
 });

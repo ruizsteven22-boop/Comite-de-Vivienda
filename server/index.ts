@@ -14,33 +14,21 @@ async function startServer() {
   const app = express();
   const PORT = Number(process.env.PORT) || 3000;
 
-  // 1. Start listening immediately to satisfy the platform's health check
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`[Server] Running on http://0.0.0.0:${PORT}`);
-  });
+  app.use(express.json({ limit: '50mb' }));
+  app.use(cors());
 
-  // 2. Initialize database (Don't block server start)
-  db.initDB().then(() => {
-    console.log(`[Server] Database initialized using ${useMySQL ? "MySQL" : "JSON"}`);
-  }).catch(async (error: any) => {
+  // 1. Initialize database (Don't block server start)
+  db.initDB().catch(async (error: any) => {
     if (useMySQL) {
       console.error(`[Server] MySQL initialization failed: ${error.message}. Falling back to JSON.`);
       db = jsonDB;
-      try {
-        await db.initDB();
-        console.log("[Server] Fallback JSON database initialized");
-      } catch (e) {
-        console.error("[Server] Fallback database failed:", e);
-      }
+      await db.initDB().catch((e: any) => console.error("[Server] Fallback database failed:", e));
     } else {
       console.error("[Server] Database initialization failed:", error);
     }
   });
 
-  app.use(express.json({ limit: '50mb' }));
-  app.use(cors());
-
-  // 3. API Routes (Defined before Vite to ensure they take precedence)
+  // 2. API Routes
   app.get("/api/health", (req, res) => {
     res.json({ 
       status: "ok", 
@@ -127,6 +115,11 @@ async function startServer() {
       res.sendFile(path.join(process.cwd(), "dist/index.html"));
     });
   }
+
+  // 5. Listen
+  app.listen(PORT, "0.0.0.0", () => {
+    console.log(`[Server] Running on http://0.0.0.0:${PORT}`);
+  });
 
   // Global error handler
   app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
