@@ -16,14 +16,10 @@ async function startServer() {
 
   // 1. Start listening immediately to satisfy the platform's health check
   app.listen(PORT, "0.0.0.0", () => {
-    console.log(`[Server] Booting on port ${PORT}...`);
+    console.log(`[Server] Running on http://0.0.0.0:${PORT}`);
   });
 
-  app.use(express.json({ limit: '50mb' }));
-  app.use(cors());
-
-  // 2. Initialize database
-  console.log("[Server] Initializing database...");
+  // 2. Initialize database (Don't block server start)
   db.initDB().then(() => {
     console.log(`[Server] Database initialized using ${useMySQL ? "MySQL" : "JSON"}`);
   }).catch(async (error: any) => {
@@ -40,6 +36,9 @@ async function startServer() {
       console.error("[Server] Database initialization failed:", error);
     }
   });
+
+  app.use(express.json({ limit: '50mb' }));
+  app.use(cors());
 
   // 3. API Routes (Defined before Vite to ensure they take precedence)
   app.get("/api/health", (req, res) => {
@@ -110,25 +109,21 @@ async function startServer() {
     }
   });
 
-  app.all("/api/(.*)", (req, res) => {
+  app.all("/api/:path*", (req, res) => {
     res.status(404).json({ error: `API route not found: ${req.path}` });
   });
 
-  // 4. Vite / Static Assets
+  // 4. Vite / Static Assets Setup
   if (process.env.NODE_ENV !== "production") {
     console.log("[Server] Starting Vite middleware...");
-    createViteServer({
+    const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa",
-    }).then(vite => {
-      app.use(vite.middlewares);
-      console.log("[Server] Vite ready");
-    }).catch(err => {
-      console.error("[Server] Vite failed to start", err);
     });
+    app.use(vite.middlewares);
   } else {
     app.use(express.static("dist"));
-    app.get("(.*)", (req, res) => {
+    app.get("/:path*", (req, res) => {
       res.sendFile(path.join(process.cwd(), "dist/index.html"));
     });
   }
