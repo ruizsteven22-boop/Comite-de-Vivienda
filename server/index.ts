@@ -110,7 +110,7 @@ async function startServer() {
     }
   });
 
-  app.all("/api/*", (req, res) => {
+  app.all("/api/(.*)", (req, res) => {
     res.status(404).json({ error: `API route not found: ${req.path}` });
   });
 
@@ -128,7 +128,7 @@ async function startServer() {
     });
   } else {
     app.use(express.static("dist"));
-    app.get("*", (req, res) => {
+    app.get("(.*)", (req, res) => {
       res.sendFile(path.join(process.cwd(), "dist/index.html"));
     });
   }

@@ -1,14 +1,9 @@
 @import "tailwindcss";
 
-@theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --color-primary: #8b5cf6;
-  --color-primary-light: #a78bfa;
-  --color-secondary: #10b981;
-  --color-accent: #3b82f6;
-  --color-danger: #f43f5e;
-  --color-sidebar-bg: #0f172a;
-}
+/*
+Theme Name: Tierra Esperanza - Gestión de Comité
+Version: 1.5.0
+*/
 
 :root {
     --primary: #8b5cf6;
