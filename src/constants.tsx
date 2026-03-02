@@ -2,7 +2,8 @@
 import React from 'react';
 
 const envApiUrl = import.meta.env.VITE_API_URL;
-export const API_URL = (envApiUrl && envApiUrl !== 'undefined') ? envApiUrl : '';
+// Si envApiUrl no es una URL absoluta válida, preferimos usar rutas relativas
+export const API_URL = (envApiUrl && envApiUrl.startsWith('http')) ? envApiUrl : '';
 
 export const COLORS = {
   primary: '#8b5cf6', // Violeta Eléctrico

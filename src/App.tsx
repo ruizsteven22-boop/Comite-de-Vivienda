@@ -1,19 +1,21 @@
 
-import React, { useState, useEffect } from 'react';
-import { Member, Transaction, BoardPosition, Assembly, User, BoardRole, CommitteeConfig, SystemRole, Language, Document, DocumentType, DocumentStatus } from './types';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
+import { Member, Transaction, BoardPosition, Assembly, User, BoardRole, CommitteeConfig, SystemRole, Language, Document } from './types';
 import { Icons, API_URL } from './constants';
 import { getTranslation } from './services/i18nService';
 import { isValidJson, safeRequest } from './services/apiService';
-import Dashboard from "./components/Dashboard";
-import MemberManagement from './components/MemberManagement';
-import Treasury from './components/Treasury';
-import BoardManagement from './components/BoardManagement';
-import Attendance from './components/Attendance';
-import AssemblyManagement from './components/AssemblyManagement';
-import SupportManagement from './components/SupportManagement';
-import SettingsManagement from './components/SettingsManagement';
-import Secretariat from './components/Secretariat';
 import Login from './components/Login';
+
+// Lazy load view components
+const Dashboard = lazy(() => import("./components/Dashboard"));
+const MemberManagement = lazy(() => import('./components/MemberManagement'));
+const Treasury = lazy(() => import('./components/Treasury'));
+const BoardManagement = lazy(() => import('./components/BoardManagement'));
+const Attendance = lazy(() => import('./components/Attendance'));
+const AssemblyManagement = lazy(() => import('./components/AssemblyManagement'));
+const SupportManagement = lazy(() => import('./components/SupportManagement'));
+const SettingsManagement = lazy(() => import('./components/SettingsManagement'));
+const Secretariat = lazy(() => import('./components/Secretariat'));
 
 const INITIAL_USERS: User[] = [
   { id: '1', username: 'soporte', role: 'SUPPORT', name: 'Soporte Técnico' },
@@ -68,7 +70,13 @@ const safeJsonParse = (key: string, fallback: any) => {
       localStorage.removeItem(key);
       return fallback;
     }
-    return JSON.parse(data);
+    const parsed = JSON.parse(data);
+    // Validar que sea un objeto de usuario mínimo
+    if (parsed && typeof parsed === 'object' && parsed.id && parsed.role) {
+      return parsed;
+    }
+    localStorage.removeItem(key);
+    return fallback;
   } catch (e) {
     return fallback;
   }
@@ -95,34 +103,45 @@ const App: React.FC = () => {
   const t = getTranslation(config.language);
 
   useEffect(() => {
-    const loadData = async () => {
-      console.log("[App] Starting data load...");
+    const savedUser = safeJsonParse('te_session', null);
+    if (savedUser) setCurrentUser(savedUser);
+
+    const loadInitialData = async () => {
+      console.log("[App] Starting initial data load...");
       setIsLoading(true);
       try {
-        const data = await safeRequest<any>(`${API_URL}/api/data`);
-        console.log("[App] Data loaded successfully:", data ? "Object received" : "Empty");
-        setUsers(data.users || INITIAL_USERS);
-        setConfig(data.config || INITIAL_CONFIG);
-        setMembers(data.members || []);
-        setTransactions(data.transactions || []);
-        setBoard(data.board || INITIAL_BOARD);
-        setBoardPeriod(data.boardPeriod || '2025 - 2027');
-        setAssemblies(data.assemblies || []);
-        setDocuments(data.documents || INITIAL_DOCUMENTS);
-        setIsInitialized(true);
+        // 1. Fetch config first (very fast) to render login page
+        const configData = await safeRequest<CommitteeConfig>(`${API_URL}/api/config`);
+        console.log("[App] Config loaded successfully");
+        setConfig(configData);
+        
+        // 2. If no user is logged in, show login page immediately
+        if (!savedUser) {
+          console.log("[App] No session found, showing login page");
+          setIsInitialized(true);
+          setIsLoading(false);
+        } else {
+          // 3. If logged in, fetch the rest of the data
+          console.log("[App] Session found, fetching full data...");
+          const allData = await safeRequest<any>(`${API_URL}/api/data`);
+          setUsers(allData.users || INITIAL_USERS);
+          setMembers(allData.members || []);
+          setTransactions(allData.transactions || []);
+          setBoard(allData.board || INITIAL_BOARD);
+          setBoardPeriod(allData.boardPeriod || '2025 - 2027');
+          setAssemblies(allData.assemblies || []);
+          setDocuments(allData.documents || INITIAL_DOCUMENTS);
+          setIsInitialized(true);
+          setIsLoading(false);
+        }
       } catch (error) {
-        console.error("[App] Failed to load data from server:", error);
+        console.error("[App] Initial load failed:", error);
         setLoadError(true);
-      } finally {
-        console.log("[App] Data load finished.");
         setIsLoading(false);
       }
     };
 
-    loadData();
-
-    const savedUser = safeJsonParse('te_session', null);
-    if (savedUser) setCurrentUser(savedUser);
+    loadInitialData();
   }, []);
 
   useEffect(() => {
@@ -294,7 +313,11 @@ const App: React.FC = () => {
 
   if (!isInitialized || isLoading) return (
     <div className="min-h-screen mesh-bg flex items-center justify-center">
-      <div className="text-white font-black animate-pulse uppercase tracking-[0.5em]">Cargando Sistema...</div>
+      <div className="flex flex-col items-center gap-6">
+        <div className="w-16 h-16 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+        <div className="text-slate-900 font-black uppercase tracking-[0.5em] animate-pulse">Cargando Sistema...</div>
+        <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">Iniciando módulos de gestión</p>
+      </div>
     </div>
   );
   if (!currentUser) return <Login onLogin={handleLogin} config={config} />;
@@ -372,7 +395,12 @@ const App: React.FC = () => {
             {!hasPermission(view) ? (
               <div className="text-center p-20 font-bold">Acceso Denegado</div>
             ) : (
-              <>
+              <Suspense fallback={
+                <div className="flex flex-col items-center justify-center p-20 gap-4">
+                  <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+                  <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest">Cargando módulo...</p>
+                </div>
+              }>
                 {view === 'dashboard' && <Dashboard members={members} transactions={transactions} assemblies={assemblies} currentUser={currentUser!} config={config} />}
                 {view === 'members' && <MemberManagement members={members} setMembers={setMembers} assemblies={assemblies} transactions={transactions} board={board} viewingMemberId={viewingMemberId} onClearViewingMember={() => setViewingMemberId(null)} currentUser={currentUser!} config={config} />}
                 {view === 'treasury' && <Treasury transactions={transactions} setTransactions={setTransactions} members={members} onViewMember={(id) => { setViewingMemberId(id); setView('members'); }} currentUser={currentUser!} config={config} board={board} />}
@@ -382,7 +410,7 @@ const App: React.FC = () => {
                 {view === 'secretariat' && <Secretariat documents={documents} setDocuments={setDocuments} config={config} board={board} currentUser={currentUser!} />}
                 {view === 'support' && <SupportManagement users={users} setUsers={setUsers} />}
                 {view === 'settings' && <SettingsManagement config={config} setConfig={setConfig} onExportBackup={handleExportBackup} onImportBackup={handleImportBackup} onResetSystem={handleResetSystem} onResetConfig={handleResetConfig} currentUser={currentUser!} setUsers={setUsers} />}
-              </>
+              </Suspense>
             )}
           </div>
         </main>

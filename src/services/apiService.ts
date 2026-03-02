@@ -18,6 +18,8 @@ export const safeRequest = async <T>(url: string, options?: RequestInit): Promis
     });
     clearTimeout(id);
 
+    console.log(`[safeRequest] Response Status: ${response.status} for ${url}`);
+
     // 1. Verificar si la respuesta fue exitosa (status 200-299)
     if (!response.ok) {
       const errorBody = await response.text();
@@ -34,6 +36,8 @@ export const safeRequest = async <T>(url: string, options?: RequestInit): Promis
     const text = await response.text();
     
     if (!isValidJson(text)) {
+      console.error("[API Service] Invalid JSON response from", url);
+      console.error("[API Service] Response preview (first 100 chars):", text.substring(0, 100));
       throw new Error('La respuesta no es una respuesta JSON válida. El servidor envió contenido no estructurado o HTML.');
     }
 

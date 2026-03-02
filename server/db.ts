@@ -57,8 +57,17 @@ export async function initDB() {
 }
 
 export async function readDB() {
-  const data = await fs.readFile(DATA_FILE, "utf-8");
-  return JSON.parse(data);
+  try {
+    const data = await fs.readFile(DATA_FILE, "utf-8");
+    if (!data || data.trim() === "") {
+      console.warn("[DB] data.json is empty, returning initial data");
+      return INITIAL_DATA;
+    }
+    return JSON.parse(data);
+  } catch (error) {
+    console.error("[DB] Error reading data.json:", error);
+    return INITIAL_DATA;
+  }
 }
 
 export async function writeDB(data: any) {

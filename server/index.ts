@@ -3,6 +3,7 @@ import { createServer as createViteServer } from "vite";
 import path from "path";
 import cors from "cors";
 import * as jsonDB from "./db";
+import { INITIAL_DATA } from "./db";
 import * as mysqlDB from "./mysql_db";
 
 // Seleccionar motor de base de datos
@@ -11,46 +12,61 @@ let db: any = useMySQL ? mysqlDB : jsonDB;
 
 async function startServer() {
   const app = express();
+  const PORT = Number(process.env.PORT) || 3000;
+
+  // 1. Start listening immediately to satisfy the platform's health check
+  app.listen(PORT, "0.0.0.0", () => {
+    console.log(`[Server] Booting on port ${PORT}...`);
+  });
 
   app.use(express.json({ limit: '50mb' }));
   app.use(cors());
 
-  // Initialize database
-  try {
-    await db.initDB();
-    console.log(`Database initialized using ${useMySQL ? "MySQL" : "JSON"}`);
-  } catch (error: any) {
+  // 2. Initialize database
+  console.log("[Server] Initializing database...");
+  db.initDB().then(() => {
+    console.log(`[Server] Database initialized using ${useMySQL ? "MySQL" : "JSON"}`);
+  }).catch(async (error: any) => {
     if (useMySQL) {
-      console.error(`MySQL initialization failed: ${error.message}. Falling back to JSON database.`);
+      console.error(`[Server] MySQL initialization failed: ${error.message}. Falling back to JSON.`);
       db = jsonDB;
-      await db.initDB();
+      try {
+        await db.initDB();
+        console.log("[Server] Fallback JSON database initialized");
+      } catch (e) {
+        console.error("[Server] Fallback database failed:", e);
+      }
     } else {
-      console.error("Database initialization failed:", error);
-      process.exit(1);
+      console.error("[Server] Database initialization failed:", error);
     }
-  }
+  });
 
-  // Health Check
+  // 3. API Routes (Defined before Vite to ensure they take precedence)
   app.get("/api/health", (req, res) => {
     res.json({ 
       status: "ok", 
-      message: "Server is running",
       database: db === mysqlDB ? "MySQL" : "JSON"
     });
   });
 
-  // API Routes
+  app.get("/api/config", async (req, res) => {
+    try {
+      const data = await db.readDB();
+      res.json(data.config || INITIAL_DATA.config);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to read config" });
+    }
+  });
+
   app.get("/api/data", async (req, res) => {
     try {
       const data = await db.readDB();
-      // Sanitize users for the general data fetch (remove passwords)
       const sanitizedUsers = data.users.map((u: any) => {
         const { password, ...rest } = u;
         return rest;
       });
       res.json({ ...data, users: sanitizedUsers });
     } catch (error) {
-      console.error("Read error:", error);
       res.status(500).json({ error: "Failed to read data" });
     }
   });
@@ -63,7 +79,6 @@ async function startServer() {
         u.username.toLowerCase() === username.toLowerCase() && 
         u.password === password
       );
-      
       if (user) {
         const { password, ...sanitizedUser } = user;
         res.json({ success: true, user: sanitizedUser });
@@ -79,8 +94,6 @@ async function startServer() {
     try {
       const currentData = await db.readDB();
       const newData = req.body;
-      
-      // Merge passwords back into users
       if (newData.users) {
         newData.users = newData.users.map((u: any) => {
           const existingUser = currentData.users.find((eu: any) => eu.id === u.id);
@@ -90,22 +103,29 @@ async function startServer() {
           };
         });
       }
-
       await db.writeDB(newData);
       res.json({ status: "ok" });
     } catch (error) {
-      console.error("Write error:", error);
       res.status(500).json({ error: "Failed to save data" });
     }
   });
 
-  // Vite middleware for development
+  app.all("/api/*", (req, res) => {
+    res.status(404).json({ error: `API route not found: ${req.path}` });
+  });
+
+  // 4. Vite / Static Assets
   if (process.env.NODE_ENV !== "production") {
-    const vite = await createViteServer({
+    console.log("[Server] Starting Vite middleware...");
+    createViteServer({
       server: { middlewareMode: true },
       appType: "spa",
+    }).then(vite => {
+      app.use(vite.middlewares);
+      console.log("[Server] Vite ready");
+    }).catch(err => {
+      console.error("[Server] Vite failed to start", err);
     });
-    app.use(vite.middlewares);
   } else {
     app.use(express.static("dist"));
     app.get("*", (req, res) => {
@@ -113,10 +133,19 @@ async function startServer() {
     });
   }
 
-  const PORT = Number(process.env.PORT) || 3000;
+  // Global error handler
+  app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+    console.error("[Server Error]:", err);
+    res.status(500).json({ error: "Internal Server Error" });
+  });
 
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on port ${PORT}`);
+  // Process-level error handlers
+  process.on('uncaughtException', (err) => {
+    console.error('[Fatal] Uncaught Exception:', err);
+  });
+
+  process.on('unhandledRejection', (reason, promise) => {
+    console.error('[Fatal] Unhandled Rejection at:', promise, 'reason:', reason);
   });
 }
 
