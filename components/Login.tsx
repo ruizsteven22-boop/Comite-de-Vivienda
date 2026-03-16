@@ -6,9 +6,13 @@ import { Icons } from '../constants';
 interface LoginProps {
   onLogin: (user: User) => void;
   config: CommitteeConfig;
+  users: User[];
+  storageMode: 'server' | 'local';
 }
 
-const Login: React.FC<LoginProps> = ({ onLogin, config }) => {
+const DEFAULT_PASSWORD = 'te2024';
+
+const Login: React.FC<LoginProps> = ({ onLogin, config, users, storageMode }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -19,6 +23,21 @@ const Login: React.FC<LoginProps> = ({ onLogin, config }) => {
     setError('');
     
     try {
+      if (storageMode === 'local') {
+        const localUser = users.find((user) =>
+          user.username.toLowerCase() === username.toLowerCase() && (user.password || DEFAULT_PASSWORD) === password
+        );
+
+        if (localUser) {
+          const { password: _ignored, ...sanitizedUser } = localUser;
+          onLogin(sanitizedUser);
+          return;
+        }
+
+        setError('Credenciales incorrectas. Por favor verifique sus datos.');
+        return;
+      }
+
       const response = await fetch('/api/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

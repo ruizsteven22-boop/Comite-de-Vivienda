@@ -36,6 +36,8 @@ const INITIAL_CONFIG: CommitteeConfig = {
 };
 
 const EMPTY_PERSON = { name: '', rut: '', phone: '' };
+const LOCAL_DATA_KEY = 'te_data';
+const DEFAULT_PASSWORD = 'te2024';
 
 const INITIAL_BOARD: BoardPosition[] = [
   { role: BoardRole.PRESIDENT, primary: { name: 'Juan Pérez', rut: '12.345.678-9', phone: '+56912345678' }, substitute: { ...EMPTY_PERSON } },
@@ -74,6 +76,34 @@ const safeJsonParse = (key: string, fallback: any) => {
   }
 };
 
+type PersistedData = {
+  users: User[];
+  config: CommitteeConfig;
+  members: Member[];
+  transactions: Transaction[];
+  board: BoardPosition[];
+  boardPeriod: string;
+  assemblies: Assembly[];
+  documents: Document[];
+};
+
+const getDefaultData = (): PersistedData => ({
+  users: INITIAL_USERS,
+  config: INITIAL_CONFIG,
+  members: [],
+  transactions: [],
+  board: INITIAL_BOARD,
+  boardPeriod: '2025 - 2027',
+  assemblies: [],
+  documents: INITIAL_DOCUMENTS
+});
+
+const sanitizeUsers = (dataUsers: User[] | undefined): User[] =>
+  (dataUsers || INITIAL_USERS).map((user) => ({
+    ...user,
+    password: user.password || DEFAULT_PASSWORD
+  }));
+
 const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [view, setView] = useState<ViewId>('dashboard');
@@ -92,29 +122,39 @@ const App: React.FC = () => {
   const [viewingMemberId, setViewingMemberId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
+  const [storageMode, setStorageMode] = useState<'server' | 'local'>('server');
   const t = getTranslation(config.language);
 
   useEffect(() => {
     const loadData = async () => {
+      const applyData = (data: Partial<PersistedData>) => {
+        setUsers(sanitizeUsers(data.users));
+        setConfig(data.config || INITIAL_CONFIG);
+        setMembers(data.members || []);
+        setTransactions(data.transactions || []);
+        setBoard(data.board || INITIAL_BOARD);
+        setBoardPeriod(data.boardPeriod || '2025 - 2027');
+        setAssemblies(data.assemblies || []);
+        setDocuments(data.documents || INITIAL_DOCUMENTS);
+        setIsInitialized(true);
+      };
+
       try {
         const response = await fetch('/api/data');
         if (response.ok) {
           const data = await response.json();
-          setUsers(data.users || INITIAL_USERS);
-          setConfig(data.config || INITIAL_CONFIG);
-          setMembers(data.members || []);
-          setTransactions(data.transactions || []);
-          setBoard(data.board || INITIAL_BOARD);
-          setBoardPeriod(data.boardPeriod || '2025 - 2027');
-          setAssemblies(data.assemblies || []);
-          setDocuments(data.documents || INITIAL_DOCUMENTS);
-          setIsInitialized(true);
+          applyData(data);
+          setStorageMode('server');
         } else {
-          setLoadError(true);
+          const localData = safeJsonParse(LOCAL_DATA_KEY, getDefaultData());
+          applyData(localData);
+          setStorageMode('local');
         }
       } catch (error) {
         console.error("Failed to load data from server:", error);
-        setLoadError(true);
+        const localData = safeJsonParse(LOCAL_DATA_KEY, getDefaultData());
+        applyData(localData);
+        setStorageMode('local');
       } finally {
         setIsLoading(false);
       }
@@ -129,26 +169,34 @@ const App: React.FC = () => {
   useEffect(() => {
     if (isInitialized && !isLoading && !loadError) {
       const saveData = async () => {
+        const payload = {
+          users,
+          config,
+          members,
+          transactions,
+          board,
+          boardPeriod,
+          assemblies,
+          documents
+        };
+
         try {
-          const response = await fetch('/api/data', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              users,
-              config,
-              members,
-              transactions,
-              board,
-              boardPeriod,
-              assemblies,
-              documents
-            })
-          });
-          if (!response.ok) {
-            console.error("Server rejected data save");
+          if (storageMode === 'server') {
+            const response = await fetch('/api/data', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload)
+            });
+            if (!response.ok) {
+              console.error("Server rejected data save");
+            }
+          } else {
+            localStorage.setItem(LOCAL_DATA_KEY, JSON.stringify(payload));
           }
         } catch (error) {
           console.error("Failed to save data to server:", error);
+          localStorage.setItem(LOCAL_DATA_KEY, JSON.stringify(payload));
+          setStorageMode('local');
         }
       };
       
@@ -156,7 +204,7 @@ const App: React.FC = () => {
       const timeout = setTimeout(saveData, 1000);
       return () => clearTimeout(timeout);
     }
-  }, [users, config, members, transactions, board, boardPeriod, assemblies, documents, isInitialized, isLoading, loadError]);
+  }, [users, config, members, transactions, board, boardPeriod, assemblies, documents, isInitialized, isLoading, loadError, storageMode]);
 
   useEffect(() => {
     if (currentUser) {
@@ -177,20 +225,16 @@ const App: React.FC = () => {
   const handleResetSystem = async () => {
     if (confirm("⚠️ ¡ADVERTENCIA CRÍTICA!\n\nEsta acción borrará permanentemente TODOS los datos registrados en el servidor (Socios, Finanzas, Actas, Documentos de Secretaría y Configuración Personalizada).\n\n¿Está absolutamente seguro de continuar?")) {
       try {
-        await fetch('/api/data', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            users: INITIAL_USERS,
-            config: INITIAL_CONFIG,
-            members: [],
-            transactions: [],
-            board: INITIAL_BOARD,
-            boardPeriod: '2025 - 2027',
-            assemblies: [],
-            documents: []
-          })
-        });
+        const resetPayload = getDefaultData();
+        if (storageMode === 'server') {
+          await fetch('/api/data', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(resetPayload)
+          });
+        } else {
+          localStorage.setItem(LOCAL_DATA_KEY, JSON.stringify(resetPayload));
+        }
         localStorage.removeItem('te_session');
         window.location.reload();
       } catch (error) {
@@ -280,23 +324,13 @@ const App: React.FC = () => {
     }
   };
 
-  if (loadError) return (
-    <div className="min-h-screen mesh-bg flex items-center justify-center p-10">
-      <div className="bg-white p-12 rounded-[3rem] shadow-2xl text-center max-w-md">
-        <div className="text-rose-500 text-5xl mb-6">⚠️</div>
-        <h2 className="text-2xl font-black text-slate-900 mb-4">Error de Conexión</h2>
-        <p className="text-slate-500 font-medium mb-8">No se pudo conectar con el servidor de datos. Por favor, verifique su conexión y recargue la página.</p>
-        <button onClick={() => window.location.reload()} className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest hover:bg-black transition">Reintentar</button>
-      </div>
-    </div>
-  );
 
   if (!isInitialized || isLoading) return (
     <div className="min-h-screen mesh-bg flex items-center justify-center">
       <div className="text-white font-black animate-pulse uppercase tracking-[0.5em]">Cargando Sistema...</div>
     </div>
   );
-  if (!currentUser) return <Login onLogin={handleLogin} config={config} />;
+  if (!currentUser) return <Login onLogin={handleLogin} config={config} users={users} storageMode={storageMode} />;
 
   const menuItems = [
     { id: 'dashboard' as const, icon: <Icons.Dashboard />, label: t.nav.dashboard },
